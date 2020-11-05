@@ -14,10 +14,10 @@ function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{headerShown: false}}>
+        <Stack.Screen name="Form" component={Form} />
         <Stack.Screen name="Home" component={Splash} />
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Coleta" component={Coleta} />
-        <Stack.Screen name="Form" component={Form} />
       </Stack.Navigator>
     </NavigationContainer>
   );

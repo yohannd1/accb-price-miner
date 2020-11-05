@@ -1,48 +1,36 @@
 import React, {Component} from 'react';
-import {View, Text} from 'react-native';
-
-import Realm from '../service/realm';
-import * as axios from 'axios';
+import {View, Text, SafeAreaView, Image} from 'react-native';
+import app from '../styles';
+import {heightPercentageToDP} from 'react-native-responsive-screen';
 
 export default class Splash extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      products: undefined,
-    };
+  componentDidMount() {
+    const {replace} = this.props.navigation;
+    // console.log(this.props);
+    setTimeout(() => {
+      replace('Login');
+    }, 2000);
   }
-
-  save_product = async (product) => {
-    const realm = await Realm();
-
-    realm.write(() => {
-      realm.create('Produto', product, 'modified');
-    });
-  };
-
-  get_product = async () => {
-    axios
-      .get('http://192.168.137.224:80/request/accb_mobile.php/?PRODUCT')
-      .then(function (response) {
-        response.data.map((value) => {
-          console.log(value);
-        });
-      })
-      .catch(function (error) {
-        if (error.response) {
-          console.log(error.response.data);
-        } else {
-          console.log('Error BATATA', error.message);
-          return error.response;
-        }
-      });
-  };
 
   render() {
     return (
-      <View style={{flex: 1}}>
-        <Text stwyle={{color: 'black'}}>{this.get_product()}</Text>
-      </View>
+      <SafeAreaView style={{...app.four_color, flex: 1}}>
+        <View
+          style={{...app.container, marginTop: heightPercentageToDP('15%')}}>
+          <View style={{flexDirection: 'row'}}>
+            <Image style={app.logo} source={require('../img/logo.png')} />
+            <Image style={app.logo} source={require('../img/logo_2.png')} />
+          </View>
+          <View style={{...app.one_color, padding: 15, width: '100%'}}>
+            <Text style={{...app.text_small, textAlign: 'center'}}>
+              Acompanhamento do Custo da Cesta Básica {'\n'}
+              {'\n'} Coleta de Preços
+              {'\n'}
+              {'\n'}Projeto Mobile - PIBITI 2020
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 }

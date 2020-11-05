@@ -129,7 +129,7 @@ export default class Form extends Component {
       return (
         <View
           style={{
-            width: wp('20%'),
+            width: wp('22%'),
             alignContent: 'center',
             justifyContent: 'center',
           }}>
@@ -138,7 +138,8 @@ export default class Form extends Component {
             color={'#fff'}
             style={{textAlign: 'center'}}
             name={icon}
-            size={40}></Icon>
+            size={40}
+          />
           <Text style={{...app.text_icon, marginBottom: 10}}>{text}</Text>
         </View>
       );
@@ -150,24 +151,27 @@ export default class Form extends Component {
           }}>
           <Icon.Button
             style={{marginLeft: 10}}
-            color={'#3B9CE2'}
+            color={'#423b3b'}
             name={icon.name_1}
             size={35}
-            backgroundColor={'rgba(255,255,255,0)'}></Icon.Button>
+            backgroundColor={'rgba(255,255,255,0)'}
+          />
           <Icon.Button
             style={{marginLeft: 10}}
             color={'#3B9CE2'}
             name={icon.name_2}
             size={35}
             backgroundColor={'rgba(255,255,255,0)'}
-            onPress={() => navigate('Form')}></Icon.Button>
+            onPress={() => navigate('Form')}
+          />
           <Icon.Button
             style={{marginLeft: 10}}
             color={'#3B9CE2'}
             name={icon.name_3}
             size={35}
             backgroundColor={'rgba(255,255,255,0)'}
-            onPress={() => navigate('Form')}></Icon.Button>
+            onPress={() => navigate('Form')}
+          />
         </View>
       );
     }
@@ -263,7 +267,8 @@ export default class Form extends Component {
             <Icon
               color={'rgba(255,255,255,0.8)'}
               name={'exclamation'}
-              size={25}></Icon>
+              size={25}
+            />
           </TouchableHighlight>
         </View>
         <View
