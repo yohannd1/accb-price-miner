@@ -19,8 +19,8 @@
   <ol>
     <li>
         <a href="#sobre-o-projeto">Sobre o projeto</a>
-		<a href="#solução">Solução</a>
     </li>
+	<li> <a href="#solução"> Solução </a> </li>
   </ol>
 </details>
 
