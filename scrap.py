@@ -3,6 +3,7 @@ import time
 import csv
 import os
 import threading
+import json
 from tkinter import messagebox
 from datetime import date
 from selenium import webdriver
@@ -11,10 +12,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-try:
-    from win10toast import ToastNotifier
-except ImportError:
-    pass
+# try:
+#     from win10toast import ToastNotifier
+# except ImportError:
+#     pass
 
 def set_viewport_size(driver, width, height):
 
@@ -28,26 +29,47 @@ def set_viewport_size(driver, width, height):
     # driver.find_element_by_ID('//settings-ui').click()
     # time.sleep(35)
 
-
 def get_data(driver, local, writer, product, local_cep):
 
     found = True
     # info = []
     elements = []
     # Lista de Produtos
-    elements = driver.find_elements_by_class_name("flex-item2")
+    time.sleep(2)
+    try:
+        
+        elements = driver.find_elements_by_class_name("flex-item2")
 
+    except:
+        
+        captcha(driver)
+        
+    elements = driver.find_elements_by_class_name("flex-item2")
+    
     for element in elements:
 
         # * Processo de aquisição de dados
 
+        try:
+            
+            # Nome do produto
+            product_name = element.find_elements_by_tag_name("strong")[0]
+            product_name = product_name.get_attribute('innerHTML')
+
+            # Todas as tags com as informações do bloco do produto
+            product_info = element.find_elements_by_tag_name("div")
+
+        except:
+            
+            captcha(driver)
+            
         # Nome do produto
         product_name = element.find_elements_by_tag_name("strong")[0]
         product_name = product_name.get_attribute('innerHTML')
 
         # Todas as tags com as informações do bloco do produto
         product_info = element.find_elements_by_tag_name("div")
-
+            
         # Preço do produto
         flag = 0
         if len(element.find_elements_by_class_name("sobre-desconto")) == 0:
@@ -108,38 +130,115 @@ def get_data(driver, local, writer, product, local_cep):
 
     # return info
 
+def check_captcha(driver, request):
+    
+    excpt = True
+    if request == 1:
+        
+        driver.back()
+    
+    time.sleep(1)
+    try:
 
-def pop_up():
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "flash")))
+
+    except:
+
+        # print("Captcha desativado.")
+        time.sleep(1)
+        excpt = False
+        return True
+
+    finally:
+
+        if excpt:
+            
+            # print("Captcha ativado.")
+            return False
+    
+def pop_up(driver):
     
     result = messagebox.askquestion("CAPTCHA", "Captcha foi ativado, resolva-o em seu navegador e aperte Sim para continuar", icon='warning')
-    if result == 'yes':
+    if result == 'yes' and check_captcha(driver, 1):
         return True
     else:
         return False
-        
 
-def captcha():
+def captcha(driver):
     
     while True:
 
-        if pop_up():
+        if pop_up(driver):
             
             break        
 
+# Backup
+def backup_check(t_date):
 
+    try:
     
-def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
+        product = 0
+        place = 0
+        finish = 0
+        date = 0
+        with open('backup.json') as json_file:
+
+            data = json.load(json_file)
+            for backup in data['backup']:
+                
+                product = backup['prod']
+                place = backup['estab']
+                date = backup['date']    
+                finish = backup['done']    
+
+        # if t_date != date:
+        
+        #     return (0, 0)
+        
+        # Pesquisa acabou
+        if finish == -1:
+            
+            return (0, 0)
+
+        # Pesquisa do estabelecimento nao acabou
+        if finish == 0:
+            
+            return (abs(product), abs(abs(place) - 1))
+
+        # Pesquisa do esatebelcimento acabou
+        if finish == 1:
+            
+            return (abs(product), abs(place))
+
+    except:
+        
+        return(0,0)
+
+def backup_save(prod, estab, date,done):
+    
+    data = {}
+    data['backup'] = []
+    data['backup'].append({"prod": prod, "estab": estab, "date": date, "done": done})
+    with open('backup.json', 'w+') as outfile:
+    
+        json.dump(data, outfile)
+# Backup
+
+def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_BAR, TXT, CITY):
 
     result = '1'
     URL = 'https://precodahora.ba.gov.br/'
-    times = 3
+    times = 5
     today = date.today()
     day = today.strftime("%d-%m-%Y")
-
+    start_prod = 0
+    start_estab = 0
+    restart = True
+    
     chrome_options = Options()
-    # chrome_options.add_argument('--headless')
-    # chrome_options.add_argument('--no-sandbox')
-    # chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
 
     driver = webdriver.Chrome(
         executable_path="chromedriver.exe", options=chrome_options)
@@ -162,6 +261,14 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
     # Requer polimento do algoritmo para garantir a validade das informações
     # Teste da ferramenta Selenium com chromedriver
 
+    start_prod, start_estab = backup_check(day)
+    CEP = CEP[start_estab:]
+    LOCALS = LOCALS[start_estab:]
+    products_backup = products
+    if start_prod > 0 or start_estab > 0:
+        
+        TXT.set("Retomando pesquisa anterior ...")
+
     for n, number in enumerate(CEP):
 
         # Define endereço a ser visitado
@@ -172,23 +279,43 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
             driver.find_element_by_id('fake-sbar').click()
             time.sleep(5*times)
 
-        dic = 'Pesquisa [ ' + day + ' ]'
+            TXT.set("Pesquisa iniciada - " + LOCALS[n])
+        
+        TXT.set("Iniciando arquivos ...")
+        # Cria a pasta de pesquisa
+        dic = CITY + ' [ ' + day + ' ]'
         if not os.path.exists(dic):
 
             os.makedirs(dic)
 
-        with open(dic + '/' + LOCALS[n] + '.csv', 'w+', newline='') as file:
+        # Se arquivo já existe, não preciso inicia-lo
+        if start_prod != 0 and restart:
+            
+            print("restart")
+            PROGRESS_BAR['value'] = (start_prod) * (100/len(products_backup))
+            products = products[start_prod:]
+            restart = False
+            
+        else: 
+            
+            products = products_backup
+            # Inicia o arquivo csv com as colunas principais
+            with open(dic + '/' + LOCALS[n] + '.csv', 'w+', newline='') as file:
 
-            writer = csv.writer(file, delimiter=';')
-            writer.writerow(
-                ["Produto", "Estabelecimento", "Keyword", "Preço"])
-        
-        TXT.set("Pesquisa iniciada - " + LOCALS[n])
-
+                writer = csv.writer(file, delimiter=';')
+                writer.writerow(
+                    ["Produto", "Estabelecimento", "Keyword", "Preço"])
+                
+            
         for index, product in enumerate(products):
 
-            time.sleep(10*times)
-    
+            print('start')
+            print(index + start_prod)
+            print(index)
+            backup_save(index + start_prod, n + start_estab, day, 0)
+            
+            time.sleep(3*times)
+            
             # Barra de pesquisa superior (produtos)
             try:
 
@@ -197,13 +324,7 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
 
             except:
 
-                # print("Captcha foi ativado.")
-                # while True:
-
-                #     go = input('Digite S quando resolver o captcha')
-                #     if go == 'S':
-
-                captcha()
+                captcha(driver)
                 driver.get('https://precodahora.ba.gov.br/produtos')
                 time.sleep(2*times)
 
@@ -211,7 +332,6 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
 
                 search = driver.find_element_by_id('top-sbar')
 
-            # Insere o produto da iteração i
             for word in product:
 
                 search.send_keys(word)
@@ -226,7 +346,8 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
             # * Processo para definir a região desejada para ser realizada a pesquisa
 
             if index == 0:
-
+                
+                TXT.set("Pesquisando endereço ...")
                 # Botão que abre o modal referente a localização
                 try:
 
@@ -235,13 +356,7 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
 
                 except:
 
-                    # while True:
-
-                        # go = input(
-                        #     'Captcha Ativado, resolva o Captcha e aperte S')
-                        # if go == 'S':
-                    captcha()
-                    driver.back()
+                    captcha(driver)
                     time.sleep(1)
                         
                 finally:
@@ -257,13 +372,7 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
 
                 except:
 
-                    # while True:
-
-                    #     go = input(
-                    #         'Captcha Ativado, resolva o Captcha e aperte S')
-                    #     if go == 'S':
-                    captcha()
-                    driver.back()
+                    captcha(driver)
                     time.sleep(1)
                             # break
 
@@ -276,10 +385,12 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
 
                 driver.find_element_by_id('my-zip').send_keys(number)
 
-                # Preciona o botão que realiza a pesquisa por CEP
+                # Pressiona o botão que realiza a pesquisa por CEP
                 driver.find_element_by_id('sel-cep').click()
 
-                time.sleep(5*times)
+                time.sleep(3*times)
+            
+            TXT.set("Pesquisa iniciada - " + LOCALS[n])
 
             # Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados
             try:
@@ -289,14 +400,7 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
 
             except:
 
-                # print("CAPTCHA foi ativado ou erro de conexão.\n")
-                # go = 'Y'
-                # while go != 'S':
-
-                #     go = input(
-                #         "Digite 'S' para continuar após resolver o CAPTCHA.\n")
-                captcha()
-                driver.back()
+                captcha(driver)
                 time.sleep(2*times)
 
             finally:
@@ -314,33 +418,60 @@ def scrap(CEP, LOCALS, BUTTON, TK, PROGRESS_VAR, TXT):
 
                         if flag == 2:
 
-                            print("2 paginas abertas.")
+                            # print("2 paginas abertas.")
                             break
 
                     except:
 
-                        print("Não teve mais resultados.")
-                        break
+                        if check_captcha(driver, 0):
+                           
+                            print("Quantidade máxima de paginas abertas.")
+                            time.sleep(1)
+                            break
+                            
+                        else:
+                                    
+                            captcha(driver)
 
                 with open(dic + '/' + LOCALS[n] + '.csv', 'a+', newline='') as file:
 
                     writer = csv.writer(file, delimiter=';')
                     get_data(driver, LOCALS[n], writer, product, number)
 
-            PROGRESS_VAR['value'] += 8.3333333
+            max_val = PROGRESS_BAR['value'] + (100/len(products_backup)) + 1
+            for x in range(int(PROGRESS_BAR['value']), int(max_val)):
+            
+                PROGRESS_BAR['value'] = x
+                time.sleep(0.01)
+                
+        time.sleep(1)
+        for x in range(100,-1,-1):
+            
+            PROGRESS_BAR['value'] = x
+            time.sleep(0.01)
         
-        PROGRESS_VAR['value'] = 0
-        if os.name == 'nt':
+        backup_save(0, n + start_estab, day, 1)
+        start_prod = 0
+        
+        # if os.name == 'nt':
 
-            toaster = ToastNotifier()
-            toaster.show_toast("Pesquisa encerrada para o estabelecimento " + LOCALS[n] + ", arquivo gerado com sucesso.")         
+        #     toaster = ToastNotifier()
+        #     toaster.show_toast("Pesquisa encerrada para o estabelecimento " + LOCALS[n], 
+        #            " ",
+        #            icon_path=None,
+        #            duration = 10)         
     
-    BUTTON["state"] = TK.NORMAL
     BUTTON.config(text="INICIAR PESQUISA")
-    if os.name == 'nt':
+    BUTTON["state"] = TK.NORMAL
+    TXT.set("Aguardando inicio de pesquisa ...")
+    backup_save(0,0,-1,1)
+    # if os.name == 'nt':
 
-        toaster = ToastNotifier()
-        toaster.show_toast("Pesquisa encerrada.")
+    #     toaster = ToastNotifier()
+    #     toaster.show_toast("Pesquisa encerrada.",
+    #                " ",
+    #                icon_path=None,
+    #                duration = 10)
         
     driver.close()
     driver.quit()

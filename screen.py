@@ -6,21 +6,6 @@ from tkinter import ttk
 import scrap as scrapper
 from datetime import datetime
 import threading
-try:
-    from winsound import *
-    from win10toast import ToastNotifier
-except ImportError:
-    pass
-
-
-def notification(message):
-
-    if os.name == 'nt':
-
-        PlaySound('notification.wav', SND_FILENAME)
-        toaster = ToastNotifier()
-        toaster.show_toast(message)
-
 
 def start_search(city, button, progress_bar, text):
 
@@ -31,34 +16,13 @@ def start_search(city, button, progress_bar, text):
     if city.get() == 1:
 
         # ITABUNA
-        CEP = ['45600050'
-               '45600050',
-               '45605412',
-               '45603232',
-               '45602170',
-               '45607100',
-               '45600050',
-               '45600013',
-               '45600050',
-               '45604795',
-               '45604195',
-               '45604165',
+        CEP = ['45607100',
                '45600050']
-
-        LOCALS = ['ITAO',
-                  'CARISMA',
-                  'BOMPRECO',
-                  'MEIRA',
-                  'MERCADO MATOS',
-                  'SUPERMERCADO BARATEIRO',
-                  'HIPER ITAO',
-                  'RONDELLI',
-                  'IRMÃOS',
-                  'MAXXI',
-                  'PADARIA LÊ & GI',
-                  'COMPRE BEM']
-
-        threading.Thread(target=lambda:scrapper.scrap(CEP, LOCALS, button, tk, progress_bar, text)).start()
+        
+        LOCALS = ['BARATEIRO',
+                  'RONDELLI']
+        
+        threading.Thread(target=lambda:scrapper.scrap(CEP, LOCALS, button, tk, progress_bar, text, "Itabuna")).start()
 
     elif city.get() == 2:
 
@@ -83,18 +47,19 @@ def start_search(city, button, progress_bar, text):
                 'MECARDINHO E FRUTARIA CLAUDINTE',
                 'NENEM SUPERMERCADOS',
                 'CESTÃO DA ECONOMIA',
-                'ATACADÃO']
+                'ATACADAO']
 
-        threading.Thread(target=lambda:scrapper.scrap(CEP, LOCALS, button, tk, progress_bar, text)).start()
+        threading.Thread(target=lambda:scrapper.scrap(CEP, LOCALS, button, tk, progress_bar, text, "Ilheus")).start()
 
 def main():
 
-    
     # Window
 
     window = tk.Tk()
     window.title('ACCB - Auto Search')
     window.resizable(height=False, width=False)
+    if os.name == 'nt':
+        window.iconbitmap('logo.ico')
 
     width = 280
     heigth = 120
@@ -133,7 +98,9 @@ def main():
     
     top.title('Search Progress')
     top.resizable(height=False, width=False)
-
+    if os.name == 'nt':
+        top.iconbitmap('logo.ico')
+  
     width = 320
     heigth = 80
 
@@ -145,7 +112,7 @@ def main():
   
     start_button = tk.Button(window, text="INICIAR PESQUISA",relief=tk.FLAT, font='Times 10' , fg='black', bg='#ddd', command=lambda: start_search(var, start_button, progress_bar, text))
     start_button.pack()
-    
+        
     window.mainloop()
     top.mainloop()
 
