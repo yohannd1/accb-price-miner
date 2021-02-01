@@ -42,10 +42,10 @@ pyinstaller --onefile --paths="C:\Users\samue\AppData\Local\Programs\Python\Pyth
 
 ## Utilizando
 
-### 1. Selecione o município 
-### 2. Selecione os estabelecimentos
-### 3. Caso o CAPTCHA seja ativado, abra seu navegador no link : www.precodahora.ba.gov.br/produtos/ e solucione o captcha e pressione SIM
-### 4. FIM
+ 1. Selecione o município 
+ 2. Selecione os estabelecimentos
+ 3. Caso o CAPTCHA seja ativado, abra seu navegador no link : www.precodahora.ba.gov.br/produtos/ e solucione o captcha e pressione SIM
+ 4. FIM
 
 ## Requisitos
 
