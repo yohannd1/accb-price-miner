@@ -33,14 +33,19 @@ O projeto tem como objetivo encontrar soluções tecnológicas para auxiliar no 
 
 A partir de uma ferramenta web externa foi realizada uma pesquisa apra a possibilidade de extrar informações de tal site. Vendo a possibilidade foi criado um scrapper e a partir dele foi feita uma GUI para facilitar o uso pelos os usuários.
 
+
+## Executavel
+
+Em um terminal execute o seguinte comando :
+
 pyinstaller --onefile --paths="C:\Users\samue\AppData\Local\Programs\Python\Python37-32\Lib\site-packages\win10toast" --paths="C:\Users\samue\AppData\Local\Programs\Python\Python37-32\Lib\site-packages\xlsxwriter"  —name="ACCB"  --icon=logo.ico  screen.py
 
 ## Utilizando
 
-# 1. Selecione o município 
-# 2. Selecione os estabelecimentos
-# 3. Caso o CAPTCHA seja ativado, abra seu navegador no link : www.precodahora.ba.gov.br/produtos/ e solucione o captcha e pressione SIM
-# 4. FIM
+### 1. Selecione o município 
+### 2. Selecione os estabelecimentos
+### 3. Caso o CAPTCHA seja ativado, abra seu navegador no link : www.precodahora.ba.gov.br/produtos/ e solucione o captcha e pressione SIM
+### 4. FIM
 
 ## Contribuidores
 
