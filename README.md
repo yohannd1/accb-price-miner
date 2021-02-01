@@ -47,6 +47,12 @@ pyinstaller --onefile --paths="C:\Users\samue\AppData\Local\Programs\Python\Pyth
 ### 3. Caso o CAPTCHA seja ativado, abra seu navegador no link : www.precodahora.ba.gov.br/produtos/ e solucione o captcha e pressione SIM
 ### 4. FIM
 
+## Requisitos
+
+Deve existir uma copia do navegador chrome instalado na maquina que deseja abrir o programa. (Windows 10)
+
+Link para download: https://www.google.com/intl/pt-BR/chrome/
+
 ## Contribuidores
 
 - [Samuel Mendonça](https://github.com/Syphoon)
