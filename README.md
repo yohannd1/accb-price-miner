@@ -1,14 +1,13 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/Syphoon/ACCB_IT/tree/GUI">
+  <a href="https://github.com/Syphoon/ACCB_IT/tree/Executavel">
     <!-- <img src="./img/logo_2.png" alt="Logo" width="100"> -->
 	<h3 align="center">Projeto ACCB - GUI</h3>
   </a>
   <p align="center">
     Projeto desenvolvido para o projeto de iniciação tecnológica
     <br />
-    <!-- <a href="https://adrielfabricio.github.io/coffee-chat/"><strong>Documentação do código do projeto</strong></a> -->
   </p>
 </p>
 
