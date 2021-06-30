@@ -1,57 +1,80 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/Syphoon/ACCB_IT/tree/Executavel">
+  <a href="https://github.com/smvasconcelos/ACCB_IT/tree/Executavel">
     <!-- <img src="./img/logo_2.png" alt="Logo" width="100"> -->
-	<h3 align="center">Projeto ACCB - GUI</h3>
+	<h3 align="center">Projeto ACCB - Guia de Funcionalidades</h3>
   </a>
-  <p align="center">
-    Projeto desenvolvido para o projeto de iniciação tecnológica
-    <br />
-  </p>
 </p>
 
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
-  <summary>Sumário</summary>
+  <summary>Opções</summary>
   <ol>
     <li>
-        <a href="#sobre-o-projeto">Sobre o projeto</a>
+        <a href="#definição">Definição</a><br>
     </li>
-	<li> <a href="#solução"> Solução </a> </li>
-	<li> <a href="#utilizando"> Utilizando </a> </li>
+	<li>
+        <a href="#tratar-pesquisas">Tratar Pesquisas</a><br>
+	</li>
+	<li>
+        <a href="#tratar-pesquisas-todos">Tratar Pesquisas Todos</a><br>
+	</li>
   </ol>
 </details>
 
-## Sobre o projeto
+## Definição
 
-O projeto tem como objetivo encontrar soluções tecnológicas para auxiliar no processo de coleta da cesta básica da UESC (ACCB).
+Dado uma estrutura :
 
-## Solução
+```
+-- ACCB.exe
+-- Itabuna [25-06-2021]
+-- Itabuna [25-06-2021]
+-- Itabuna [25-06-2021]
+-- Ilhéus [25-06-2021]
+-- Ilhéus [25-06-2021]
+-- Ilhéus [25-06-2021]
+-- Ilhéus [25-06-2021]
+```
 
-A partir de uma ferramenta web externa foi realizada uma pesquisa apra a possibilidade de extrar informações de tal site. Vendo a possibilidade foi criado um scrapper e a partir dele foi feita uma GUI para facilitar o uso pelos os usuários.
+o programa itera por cada pasta de pesquisa e retorna 2 pastas com 3 subdiretórios cada em cada pasta de sua respectiva cidade.
 
+```
+-- ACCB.exe
+...
+-- Coleta Datada
+   --Itabuna
+		-- Coleta Padrão
+		-- Coleta Arquivo TODOS
+		-- Coleta Extra
+   --Ilhéus
+		-- Coleta Padrão
+		-- Coleta Arquivo TODOS
+		-- Coleta Extra
+-- Coleta Concatenada
+   --Itabuna
+		-- Coleta Padrão
+		-- Coleta Arquivo TODOS
+		-- Coleta Extra
+   --Ilhéus
+		-- Coleta Padrão
+		-- Coleta Arquivo TODOS
+		-- Coleta Extra
+```
+	-- Coleta Datada -> Retorna todas as coletas de cada pasta concatenadas em um unico arquivo do seu respectivo estabelecimento em que cada 'sheet' (planilha) é a data da coleta.
+	-- Coleta Concatenada -> Concatena todas as coletas do resultado anterior (Coleta Datada) em um arquivo do seu respectivo estabelecimento, com uma unica 'sheet' (panilha) e todas as duplicações de valores existentes em cada data.
 
-## Executavel
-
-Em um terminal execute o seguinte comando :
-
-pyinstaller --onefile --paths="C:\Users\samue\AppData\Local\Programs\Python\Python37-32\Lib\site-packages\win10toast" --paths="C:\Users\samue\AppData\Local\Programs\Python\Python37-32\Lib\site-packages\xlsxwriter"  —name="ACCB"  --icon=logo.ico  screen.py
-
-## Utilizando
-
- 1. Selecione o município 
- 2. Selecione os estabelecimentos
- 3. Caso o CAPTCHA seja ativado, abra seu navegador no link : www.precodahora.ba.gov.br/produtos/ e solucione o captcha e pressione SIM
- 4. FIM
-
-## Requisitos
-
-Deve existir uma copia do navegador chrome instalado na maquina que deseja abrir o programa. (Windows 10)
-
-Link para download: https://www.google.com/intl/pt-BR/chrome/
+## Tratar Pesquisas
+```
+O comando Tratar Pesquisas faz todo esse processo com os arquivos da pesquisa padrão e os coloca na pasta Coleta Padrão, ou seja, todos os arquivos que não tem Todos no nome.
+```
+## Tratar Pesquisas Todos
+```
+O comando Tratar Pesquisas Todos, faz a mesma coisa que a de cima, porém ele faz a pesquisa no arquivo Todos daquela data, colocando os resultados da pesquisa Padrão em Aquivo na pasta Coleta Arquivo TODOS e também pesquisa cada estabelecimento único que aparece no arquivo TODOS daquela data, ou seja, qualquer estabelecimento que não pertence a pesquisa oficial é colocado na Coleta Extra, com o nome do seu estabelecimento no mesmo padrão que as demais.
+```
 
 ## Contribuidores
 
-- [Samuel Mendonça](https://github.com/Syphoon)
+- [Samuel Mendonça](https://github.com/smvasconcelos)
