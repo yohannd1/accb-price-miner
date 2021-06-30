@@ -63,14 +63,23 @@ o programa itera por cada pasta de pesquisa e retorna 2 pastas com 3 subdiretór
 		-- Coleta Arquivo TODOS
 		-- Coleta Extra
 ```
-
+<p>
 -- Coleta Datada -> Retorna todas as coletas de cada pasta concatenadas em um unico arquivo do seu respectivo estabelecimento em que cada 'sheet' (planilha) é a data da coleta.
+</p>
+<p>
 -- Coleta Concatenada -> Concatena todas as coletas do resultado anterior (Coleta Datada) em um arquivo do seu respectivo estabelecimento, com uma unica 'sheet' (panilha) e todas as duplicações de valores existentes em cada data.
+</p>
 
 ## Tratar Pesquisas
+<p>
 	O comando Tratar Pesquisas faz todo esse processo com os arquivos da pesquisa padrão e os coloca na pasta Coleta Padrão, ou seja, todos os arquivos que não tem Todos no nome.
+</p>
+
 ## Tratar Pesquisas Todos
+
+<p>
 	O comando Tratar Pesquisas Todos, faz a mesma coisa que a de cima, porém ele faz a pesquisa no arquivo Todos daquela data, colocando os resultados da pesquisa Padrão em Aquivo na pasta Coleta Arquivo TODOS e também pesquisa cada estabelecimento único que aparece no arquivo TODOS daquela data, ou seja, qualquer estabelecimento que não pertence a pesquisa oficial é colocado na Coleta Extra, com o nome do seu estabelecimento no mesmo padrão que as demais.
+</p>
 
 ## Contribuidores
 
