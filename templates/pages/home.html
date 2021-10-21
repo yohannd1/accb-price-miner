@@ -1,0 +1,64 @@
+{% extends "material/base.html" %} {% block content %}
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link
+			rel="stylesheet"
+			href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			type="text/css"
+			href="{{ url_for('static',filename='styles/home.css') }}"
+		/>
+		<title>Document</title>
+	</head>
+	<body>
+		<header>
+			<div class="top-logo">
+				<img
+					src="{{ url_for('static',filename='img/uesc.png') }}"
+					alt="Uesc Logo"
+				/>
+				<img
+					src="{{ url_for('static',filename='img/accb.png') }}"
+					alt="ACCB Logo"
+				/>
+			</div>
+			<ul id="main-navigation" class="tabs">
+				<li class="tab col s3"><a href="#pesquisar"> <i class="fa fa-shopping-cart"> </i> Pesquisar</a></li>
+				<li class="tab col s3"><a id="progresso" href="#progress"> <i class="fa fa-shopping-cart"> </i> Progresso</a></li>
+				<li class="tab col s3"></i><a href="#configurar"> <i class="fa fa-cogs"> </i>
+					Configurar</a></li>
+			</ul>
+		</header>
+		<main class="main-content row">
+			<div id="pesquisar" class="tab">
+				{% if search == false %}
+					<h5>Selecione um município para prosseguir com a pesquisa</h5>
+					<div class="select_wrapper">
+						<select class="browser-default select">
+							{% for name in data %}
+								<option value={{name}}>{{name}}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<a id="selecionar-estab" class="waves-effect waves-light btn-large white">Selecionar Estabelecimentos</a>
+				{% endif %}
+			</div>
+			<div id="configurar" class="col s12 red tab">Configurar</div>
+			<div id="progress" class="col s12 red tab">Progresso</div>
+		</main>
+		<footer>
+
+		</footer>
+		<script type=text/javascript src="{{url_for('static', filename='js/jquery.js')}}"></script>
+		<script type=text/javascript src="{{url_for('static', filename='js/home.js')}}"></script>
+	</body>
+</html>
+
+{% endblock %}

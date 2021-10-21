@@ -1,18 +1,37 @@
 from logging import debug
 from flask import Flask, render_template
 from datetime import datetime
-from waitress import serve
+from flask_material import Material
+
 import re
 
+
+class Web:
+
+    search = False
+    progress = False
+    select = True
+
+    def set_search(self, value):
+        self.search = value
+
+    def set_progress(self, value):
+        self.search = value
+
+    def set_select(self, value):
+        self.select = value
+
+
 app = Flask(__name__)
+Material(app)
+
 
 @app.route("/")
 def home():
-    names = ['samuel', 'alanis', 'fernanda']
-    return render_template("home.html", data=names)
+    names = ['Ilhéus', 'Itabuna', 'Porto Seguro']
+    return render_template("pages/home.html", data=names, search=False)
 
 
 if __name__ == '__main__':
 
-    # serve(app, host="0.0.0.0", port=8080)
     app.run(debug=True)

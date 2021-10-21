@@ -1,5 +1,117 @@
-p{
-	font-size: 20px;
-	padding: 10px;
+* {
+	color: #4aaccf !important;
+}
+
+.primary_color {
+	background-color: #17527b;
+}
+
+.secundary_color {
+	background-color: #4aaccf;
+}
+
+.primary_background {
+	background-color: rgba(255, 255, 255, 0.85);
+}
+
+.secundary_background {
+	background-color: #4aaccf;
+}
+
+html {
+	background-color: #17527b;
+	padding: 8em 5em;
+}
+
+.tabs {
+	border-radius: 10px;
+}
+
+.tabs i {
+	font-size: 1.5em;
+}
+
+.tabs li {
+	padding: 1.5em;
+}
+
+main {
+	background-color: rgba(255, 255, 255, 0.85);
+	height: 65vh;
+	border-radius: 10px;
+	padding: 5em;
+	margin-top: 1em;
+	text-align: center !important;
+}
+
+.top-logo {
+	position: absolute;
+	top: 0;
+	left: 10px;
+	padding: 15px;
+}
+
+.top-logo img {
+	width: 75px;
+	height: 75px;
+}
+
+.btn-large {
+	border-radius: 10px !important;
+}
+
+.tab {
+	height: 100%;
+}
+
+.select_wrapper {
+	height: 50%;
 	width: 100%;
+	margin: auto 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.select {
+	width: 50%;
+	text-align: center;
+	margin: 0 auto;
+}
+
+.select-item {
+	width: 30%;
+	padding: 1.5em 2em;
+	margin: 2.5em;
+	background-color: #4aaccf;
+	color: white !important;
+	border-radius: 10px;
+}
+
+.main-content {
+	display: block !important;
+}
+
+.nav-wrapper li {
+	border-right: solid 1px #707070;
+	padding: 0 1em;
+	text-align: center !important;
+	justify-content: center !important;
+	display: flex !important;
+}
+
+/* Progress Bar  */
+
+#myProgress {
+	width: 100%;
+	background-color: #ddd;
+}
+
+#myBar {
+	width: 10%;
+	height: 30px;
+	background-color: #04aa6d;
+	text-align: center;
+	line-height: 30px;
+	color: white;
 }
