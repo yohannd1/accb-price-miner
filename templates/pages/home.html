@@ -18,7 +18,7 @@
 		<title>Document</title>
 	</head>
 	<body>
-		<header>
+		<header class="z-depth-5">
 			<div class="top-logo">
 				<img
 					src="{{ url_for('static',filename='img/uesc.png') }}"
@@ -30,34 +30,60 @@
 				/>
 			</div>
 			<ul id="main-navigation" class="tabs">
-				<li class="tab col s3"><a href="#pesquisar"> <i class="fa fa-shopping-cart"> </i> Pesquisar</a></li>
-				<li class="tab col s3"><a id="progresso" href="#progress"> <i class="fa fa-shopping-cart"> </i> Progresso</a></li>
-				<li class="tab col s3"></i><a href="#configurar"> <i class="fa fa-cogs"> </i>
+				<li class="tab col s3"><a id="search" href="#pesquisar"> <i class="fa fa-shopping-cart"> </i> Pesquisar</a></li>
+				<li class="tab col s3"></i><a id="list" href="#listagem" > <i class="fa fa-cogs"> </i>
+					Selecionar</a></li>
+				<li class="tab col s3"><a id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
+				<li class="tab col s3"></i><a href="#configurar"  id="config"> <i class="fa fa-cogs"> </i>
 					Configurar</a></li>
 			</ul>
 		</header>
-		<main class="main-content row">
+		<main class="main-content row z-depth-5">
 			<div id="pesquisar" class="tab">
 				{% if search == false %}
-					<h5>Selecione um município para prosseguir com a pesquisa</h5>
-					<div class="select_wrapper">
-						<select class="browser-default select">
-							{% for name in data %}
-								<option value={{name}}>{{name}}</option>
+					<div class="tab-content">
+						<h5>Selecione um município para prosseguir com a pesquisa</h5>
+						<div class="select-wrapper-main">
+							{% for index,city in enumerate(data) %}
+								<a class="select-item city" id="C{{index}}" >{{city}}</a>
 							{% endfor %}
-						</select>
+						</div>
+						<button id="select" class="waves-effect waves-light btn-large">Selecionar Estabelecimentos</button>
 					</div>
-					<a id="selecionar-estab" class="waves-effect waves-light btn-large white">Selecionar Estabelecimentos</a>
 				{% endif %}
 			</div>
 			<div id="configurar" class="col s12 red tab">Configurar</div>
-			<div id="progress" class="col s12 red tab">Progresso</div>
+			<div id="progress" class="col s12 tab">
+				<div class="tab-content">
+					<h5>Pesquisando Produto [{{product}}]</h5>
+					<div id="myProgress">
+						<div id="myBar">10%</div>
+					</div>
+					<button onclick="move()" id="pause" class="waves-effect waves-light btn-large">Pausar Pesquisa</button>
+				</div>
+			</div>
+			<div id="listagem" class="col s12 tab">
+				<h5>Selecione pelo menos um estabelecimento para prosseguir</h5>
+				<button id="select-all" class="waves-effect waves-light btn-large">Selecionar Todos</button>
+				<div class="tab-content-listagem">
+					<div>
+						<div class="select-wrapper col s12">
+								{% for index,estab in enumerate(estab_names) %}
+									<a class="select-item estab" id="E{{index}}" >{{estab}}</a>
+								{% endfor %}
+						</div>
+					</div>
+				</div>
+				<div class="button-menu">
+					<button id="back" class="waves-effect waves-light btn-large">Voltar</button>
+					<button id="start" class="waves-effect waves-light btn-large">Iniciar Pesquisa</button>
+				</div>
+			</div>
 		</main>
 		<footer>
-
 		</footer>
-		<script type=text/javascript src="{{url_for('static', filename='js/jquery.js')}}"></script>
-		<script type=text/javascript src="{{url_for('static', filename='js/home.js')}}"></script>
+		<script type='text/javascript' src="{{url_for('static', filename='js/jquery.js')}}"></script>
+		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
 	</body>
 </html>
 
