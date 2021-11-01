@@ -36,7 +36,7 @@
 .modal-menu{
     position: absolute;
     display: flex;
-    bottom: 5%;
+    bottom: 10%;
     right: 0;
     width: 100%;
     justify-content: center;

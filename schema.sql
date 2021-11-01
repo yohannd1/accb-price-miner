@@ -3,19 +3,24 @@ DROP TABLE IF EXISTS estab;
 DROP TABLE IF EXISTS product;
 
 CREATE TABLE city (
-	city_name text
+	city_name text,
+	PRIMARY KEY(city_name)
 );
 
 CREATE TABLE product (
 	prod_name text,
-	keywords varchar
+	keywords varchar,
+	PRIMARY KEY(prod_name)
 );
 
 CREATE TABLE estab (
 	city_name text,
 	estab_name text,
 	adress varchar,
-	web_name text
+	web_name text,
+	PRIMARY KEY(estab_name),
+	FOREIGN KEY (city_name) REFERENCES city (city_name)
+            ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 INSERT INTO city VALUES ("Itabuna"),("Ilhéus");

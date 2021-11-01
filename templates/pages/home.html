@@ -45,7 +45,7 @@
 			<ul id="main-navigation" class="tabs">
 				<li class="tab col s3"><a id="search" href="#pesquisar"> <i class="fa fa-map-marker"> </i> Município</a></li>
 				<li class="tab col s3"></i><a id="list" href="#listagem" > <i class="fa fa-cogs"> </i>
-					Selecionar Estabelecimentos</a></li>
+					Estabelecimentos</a></li>
 				<li class="tab col s3"><a id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
 				<li class="tab col s3"></i><a href="#configurar"  id="config" class="active"> <i class="fa fa-cogs"> </i>
 					Configurar</a></li>
@@ -92,13 +92,14 @@
 			<div id="configurar" class="col s12 tab" >
 				<div class="config-menu">
 					<div class="left">
-						<select class="browser-default">
+						<select id="city-select" class="browser-default">
 							{% for city in data %}
 								<option value="{{decode(city[0])}}">{{decode(city[0])}}</option>
 							{% endfor %}
 						</select>
 					</div>
-					<a class="right round btn-floating btn-large  primary_color"><i class="fa fa-plus"></i></a>
+					<a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large  primary_color"><i class="fa fa-plus"></i></a>
+					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i></a>
 					<a id="export" class="primary_color left  btn-large">Exportar</a>
 					<a id="import" class="primary_color left  btn-large">Importar</a>
 				</div>
@@ -113,9 +114,14 @@
 				</div>
 			</div>
 		</main>
+
+		<!-- MODAL DINAMICO PARA EDIÇÃO DE ESTAB -->
+
 		<div id="edit-modal" class="modal">
 			<a href="#" rel="modal:close" />
 		</div>
+
+		<!-- MODAL ADICIONANDO ESTAB -->
 		<div id="add-modal" class="modal">
 			<div class="modal-content">
 				<div>
@@ -146,8 +152,57 @@
 						</div>
 					</div>
 					<div class="modal-menu">
-						<button  class="primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
+						<button  class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
 						<button id="save-add" class="primary_color btn-large">Adicionar Estabelecimento</button>
+					</div>
+			</div>
+		</div>
+
+		<!-- MODAL EDITANDO CIDADE -->
+		<div id="edit-city" class="modal" style="max-width: 50%; height: 40%;">
+			<div class="modal-content">
+				<div>
+					<h5 class="modal-title">Editar Cidade</h5>
+				</div>
+					<div class="row">
+						<div style="margin: 20px 0;">
+							<div class="input-field col s6">
+								<select id="city-edit-select" style="color: black !important;">
+									{% for city in data %}
+										<option value="{{city[0]}}" >{{decode(city[0])}}</option>
+									{% endfor %}
+								</select>
+								<label>Cidade</label>
+							</div>
+							<div class="input-field col s6">
+								<input placeholder="Cidade" id="city-edit" type="text" >
+								<label class="active" for="city-edit">Novo Nome</label>
+							</div>
+					</div>
+				</div>
+				<div class="modal-menu">
+					<button  class="cancel primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
+					<button id="save-edit-city" class="primary_color btn-large">Salvar Alterações</button>
+				</div>
+		</div>
+
+		<!-- MODAL ADICIONANDO CIDADE -->
+		<div style="max-width: 50%; height: 40%;" id="add-city-modal" class="modal">
+			<div class="modal-content">
+				<div>
+					<h5 class="modal-title">Adicionar Cidade</h5>
+				</div>
+					<div class="row">
+						<div style="margin: 20px 0;">
+							<div class="input-field col s12">
+								<input placeholder="Cidade" id="save-city" type="text" >
+								<label class="active" for="save-city">Cidade</label>
+							</div>
+						</div>
+					</div>
+					<div class="modal-menu">
+						<button  class="cancel primary_color btn-large" href="#add-city-modal" rel="modal:close">Cancelar</button>
+						<button id="add-city" class="primary_color btn-large">Adicionar Cidade</button>
 					</div>
 			</div>
 		</div>

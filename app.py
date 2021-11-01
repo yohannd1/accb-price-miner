@@ -49,11 +49,11 @@ def update_estab():
 
     except sqlite3.Error as er:
 
-        print('SQLite error: %s' % (' '.join(er.args)))
-        print("Exception class is: ", er.__class__)
-        print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
+        # exc_type, exc_value, exc_tb = sys.exc_info()
+        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O estabelecimento {} não pode ser atualizado.".format(estab_name)}
 
@@ -75,11 +75,11 @@ def insert_estab():
 
     except sqlite3.Error as er:
 
-        print('SQLite error: %s' % (' '.join(er.args)))
-        print("Exception class is: ", er.__class__)
-        print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
+        # exc_type, exc_value, exc_tb = sys.exc_info()
+        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O estabelecimento {} não pode ser adicionado.".format(estab_name)}
 
@@ -90,6 +90,28 @@ def select_city():
     db = database.Database()
     g.cities = db.db_get_city()
     return json.dumps(g.cities)
+
+
+@app.route("/insert_city")
+def insert_city():
+
+    db = database.Database()
+    city_name = request.args.get('city_name')
+
+    try:
+
+        db.db_save_city(city_name)
+        return {"success": True, "message": "A cidade {} foi adicionado com sucesso".format(city_name)}
+
+    except sqlite3.Error as er:
+
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
+        # exc_type, exc_value, exc_tb = sys.exc_info()
+        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return {"success": False, "message": "A cidade {} não pode ser adicionado.".format(city_name)}
 
 
 @app.route("/remove_estab")
@@ -103,11 +125,11 @@ def remove_estab():
 
     except sqlite3.Error as er:
 
-        print('SQLite error: %s' % (' '.join(er.args)))
-        print("Exception class is: ", er.__class__)
-        print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
+        # exc_type, exc_value, exc_tb = sys.exc_info()
+        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O estabelecimento {} não pode ser removido.".format(estab_name)}
 
