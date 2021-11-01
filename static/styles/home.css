@@ -1,9 +1,11 @@
-/* * {
-	color: #17527b !important;
-} */
+* {
+	/* color: #17527b !important; */
+	font-family: 'Nunito', sans-serif;
+	font-weight: bold;
+}
 
 .primary_color {
-	background-color: #17527b;
+	background-color: #17527b !important;
 }
 
 .secundary_color {
@@ -18,8 +20,13 @@
 	background-color: #4aaccf;
 }
 
-html {
-	background-color: #17527b;
+html{
+	height: 100vh;
+	background: rgb(16,45,66);
+	background: -moz-linear-gradient(0deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
+	background: -webkit-linear-gradient(0deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
+	background: linear-gradient(0deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#102d42",endColorstr="#02426f",GradientType=1);
 	padding: 8em 5em;
 }
 
@@ -43,9 +50,14 @@ html {
 
 }
 
+.tabs{
+	overflow: visible !important;
+}
+
 .tabs .indicator {
   background-color:#26a69a;
   /*Custom Color Of Indicator*/
+  padding: 0;
 }
 
 h5{
@@ -103,7 +115,7 @@ main {
 	overflow: auto;
 }
 
-.select-wrapper {
+.select_wrapper {
 	width: 100%;
 	display: flex;
 	flex-flow: row wrap;
@@ -132,8 +144,7 @@ main {
 	text-decoration: none;
 	float: left;
 	text-decoration: none;
-	transition: background .5s ease-in-out;
-	transition: color .5s ease-in-out;
+	transition: background .5s ease;
 	background-color:  #fff;
 }
 
@@ -158,10 +169,10 @@ main {
 	left: 50%;
 	transform: translate(-50%, -50%);
 	bottom: -5%;
+	width: 100%;
 }
 
-
-button{
+.main-content button{
 	background-color: #17527b !important;
 	color: #fff !important;
 	font-weight: normal;
@@ -201,6 +212,144 @@ button{
     pointer-events: none;
 }
 
+/* Idicators */
+
+#loader{
+	font-size: 2.5em;
+	color: white !important;
+	display: none;
+}
+
+/* Config */
+
+#configurar{
+	padding: 1em;
+}
+
+.tab-content-config{
+	display: block;
+	height: 90%;
+}
+
+.estab-config{
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
+	padding: 15px;
+	background-color: #0e3049;
+	color: white;
+	font-weight: bold;
+	border-radius: 10px;
+	margin-bottom: 1em;
+	transition: background .2s ease-in-out;
+	font-size: 1.1em;
+}
+
+.estab-config:hover{
+	background-color: #17527b;
+	cursor: pointer;
+}
+
+#list-config {
+	height: 80%;
+	overflow: auto;
+	padding: 1em;
+}
+
+.estab-config a{
+	margin-left: 10px;
+}
+
+.config-menu{
+	/* background-color: #17527b; */
+	width: 100%;
+	height: 10%;
+}
+
+.config-title{
+	display: flex;
+	width: 100%;
+	margin: 0 auto;
+	margin-top: 2em;
+	margin-bottom: 2em;
+}
+
+#export , #import {
+	margin-left: 10px;
+}
+
+.s-hidden {
+    visibility:hidden;
+    padding-right: 10px;
+    width: 15em;
+    height: 3.5em;
+}
+
+.select {
+    cursor:pointer;
+    display:inline-block;
+    position:relative;
+    font:normal 11px/22px;
+    color:white;
+    /* border:1px solid #ccc; */
+	border-radius: 5px;
+}
+.styledSelect {
+    position:absolute;
+    top:0;
+    right:0;
+    bottom:0;
+    left:0;
+    background-color:#17527b;
+    padding: 15px 10px;
+	border-radius: 5px;
+    font-weight:bold;
+	transition: background .2s ease-in-out;
+}
+.styledSelect:after {
+    content:"";
+    width:0;
+    height:0;
+    border:5px solid transparent;
+    border-color:white transparent transparent transparent;
+    position:absolute;
+    top:50%;
+    right:5%;
+}
+.styledSelect:active, .styledSelect.active {
+    background-color:#216fa7;
+}
+.options {
+    display:none;
+    position:absolute;
+    top:101%;
+    right:0;
+    left:0;
+    z-index:999;
+    margin:0 0;
+	border-radius:5px;
+    list-style:none;
+    /* border:1px solid #ccc; */
+    background-color:#216fa7;
+    -webkit-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+    -moz-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.options li {
+	transition: background .3s ease-in-out;
+	padding: 10px;
+	border-bottom: 1px solid #eee;
+}
+.options li:last-child {
+	transition: background .3s ease-in-out;
+	padding: 10px;
+	border: none;
+}
+
+.options li:hover {
+    background-color:#17527b;
+    color:white;
+}
 
 /* ScrollBar */
 

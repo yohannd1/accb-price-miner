@@ -1,23 +1,36 @@
-{% extends "material/base.html" %} {% block content %}
-
-<!DOCTYPE html>
-<html lang="en">
+{% extends "material/base.html" %}
 	<head>
-		<meta charset="UTF-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link
-			rel="stylesheet"
-			href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"
-		/>
-		<link
-			rel="stylesheet"
-			type="text/css"
-			href="{{ url_for('static',filename='styles/home.css') }}"
-		/>
-		<title>Document</title>
+		{% block head %}
+			<meta charset="UTF-8" />
+			<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+			<link rel="preconnect" href="https://fonts.googleapis.com">
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+			<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700&family=Spectral:ital,wght@1,400;1,600;1,800&display=swap" rel="stylesheet">
+			<link
+				rel="stylesheet"
+				type="text/css"
+				href="{{ url_for('static',filename='styles/materialize.css') }}"
+			/>
+			<link
+				rel="stylesheet"
+				href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"
+			/>
+			<link
+				rel="stylesheet"
+				type="text/css"
+				href="{{ url_for('static',filename='styles/home.css') }}"
+			/>
+			<link
+				rel="stylesheet"
+				type="text/css"
+				href="{{ url_for('static',filename='styles/modal.css') }}"
+			/>
+			<title>ACCB - Pesquisa Automática</title>
+		{% endblock %}
 	</head>
-	<body>
+	{% block content %}
+		<city value={{city}} />
 		<header class="z-depth-5">
 			<div class="top-logo">
 				<img
@@ -30,11 +43,11 @@
 				/>
 			</div>
 			<ul id="main-navigation" class="tabs">
-				<li class="tab col s3"><a id="search" href="#pesquisar"> <i class="fa fa-shopping-cart"> </i> Pesquisar</a></li>
+				<li class="tab col s3"><a id="search" href="#pesquisar"> <i class="fa fa-map-marker"> </i> Município</a></li>
 				<li class="tab col s3"></i><a id="list" href="#listagem" > <i class="fa fa-cogs"> </i>
-					Selecionar</a></li>
+					Selecionar Estabelecimentos</a></li>
 				<li class="tab col s3"><a id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
-				<li class="tab col s3"></i><a href="#configurar"  id="config"> <i class="fa fa-cogs"> </i>
+				<li class="tab col s3"></i><a href="#configurar"  id="config" class="active"> <i class="fa fa-cogs"> </i>
 					Configurar</a></li>
 			</ul>
 		</header>
@@ -44,47 +57,105 @@
 					<div class="tab-content">
 						<h5>Selecione um município para prosseguir com a pesquisa</h5>
 						<div class="select-wrapper-main">
-							{% for index,city in enumerate(data) %}
-								<a class="select-item city" id="C{{index}}" >{{city}}</a>
+							{% for city in data %}
+								<a class="select-item city" id="C{{city[0]}}" >{{decode(city[0])}}</a>
 							{% endfor %}
 						</div>
-						<button id="select" class="waves-effect waves-light btn-large">Selecionar Estabelecimentos</button>
+						<button id="select" class=" btn-large">Selecionar Estabelecimentos</button>
 					</div>
 				{% endif %}
 			</div>
-			<div id="configurar" class="col s12 red tab">Configurar</div>
 			<div id="progress" class="col s12 tab">
 				<div class="tab-content">
 					<h5>Pesquisando Produto [{{product}}]</h5>
 					<div id="myProgress">
 						<div id="myBar">10%</div>
 					</div>
-					<button onclick="move()" id="pause" class="waves-effect waves-light btn-large">Pausar Pesquisa</button>
+					<button onclick="move()" id="pause" class=" btn-large">Pausar Pesquisa</button>
 				</div>
 			</div>
 			<div id="listagem" class="col s12 tab">
 				<h5>Selecione pelo menos um estabelecimento para prosseguir</h5>
-				<button id="select-all" class="waves-effect waves-light btn-large">Selecionar Todos</button>
 				<div class="tab-content-listagem">
 					<div>
-						<div class="select-wrapper col s12">
-								{% for index,estab in enumerate(estab_names) %}
-									<a class="select-item estab" id="E{{index}}" >{{estab}}</a>
-								{% endfor %}
+						<div class="select_wrapper col s12">
+							<i class="fa fa-spinner fa-pulse" id="loader"></i>
 						</div>
 					</div>
 				</div>
 				<div class="button-menu">
-					<button id="back" class="waves-effect waves-light btn-large">Voltar</button>
-					<button id="start" class="waves-effect waves-light btn-large">Iniciar Pesquisa</button>
+					<button id="back" class=" btn-large">Voltar</button>
+					<button id="select-all" class=" btn-large">Selecionar Todos</button>
+					<button id="start" class=" btn-large">Iniciar Pesquisa</button>
+				</div>
+			</div>
+			<div id="configurar" class="col s12 tab" >
+				<div class="config-menu">
+					<div class="left">
+						<select class="browser-default">
+							{% for city in data %}
+								<option value="{{decode(city[0])}}">{{decode(city[0])}}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<a class="right round btn-floating btn-large  primary_color"><i class="fa fa-plus"></i></a>
+					<a id="export" class="primary_color left  btn-large">Exportar</a>
+					<a id="import" class="primary_color left  btn-large">Importar</a>
+				</div>
+				<div class="tab-content-config">
+					<div class="config-title">
+						<h5>Listagem de Estabelecimentos</h5>
+						<a class="right round btn-floating btn-large  primary_color" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
+					</div>
+					<div id="list-config">
+
+					</div>
 				</div>
 			</div>
 		</main>
-		<footer>
-		</footer>
-		<script type='text/javascript' src="{{url_for('static', filename='js/jquery.js')}}"></script>
-		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
-	</body>
-</html>
+		<div id="edit-modal" class="modal">
+			<a href="#" rel="modal:close" />
+		</div>
+		<div id="add-modal" class="modal">
+			<div class="modal-content">
+				<div>
+					<h5 class="modal-title">Adicionar Estabelecimento</h5>
+				</div>
+					<div class="row">
+						<div style="margin: 20px 0;">
+							<div class="input-field col s6">
+								<select id="city_name-save" style="color: black !important;">
+									{% for city in data %}
+										<option value="{{city[0]}}" >{{decode(city[0])}}</option>
+									{% endfor %}
+								</select>
+								<label>Cidade</label>
+							</div>
+							<div class="input-field col s6">
+								<input placeholder="Estabelecimento" id="estab_name-save" type="text" >
+								<label class="active" for="estab_name">Estabelecimento</label>
+							</div>
+							<div class="input-field col s6">
+								<input  placeholder="Nome na Plataforma" id="web_name-save" type="text" >
+								<label class="active" for="web_name">Nome na Plataforma</label>
+							</div>
+							<div class="input-field col s6">
+								<input placeholder="Endereço" id="adress-save" type="text" >
+								<label class="active" for="adress">Endereço</label>
+							</div>
+						</div>
+					</div>
+					<div class="modal-menu">
+						<button  class="primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
+						<button id="save-add" class="primary_color btn-large">Adicionar Estabelecimento</button>
+					</div>
+			</div>
+		</div>
+	{% endblock %}
 
-{% endblock %}
+	{% block scripts %}
+		{{super()}}
+		<script type='text/javascript' src="{{url_for('static', filename='js/materialize.js')}}"></script>
+		<script type='text/javascript' src="{{url_for('static', filename='js/modal.js')}}"></script>
+		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
+	{% endblock %}
