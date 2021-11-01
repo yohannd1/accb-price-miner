@@ -198,6 +198,54 @@ $(document).ready(function () {
 	list_estab();
 	custom_select();
 
+	$('#save-delete-city').click((e) => {
+
+		e.preventDefault();
+		var city_name = $("#city-delete-select").val();
+
+		$.get("/delete_city", { city_name: city_name }, (response) => {
+
+			if (response.success) {
+
+				alert(response.message);
+				var modal = $("#delete-city").modal();
+				modal.closeModal();
+				$(".jquery-modal").fadeOut(500);
+				window.location.reload(false);
+
+			} else {
+				alert(response.message);
+			}
+
+		});
+
+
+	});
+
+	$('#save-edit-city').click((e) => {
+
+		e.preventDefault();
+		var old_name = $("#city-edit-select").val();
+		var new_name = $("#city-edit").val();
+
+		$.get("/update_city", { city_name: new_name, primary_key: old_name }, (response) => {
+
+			if (response.success) {
+
+				alert(response.message);
+				var modal = $("#edit-city").modal();
+				modal.closeModal();
+				$(".jquery-modal").fadeOut(500);
+				window.location.reload(false);
+
+			} else {
+				alert(response.message);
+			}
+
+		});
+
+	});
+
 	$(".cancel").click((e) => {
 
 		e.preventDefault();

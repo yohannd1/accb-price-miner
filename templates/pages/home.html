@@ -100,6 +100,7 @@
 					</div>
 					<a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large  primary_color"><i class="fa fa-plus"></i></a>
 					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i></a>
+					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i></a>
 					<a id="export" class="primary_color left  btn-large">Exportar</a>
 					<a id="import" class="primary_color left  btn-large">Importar</a>
 				</div>
@@ -158,6 +159,29 @@
 			</div>
 		</div>
 
+		<!-- MODAL DELETANDO CIDADE -->
+		<div id="delete-city" class="modal" style="max-width: 50%; height: 40%;">
+			<div class="modal-content">
+				<div>
+					<h5 class="modal-title">Deletar Cidade</h5>
+				</div>
+					<div class="row">
+						<div style="margin: 20px 0;">
+							<div class="input-field col s12">
+								<select id="city-delete-select" style="color: black !important;">
+									{% for city in data %}
+										<option value="{{city[0]}}" >{{decode(city[0])}}</option>
+									{% endfor %}
+								</select>
+								<label>Cidade</label>
+							</div>
+					</div>
+				</div>
+				<div class="modal-menu">
+					<button  class="cancel primary_color btn-large" href="#delete-city" rel="modal:close">Cancelar</button>
+					<button id="save-delete-city" class="primary_color btn-large">Deletar Cidade</button>
+				</div>
+		</div>
 		<!-- MODAL EDITANDO CIDADE -->
 		<div id="edit-city" class="modal" style="max-width: 50%; height: 40%;">
 			<div class="modal-content">
@@ -206,6 +230,8 @@
 					</div>
 			</div>
 		</div>
+
+
 	{% endblock %}
 
 	{% block scripts %}

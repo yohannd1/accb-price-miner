@@ -9,6 +9,8 @@ import traceback
 app = Flask(__name__)
 Material(app)
 
+print("Ilhéus".encode("utf8"))
+
 
 @app.route("/")
 def home():
@@ -29,6 +31,26 @@ def select_estab():
     g.estab = db.db_get_estab()
     g.estab_list = [estab for estab in g.estab if estab[0] == city]
     return json.dumps(g.estab_list)
+
+
+@app.route("/remove_estab")
+def remove_estab():
+
+    db = database.Database()
+    estab_name = request.args.get('estab_name')
+    try:
+        db.db_delete("estab", "estab_name", estab_name)
+        return {"success": True, "message": "O estabelecimento {} foi removido com sucesso".format(estab_name)}
+
+    except sqlite3.Error as er:
+
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
+        # exc_type, exc_value, exc_tb = sys.exc_info()
+        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return {"success": False, "message": "O estabelecimento {} não pode ser removido.".format(estab_name)}
 
 
 @app.route("/update_estab")
@@ -114,24 +136,49 @@ def insert_city():
         return {"success": False, "message": "A cidade {} não pode ser adicionado.".format(city_name)}
 
 
-@app.route("/remove_estab")
-def remove_estab():
+@app.route("/update_city")
+def update_city():
 
     db = database.Database()
-    estab_name = request.args.get('estab_name')
+    city_name = request.args.get('city_name')
+    primary_key = request.args.get('primary_key')
+
     try:
-        db.db_delete("estab", "estab_name", estab_name)
-        return {"success": True, "message": "O estabelecimento {} foi removido com sucesso".format(estab_name)}
+
+        db.db_update_city({"city_name": city_name, "primary_key": primary_key})
+        return {"success": True, "message": "A cidade {} foi editada com sucesso".format(city_name)}
 
     except sqlite3.Error as er:
 
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        # exc_type, exc_value, exc_tb = sys.exc_info()
-        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        print('SQLite error: %s' % (' '.join(er.args)))
+        print("Exception class is: ", er.__class__)
+        print('SQLite traceback: ')
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        print(traceback.format_exception(exc_type, exc_value, exc_tb))
 
-        return {"success": False, "message": "O estabelecimento {} não pode ser removido.".format(estab_name)}
+        return {"success": False, "message": "A cidade {} não pode ser editada.".format(city_name)}
+
+
+@app.route("/delete_city")
+def delete_city():
+
+    db = database.Database()
+    city_name = request.args.get('city_name')
+
+    try:
+
+        db.db_delete('city', 'city_name', city_name)
+        return {"success": True, "message": "A cidade {} foi deletada com sucesso".format(city_name)}
+
+    except sqlite3.Error as er:
+
+        print('SQLite error: %s' % (' '.join(er.args)))
+        print("Exception class is: ", er.__class__)
+        print('SQLite traceback: ')
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return {"success": False, "message": "A cidade {} não pode ser deletada.".format(city_name)}
 
 
 # Insere a função para ser chamada em todos os templates a qualquer momento
@@ -141,7 +188,10 @@ def utility_processor():
         return f"{amount:.2f}{currency}"
 
     def decode(text):
-        return text.encode('utf8').decode('utf8')
+        try:
+            return text.decode('utf8')
+        except:
+            return text.encode('utf8').decode('utf8')
     return dict(format_price=format_price, enumerate=enumerate, decode=decode)
 
 

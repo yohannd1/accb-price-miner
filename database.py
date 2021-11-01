@@ -1,4 +1,5 @@
 import sqlite3
+import sys
 from os.path import exists
 
 
@@ -22,9 +23,11 @@ class Database:
         conn = None
         if exists("accb.sqlite"):
             conn = sqlite3.connect("accb.sqlite")
+            conn.execute("PRAGMA foreign_keys = ON")
         else:
             self.db_start()
             conn = sqlite3.connect("accb.sqlite")
+            conn.execute("PRAGMA foreign_keys = ON")
 
         return conn
 
@@ -117,8 +120,20 @@ class Database:
         self.conn.commit()
         self.db_end_conn()
 
+    def db_update_city(self, city):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+        sql_query = """UPDATE city SET city_name="{}" WHERE city_name = "{}" """.format(
+            city['city_name'], city['primary_key'])
+        cursor = cursor.execute(sql_query)
+        self.conn.commit()
+        self.db_end_conn()
+
     def db_end_conn(self):
 
         if self.conn:
             self.conn.close()
 
+
+# db = Database()
