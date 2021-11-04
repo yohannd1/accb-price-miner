@@ -4,6 +4,18 @@
 	font-weight: bold;
 }
 
+button, a{
+	font-weight: bold  !important;
+}
+
+a.red{
+	transition: background .3 ease-in-out;
+}
+
+a.red:hover{
+	background-color: #ee776c  !important;
+}
+
 .character-counter{
 	display: none !important;
 }
@@ -273,6 +285,7 @@ main {
 }
 
 .estab-config{
+	text-transform: uppercase;
 	display: flex;
 	justify-content: space-between;
 	width: 100%;
@@ -293,6 +306,7 @@ main {
 }
 
 .product-config{
+	text-transform: uppercase;
 	display: flex;
 	justify-content: space-between;
 	width: 100%;

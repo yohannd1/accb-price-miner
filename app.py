@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, g
 from flask_material import Material
+from numpy import broadcast
+from flask_socketio import SocketIO, send
 import json
 import sqlite3
 import sys
@@ -8,6 +10,8 @@ import traceback
 
 app = Flask(__name__)
 Material(app)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
 
 
 @app.route("/")
@@ -32,7 +36,7 @@ def insert_product():
 
         db.db_save_product(
             {"product_name": product_name, "keywords": keywords})
-        return {"success": True, "message": "O producto {} foi inserido com sucesso".format(product_name)}
+        return {"success": True, "message": "O produto {} foi inserido com sucesso".format(product_name)}
 
     except sqlite3.Error as er:
 
@@ -42,7 +46,7 @@ def insert_product():
         # exc_type, exc_value, exc_tb = sys.exc_info()
         # print(traceback.format_exception(exc_type, exc_value, exc_tb))
 
-        return {"success": False, "message": "O producto {} não pode ser inserido.".format(product_name)}
+        return {"success": False, "message": "O produto {} não pode ser inserido.".format(product_name)}
 
 
 @app.route("/remove_product")
@@ -257,6 +261,14 @@ def delete_city():
         return {"success": False, "message": "A cidade {} não pode ser deletada.".format(city_name)}
 
 
+# SocketIO
+
+@socketio.on("progress")
+def handle_progress(msg):
+
+    print("10")
+    send(msg, broadcast='true')
+
 # Insere a função para ser chamada em todos os templates a qualquer momento
 @app.context_processor
 def utility_processor():
@@ -271,4 +283,5 @@ def utility_processor():
 
 if __name__ == '__main__':
 
-    app.run(debug=True)
+    # app.run(debug=True)
+    socketio.run(app)

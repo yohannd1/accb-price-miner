@@ -77,7 +77,7 @@ const custom_select = () => {
 			$styledSelect.text($(this).text()).removeClass('active');
 			$this.val($(this).attr('rel'));
 			$list.hide();
-			// alert($this.val());
+			// Materialize.toast($this.val());
 			list_estab($this.val());
 		});
 
@@ -135,7 +135,7 @@ const list_product = () => {
 					<p>${value[0]}</p>
 					<div class="right">
 						<a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large   primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
-						<a  value="${value[0]}" class="remove-product btn-floating btn-large  red " ><i class="fa fa-minus"></i></a>
+						<a  value="${value[0]}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
 					</div>
 				</div>
 			`).appendTo("#list-product").hide().slideDown("slow");
@@ -305,7 +305,7 @@ const validate_form = (info, edit = false) => {
 		});
 
 		if (validated.some(elem => elem == false)) {
-			alert("Preencha todos os campos para realizar esta ação.");
+			Materialize.toast("Preencha todos os campos para realizar esta ação.");
 			return false
 
 		} else
@@ -317,6 +317,11 @@ const validate_form = (info, edit = false) => {
 }
 
 $(document).ready(function () {
+
+	var socket = io().connect("http://127.0.0.1:5000/");
+	socket.on('progress', function () {
+		socket.emit('my event', { data: 'I\'m connected!' });
+	});
 
 	var city = undefined;
 	$("select").formSelect();
@@ -358,7 +363,7 @@ $(document).ready(function () {
 					window.location.reload(false);
 
 				} else {
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 				}
 
 			});
@@ -390,7 +395,7 @@ $(document).ready(function () {
 						window.location.reload(false);
 
 					} else {
-						alert(response.message);
+						Materialize.toast(response.message, 2000);
 					}
 
 				});
@@ -423,7 +428,7 @@ $(document).ready(function () {
 						window.location.reload(false);
 
 					} else {
-						alert(response.message);
+						Materialize.toast(response.message, 2000);
 					}
 
 				});
@@ -465,7 +470,7 @@ $(document).ready(function () {
 					window.location.reload(false);
 
 				} else {
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 				}
 
 			});
@@ -488,7 +493,7 @@ $(document).ready(function () {
 
 				if (response.success) {
 
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 					var modal = $("#add-modal").modal();
 					modal.closeModal();
 					$(".jquery-modal").fadeOut(500);
@@ -497,7 +502,7 @@ $(document).ready(function () {
 					create_estab_element(estab_name);
 
 				} else {
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 				}
 
 			});
@@ -517,7 +522,7 @@ $(document).ready(function () {
 
 				if (response.success) {
 
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 					var modal = $("#add-modal-product").modal();
 					modal.closeModal();
 					$(".jquery-modal").fadeOut(500);
@@ -527,7 +532,7 @@ $(document).ready(function () {
 					create_product_element(product_name);
 
 				} else {
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 				}
 
 			});
@@ -596,7 +601,7 @@ $(document).ready(function () {
 
 				if (response.success) {
 
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 					var modal = $("#edit-modal").modal();
 					modal.closeModal();
 					$(".jquery-modal").fadeOut(500);
@@ -604,7 +609,7 @@ $(document).ready(function () {
 					list_estab();
 
 				} else {
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 				}
 
 			});
@@ -661,7 +666,7 @@ $(document).ready(function () {
 		if (!$('.estab').hasClass("select-item-active")) {
 			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000);
 		} else {
-			Materialize.toast('Pesquisa iniciada ...', 1000);
+			Materialize.toast('Pesquisa iniciada ...', 3000);
 			$('ul.tabs').tabs('select', 'progress');
 		}
 
@@ -733,10 +738,10 @@ $(document).ready(function () {
 					$(e.currentTarget).parent().parent().fadeOut(250, () => {
 						$(this).remove();
 					});
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 					console.log(response);
 				} else {
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 					console.log(response);
 				}
 
@@ -761,10 +766,10 @@ $(document).ready(function () {
 					$(e.currentTarget).parent().parent().fadeOut(250, () => {
 						$(this).remove();
 					});
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 					console.log(response);
 				} else {
-					alert(response.message);
+					Materialize.toast(response.message, 2000);
 					console.log(response);
 				}
 
