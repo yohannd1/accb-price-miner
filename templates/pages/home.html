@@ -26,6 +26,7 @@
 				type="text/css"
 				href="{{ url_for('static',filename='styles/modal.css') }}"
 			/>
+			<link rel="icon" href="{{ url_for('static',filename='icon/cart.svg') }}">
 			<title>ACCB - Pesquisa Automática</title>
 		{% endblock %}
 	</head>
@@ -47,13 +48,13 @@
 				/>
 			</div>
 			<ul id="main-navigation" class="tabs">
-				<li class="tab col s3"><a id="search" href="#pesquisar"> <i class="fa fa-map-marker"> </i> Município</a></li>
-				<li class="tab col s3"></i><a id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
+				<li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
+				<li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
 					Estabelecimentos</a></li>
-				<li class="tab col s3"><a id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
-				<li class="tab col s3"></i><a href="#configurar"  id="config" > <i class="fa fa-cogs"> </i>
+				<li class="tab col s3"><a class="disable" id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
+				<li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
 					Configurar</a></li>
-				<li class="tab col s3"></i><a href="#produtos"  id="config" class="active"> <i class="fa fa-cogs"> </i>
+				<li class="tab col s3"></i><a href="#produtos"  id="config-product" class="active tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
 					Produtos</a></li>
 			</ul>
 		</header>
@@ -63,20 +64,11 @@
 						<h5>Selecione um município para prosseguir com a pesquisa</h5>
 						<div class="select-wrapper-main">
 							{% for city in data %}
-								<a class="select-item city" id="C{{city[0]}}" >{{decode(city[0])}}</a>
+								<a class="select-item city z-depth-2" id="C{{city[0]}}" >{{decode(city[0])}}</a>
 							{% endfor %}
 						</div>
 						<button id="select" class=" btn-large">Selecionar Estabelecimentos</button>
 					</div>
-			</div>
-			<div id="progress" class="col s12 tab">
-				<div class="tab-content">
-					<h5>Pesquisando Produto [{{product}}]</h5>
-					<div id="myProgress">
-						<div id="myBar">10%</div>
-					</div>
-					<button onclick="move()" id="pause" class=" btn-large">Pausar Pesquisa</button>
-				</div>
 			</div>
 			<div id="listagem" class="col s12 tab">
 				<h5>Selecione pelo menos um estabelecimento para prosseguir</h5>
@@ -93,25 +85,37 @@
 					<button id="start" class=" btn-large">Iniciar Pesquisa</button>
 				</div>
 			</div>
+			<div id="progress" class="col s12 tab">
+				<div class="tab-content">
+					<h5>Pesquisando Produto [{{product}}]</h5>
+					<div id="myProgress">
+						<div id="myBar">10%</div>
+					</div>
+					<button onclick="move()" id="pause" class=" btn-large">Pausar Pesquisa</button>
+				</div>
+			</div>
 			<div id="configurar" class="col s12 tab" >
 				<div class="config-menu">
-					<div style="margin-top: 1px ;" class="left">
-						<select id="city-select" class="browser-default">
+					<div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Cidade" >
+						<select id="city-select" class="browser-default" >
 							{% for city in data %}
 								<option value="{{decode(city[0])}}">{{decode(city[0])}}</option>
 							{% endfor %}
 						</select>
 					</div>
-					<a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large  primary_color"><i class="fa fa-plus"></i></a>
-					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i></a>
-					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i></a>
+					<a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large  primary_color tooltipped"  data-position="left" data-tooltip="Adicionar Cidade"><i class="fa fa-plus"></i>
+					</a>
+					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Editar Cidade" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i>
+					</a>
+					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Remover Cidade" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i>
+					</a>
 					<a id="export" class="primary_color left  btn-large">Exportar</a>
 					<a id="import" class="primary_color left  btn-large">Importar</a>
 				</div>
 				<div class="tab-content-config">
 					<div class="config-title">
 						<h5>Listagem de Estabelecimentos</h5>
-						<a class="right round btn-floating btn-large  primary_color" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
+						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Estabelecimento" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
 					</div>
 					<div id="list-config">
 
@@ -122,7 +126,7 @@
 				<div class="tab-content-config">
 					<div class="config-title">
 						<h5>Listagem de Produtos</h5>
-						<a class="right round btn-floating btn-large  primary_color" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
+						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
 					</div>
 					<div id="list-product">
 

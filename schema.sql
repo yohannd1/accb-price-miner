@@ -57,7 +57,7 @@ INSERT INTO estab VALUES ("Itabuna","Atacadao Rondelli","AVENIDA JOSE SOARES PIN
 ("Ilhéus","Itao Supermercado","Avenida Petrobrás S/n","Supermercados Itao"),
 ("Ilhéus","Jaciana Supermercado","Rua Coronel Pessoa 51","Mercado Jaciana"),
 ("Ilhéus","Gbarbosa","Avenida Lomando Junior 786","GBARBOSA"),
-("Ilhéus","Frutaria e Mercadinho Cladudinete","Avenida Ilhéus/Salobrinho 91","Frutaria e Mercadinho Claudinete"),
+("Ilhéus","Frutaria e Mercadinho Claudinete","Avenida Ilhéus/Salobrinho 91","Frutaria e Mercadinho Claudinete"),
 ("Ilhéus","Nenem Supermercados","Rua Dois de Julho  480","Meu Mercado"),
 ("Ilhéus","Supermercado Meira - Malhado","Rua Uruguaiana 1187","Supermercado Dalnorde"),
 ("Ilhéus","Supermercado Meira - Centro","Avenida Coronel Misael Tavares 432","Dalnorde Supermercados"),

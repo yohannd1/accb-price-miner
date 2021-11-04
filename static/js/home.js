@@ -109,14 +109,15 @@ const list_estab = (city = undefined) => {
 				<div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
 					<p>${value[1]}</p>
 					<div class="right">
-						<a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit" ><i class="fa fa-edit"></i></a>
-						<a  value="${value[1]}" class="remove-estab btn-floating btn-large  red"><i class="fa fa-minus"></i></a>
+						<a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit "  ><i class="fa fa-edit"></i></a>
+						<a  value="${value[1]}" class="remove-estab btn-floating btn-large  red " data-position="left" ><i class="fa fa-minus"></i></a>
 					</div>
 				</div>
 			`).appendTo("#list-config").hide().slideDown("slow");
 		});
 
 	});
+
 
 }
 
@@ -133,8 +134,8 @@ const list_product = () => {
 				<div class="z-depth-3 product-config edit-product" id="ed-${value[0]}" value="${value[0]}">
 					<p>${value[0]}</p>
 					<div class="right">
-						<a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large   primary_color edit-product" ><i class="fa fa-edit"></i></a>
-						<a  value="${value[0]}" class="remove-product btn-floating btn-large  red"><i class="fa fa-minus"></i></a>
+						<a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large   primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
+						<a  value="${value[0]}" class="remove-product btn-floating btn-large  red " ><i class="fa fa-minus"></i></a>
 					</div>
 				</div>
 			`).appendTo("#list-product").hide().slideDown("slow");
@@ -142,7 +143,6 @@ const list_product = () => {
 
 	});
 
-	console.log("listado");
 
 }
 
@@ -320,6 +320,7 @@ $(document).ready(function () {
 
 	var city = undefined;
 	$("select").formSelect();
+	$('.tooltipped').tooltip();
 	list_estab();
 	list_product();
 	custom_select();
@@ -614,6 +615,7 @@ $(document).ready(function () {
 	$('body').on('click', 'a.estab', (e) => {
 
 		$('.city').removeClass("select-item-active")
+		city = undefined;
 
 		let id = $(e.currentTarget).attr('id');
 
@@ -674,17 +676,18 @@ $(document).ready(function () {
 		if (!$('.city').hasClass("select-item-active")) {
 			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000);
 		} else {
-			Materialize.toast('Pesquisa iniciada ...', 1000);
+			// Materialize.toast('Pesquisa iniciada ...', 1000);
 			$('ul.tabs').tabs('select', 'listagem');
 			$(".tabs a").addClass('disable');
 		}
 		let city_name = $('.select-item-active').html();
-		// Exemplo de requisição para o python
+
 		$.get("/select_estab", { city: city_name }, (response) => {
 
 			response = JSON.parse(response);
 			response.map((value, index) => {
-				$("#listagem  .select_wrapper").append(`<a class="select-item estab" id="E${index}" >${value[1]}</a>`)
+				var delay = 400 + index * 100;
+				$("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay));
 			});
 			$("#loader").hide();
 
@@ -708,7 +711,11 @@ $(document).ready(function () {
 
 	$("#back").click(() => {
 		$('ul.tabs').tabs('select', 'pesquisar');
-		$(".tabs a").addClass('enable');
+
+		$("#config-product").addClass('enable');
+		$("#search").addClass('enable');
+		$("#config").addClass('enable');
+
 		$(".estab").remove();
 	});
 
