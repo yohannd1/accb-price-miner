@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, g
 from flask_material import Material
 from numpy import broadcast
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO, send, emit
+import time
 import json
 import sqlite3
 import sys
@@ -13,6 +14,16 @@ Material(app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+
+def log_error(err):
+
+    with open('err.log', 'w+') as outfile:
+
+        outfile.write("Date : {} \n".format(time.asctime()))
+        for error in err:
+            outfile.write(str(error))
+
+    return
 
 @app.route("/")
 def home():
@@ -43,8 +54,8 @@ def insert_product():
         # print('SQLite error: %s' % (' '.join(er.args)))
         # print("Exception class is: ", er.__class__)
         # print('SQLite traceback: ')
-        # exc_type, exc_value, exc_tb = sys.exc_info()
-        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O produto {} não pode ser inserido.".format(product_name)}
 
@@ -63,8 +74,8 @@ def remove_product():
         # print('SQLite error: %s' % (' '.join(er.args)))
         # print("Exception class is: ", er.__class__)
         # print('SQLite traceback: ')
-        # exc_type, exc_value, exc_tb = sys.exc_info()
-        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O produto {} não pode ser removido.".format(product_name)}
 
@@ -94,11 +105,11 @@ def update_product():
 
     except sqlite3.Error as er:
 
-        print('SQLite error: %s' % (' '.join(er.args)))
-        print("Exception class is: ", er.__class__)
-        print('SQLite traceback: ')
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
         exc_type, exc_value, exc_tb = sys.exc_info()
-        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O produto {} não pode ser atualizado.".format(primary_key)}
 
@@ -127,8 +138,8 @@ def remove_estab():
         # print('SQLite error: %s' % (' '.join(er.args)))
         # print("Exception class is: ", er.__class__)
         # print('SQLite traceback: ')
-        # exc_type, exc_value, exc_tb = sys.exc_info()
-        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O estabelecimento {} não pode ser removido.".format(estab_name)}
 
@@ -154,8 +165,8 @@ def update_estab():
         # print('SQLite error: %s' % (' '.join(er.args)))
         # print("Exception class is: ", er.__class__)
         # print('SQLite traceback: ')
-        # exc_type, exc_value, exc_tb = sys.exc_info()
-        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O estabelecimento {} não pode ser atualizado.".format(estab_name)}
 
@@ -180,8 +191,8 @@ def insert_estab():
         # print('SQLite error: %s' % (' '.join(er.args)))
         # print("Exception class is: ", er.__class__)
         # print('SQLite traceback: ')
-        # exc_type, exc_value, exc_tb = sys.exc_info()
-        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "O estabelecimento {} não pode ser adicionado.".format(estab_name)}
 
@@ -210,8 +221,8 @@ def insert_city():
         # print('SQLite error: %s' % (' '.join(er.args)))
         # print("Exception class is: ", er.__class__)
         # print('SQLite traceback: ')
-        # exc_type, exc_value, exc_tb = sys.exc_info()
-        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "A cidade {} não pode ser adicionado.".format(city_name)}
 
@@ -234,7 +245,7 @@ def update_city():
         print("Exception class is: ", er.__class__)
         print('SQLite traceback: ')
         exc_type, exc_value, exc_tb = sys.exc_info()
-        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "A cidade {} não pode ser editada.".format(city_name)}
 
@@ -252,24 +263,24 @@ def delete_city():
 
     except sqlite3.Error as er:
 
-        print('SQLite error: %s' % (' '.join(er.args)))
-        print("Exception class is: ", er.__class__)
-        print('SQLite traceback: ')
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
         exc_type, exc_value, exc_tb = sys.exc_info()
-        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
         return {"success": False, "message": "A cidade {} não pode ser deletada.".format(city_name)}
 
 
 # SocketIO
 
-@socketio.on("progress")
-def handle_progress(msg):
-
-    print("10")
-    send(msg, broadcast='true')
-
+@socketio.on('message')
+def handle_message(data):
+    print(data)
+    send(data, broadcast=True)
 # Insere a função para ser chamada em todos os templates a qualquer momento
+
+
 @app.context_processor
 def utility_processor():
     def format_price(amount, currency="€"):
@@ -284,4 +295,4 @@ def utility_processor():
 if __name__ == '__main__':
 
     # app.run(debug=True)
-    socketio.run(app)
+    socketio.run(app,  debug=True)
