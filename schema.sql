@@ -8,9 +8,9 @@ CREATE TABLE city (
 );
 
 CREATE TABLE product (
-	prod_name text,
+	product_name text,
 	keywords varchar,
-	PRIMARY KEY(prod_name)
+	PRIMARY KEY(product_name)
 );
 
 CREATE TABLE estab (

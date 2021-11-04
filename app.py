@@ -9,8 +9,6 @@ import traceback
 app = Flask(__name__)
 Material(app)
 
-print("Ilhéus".encode("utf8"))
-
 
 @app.route("/")
 def home():
@@ -21,6 +19,84 @@ def home():
     g.product = db.db_get_product()
 
     return render_template("pages/home.html", data=g.city, search=False, product="Açúcar", city=g.city[0][0], estab_names=g.estab, products=g.product)
+
+
+@app.route("/insert_product")
+def insert_product():
+
+    db = database.Database()
+    product_name = request.args.get('product_name')
+    keywords = request.args.get('keywords')
+
+    try:
+
+        db.db_save_product(
+            {"product_name": product_name, "keywords": keywords})
+        return {"success": True, "message": "O producto {} foi inserido com sucesso".format(product_name)}
+
+    except sqlite3.Error as er:
+
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
+        # exc_type, exc_value, exc_tb = sys.exc_info()
+        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return {"success": False, "message": "O producto {} não pode ser inserido.".format(product_name)}
+
+
+@app.route("/remove_product")
+def remove_product():
+
+    db = database.Database()
+    product_name = request.args.get('product_name')
+    try:
+        db.db_delete("product", "product_name", product_name)
+        return {"success": True, "message": "O produto {} foi removido com sucesso".format(product_name)}
+
+    except sqlite3.Error as er:
+
+        # print('SQLite error: %s' % (' '.join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print('SQLite traceback: ')
+        # exc_type, exc_value, exc_tb = sys.exc_info()
+        # print(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return {"success": False, "message": "O produto {} não pode ser removido.".format(product_name)}
+
+
+@app.route("/select_product")
+def select_product():
+
+    db = database.Database()
+    products = db.db_get_product()
+
+    return json.dumps([product for product in products])
+
+
+@app.route("/update_product")
+def update_product():
+
+    db = database.Database()
+    product_name = request.args.get('product_name')
+    keywords = request.args.get('keywords')
+    primary_key = request.args.get('primary_key')
+
+    try:
+
+        db.db_update_product(
+            {"product_name": product_name, "keywords": keywords, "primary_key": primary_key})
+        return {"success": True, "message": "O produto {} foi atualizado com sucesso".format(primary_key)}
+
+    except sqlite3.Error as er:
+
+        print('SQLite error: %s' % (' '.join(er.args)))
+        print("Exception class is: ", er.__class__)
+        print('SQLite traceback: ')
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        print(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return {"success": False, "message": "O produto {} não pode ser atualizado.".format(primary_key)}
 
 
 @app.route("/select_estab")
@@ -188,10 +264,8 @@ def utility_processor():
         return f"{amount:.2f}{currency}"
 
     def decode(text):
-        try:
-            return text.decode('utf8')
-        except:
-            return text.encode('utf8').decode('utf8')
+        return text.encode("utf8").decode("utf8")
+
     return dict(format_price=format_price, enumerate=enumerate, decode=decode)
 
 

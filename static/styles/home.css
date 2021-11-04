@@ -12,6 +12,11 @@
 	background-color: #17527b !important;
 }
 
+a.primary_color:hover{
+	background-color: #2f79ad !important;
+	transition: background .3s ease-in-out;
+}
+
 .secundary_color {
 	background-color: #4aaccf;
 }
@@ -34,12 +39,37 @@ html{
 	padding: 8em 5em;
 }
 
+header{
+	text-align: center;
+    justify-content: center;
+    display: flex;
+    align-content: center;
+    align-self: center;
+    align-self: center;
+    background: transparent;
+    margin: 0 auto;
+}
+
+
+.tabs{
+	text-align: center;
+	width: auto;
+	border-radius: 3px;
+}
+
 .tabs i {
 	font-size: 1.5em;
 }
 
 .tabs a{
 	color: #17527b !important;
+}
+
+.tab a.active{
+	border-radius: 3px;
+	transition: background .3s ease-in-out;
+	background-color:#17527b !important;
+	color: #fff !important;
 }
 
 .disable{
@@ -50,8 +80,8 @@ html{
 }
 
 .tabs li {
-	padding: 1.5em;
-
+	height: auto;
+	margin: 0;
 }
 
 .tabs{
@@ -59,9 +89,10 @@ html{
 }
 
 .tabs .indicator {
-  background-color:#26a69a;
+  /* background-color:#26a69a; */
+  /* position: absolute; */
+  display: none;
   /*Custom Color Of Indicator*/
-  padding: 0;
 }
 
 h5{
@@ -72,6 +103,7 @@ h5{
 	margin: 0 auto;
 	font-weight: bold;
 	color: #fff !important;
+	background-color: #17527b ;
 }
 
 main {
@@ -91,7 +123,7 @@ main {
 }
 
 .top-logo img {
-	width: 75px;
+	/* width: 75px; */
 	height: 75px;
 }
 
@@ -181,6 +213,11 @@ main {
 	color: #fff !important;
 	font-weight: normal;
 	margin-left: 10px;
+	transition: background .3s ease-in-out;
+}
+
+.main-content button:hover{
+	background-color: #2f79ad !important;
 }
 
 .nav-wrapper li {
@@ -239,7 +276,8 @@ main {
 	display: flex;
 	justify-content: space-between;
 	width: 100%;
-	padding: 15px;
+	padding: .5em;
+	padding-left: 1em;
 	background-color: #0e3049;
 	color: white;
 	font-weight: bold;
@@ -254,7 +292,33 @@ main {
 	cursor: pointer;
 }
 
+.product-config{
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
+	padding: .5em;
+	padding-left: 1em;
+	background-color: #0e3049;
+	color: white;
+	font-weight: bold;
+	border-radius: 10px;
+	margin-bottom: 1em;
+	transition: background .2s ease-in-out;
+	font-size: 1.1em;
+}
+
+.product-config:hover{
+	background-color: #17527b;
+	cursor: pointer;
+}
+
 #list-config {
+	height: 80%;
+	overflow: auto;
+	padding: 1em;
+}
+
+#list-product {
 	height: 80%;
 	overflow: auto;
 	padding: 1em;
@@ -267,6 +331,7 @@ main {
 .config-menu{
 	/* background-color: #17527b; */
 	width: 100%;
+	padding-left: 1.3em;
 	height: 10%;
 }
 

@@ -1,4 +1,6 @@
 let ESTAB_DATA = undefined;
+let PRODUCT_DATA = undefined;
+let EDIT_FORM_DATA = undefined;
 
 var i = 0;
 function move() {
@@ -89,6 +91,8 @@ const custom_select = () => {
 
 }
 
+// Listagem de cidades
+
 const list_estab = (city = undefined) => {
 
 	if (city == undefined)
@@ -102,19 +106,47 @@ const list_estab = (city = undefined) => {
 		ESTAB_DATA = response;
 		response.map((value, index) => {
 			$(`
-				<div class="estab-config edit" id="ed-${value[1]}" value="${value[1]}">
+				<div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
 					<p>${value[1]}</p>
 					<div class="right">
 						<a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit" ><i class="fa fa-edit"></i></a>
-						<a  value="${value[1]}" class="remove-estab btn-floating btn-large   red"><i class="fa fa-minus"></i></a>
+						<a  value="${value[1]}" class="remove-estab btn-floating btn-large  red"><i class="fa fa-minus"></i></a>
 					</div>
 				</div>
-			`).appendTo("#list-config").hide().fadeIn(1000);
+			`).appendTo("#list-config").hide().slideDown("slow");
 		});
 
 	});
 
 }
+
+// Listagem de produtos
+
+const list_product = () => {
+
+	$.get("/select_product", (response) => {
+
+		response = JSON.parse(response);
+		PRODUCT_DATA = response;
+		response.map((value, index) => {
+			$(`
+				<div class="z-depth-3 product-config edit-product" id="ed-${value[0]}" value="${value[0]}">
+					<p>${value[0]}</p>
+					<div class="right">
+						<a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large   primary_color edit-product" ><i class="fa fa-edit"></i></a>
+						<a  value="${value[0]}" class="remove-product btn-floating btn-large  red"><i class="fa fa-minus"></i></a>
+					</div>
+				</div>
+			`).appendTo("#list-product").hide().slideDown("slow");
+		});
+
+	});
+
+	console.log("listado");
+
+}
+
+// Conteudo do modal dinamico
 
 const get_modal_content = (estab_name, cities) => {
 
@@ -168,17 +200,66 @@ const get_modal_content = (estab_name, cities) => {
 	$(modal).appendTo('#edit-modal');
 
 	$("#edit-modal").modal({
-		fadeDuration: 200,
+		// fadeDuration: 200,
 	});
 	$('select').formSelect();
 
 }
 
+// Conteudo do modal dinamico - Produto
+
+const get_modal_content_product = (product_name) => {
+
+	$('#edit-modal-product .modal-content').remove();
+	var filtered_product = PRODUCT_DATA.filter((item, index) => {
+		if (item[0] === product_name)
+			return item;
+	});
+
+	filtered_product = filtered_product[0];
+	keywords = filtered_product[1].split(',');
+
+	console.log({ filtered_product, keywords });
+
+	let modal = `
+		<div class="modal-content">
+			<primary_key_product style="display: none;" value="${filtered_product[0]}" />
+			<h5 class="modal-title">${filtered_product[0]}</h5>
+			<div class="row">
+				<div style="margin: 20px 0;">
+					<div class="input-field col s12">
+						<input value="${filtered_product[0]}" placeholder="Produto" id="product_name_edit" type="text" class="validate">
+						<label class="active" for="product_name_edit">Produto</label>
+					</div>
+					<div class="input-field col s12">
+						<input value="${filtered_product[1]}" placeholder="Palavras Chave" id="keywords_edit" type="text" class="validate">
+						<label class="active" for="keywords_edit">Palavras Chave</label>
+					</div>
+				</div>
+				</div>
+				<div class="modal-menu">
+					<button id="cancel" class="primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
+					<button id="save-edit-product" class="primary_color   btn-large">Salvar Alterações</button>
+				</div>
+		</div>
+	`
+
+	$(modal).appendTo('#edit-modal-product');
+
+	$("#edit-modal-product").modal({
+		// fadeDuration: 200,
+	});
+	$('select').formSelect();
+
+}
+
+// Cria novo estab adidiconado e o coloca no front end
+
 const create_estab_element = (new_estab) => {
 
 	var element =
 		`
-		<div class="estab-config edit" id="ed-${new_estab}" value="${new_estab}">
+		<div class="z-depth-3 estab-config edit" id="ed-${new_estab}" value="${new_estab}">
 			<p>${new_estab}</p>
 			<div class="right">
 				<a  id="e-${new_estab}" value="${new_estab}" class="btn-floating btn-large   primary_color edit" ><i class="fa fa-edit"></i></a>
@@ -191,60 +272,165 @@ const create_estab_element = (new_estab) => {
 
 }
 
+// Cria novo produto adidiconado e o coloca no front end
+
+const create_product_element = (new_product) => {
+
+	var element =
+		`
+		<div class="z-depth-3 product-config edit-product" id="ed-${new_product}" value="${new_product}">
+			<p>${new_product}</p>
+			<div class="right">
+				<a style="margin-right: 10px;" id="e-${new_product}" value="${new_product}" class="btn-floating btn-large   primary_color edit-product" ><i class="fa fa-edit"></i></a>
+				<a  value="${new_product}" class="remove-product btn-floating btn-large   red"><i class="fa fa-minus"></i></a>
+			</div>
+		</div>
+		`
+
+	$("#list-product").prepend(element).hide().fadeIn(1000);
+
+}
+
+// Valida formulários para campos vázios
+
+const validate_form = (info, edit = false) => {
+
+	if (!edit) {
+		var validated = info.map((value, index) => {
+			if (value == " " || value == "") {
+				return false;
+			} else {
+				return true;
+			}
+		});
+
+		if (validated.some(elem => elem == false)) {
+			alert("Preencha todos os campos para realizar esta ação.");
+			return false
+
+		} else
+			return true
+	} else {
+
+	}
+
+}
+
 $(document).ready(function () {
 
 	var city = undefined;
 	$("select").formSelect();
 	list_estab();
+	list_product();
 	custom_select();
+
+	// Mascara para keywords
+	// ACUCAR CRISTAL, ACUCAR CRISTAL 1KG, A
+
+	$('body').on('keyup', '#keywords', (e) => {
+
+		var pattern = new RegExp(',+(?=[/\s])', 'i');
+		var keywords = $('#keywords').val();
+		var result = keywords.replace(pattern, "");
+		console.log({ keywords, result });
+		$("#keywords").val(result);
+
+	});
+
+	// Salvar deleção de cidade
 
 	$('#save-delete-city').click((e) => {
 
 		e.preventDefault();
 		var city_name = $("#city-delete-select").val();
 
-		$.get("/delete_city", { city_name: city_name }, (response) => {
+		if (window.confirm(`Realmente deseja deletar a cidade ${city_name} e todos os estabelecimentos pertencentes permanentemente ?`)) {
 
-			if (response.success) {
+			$.get("/delete_city", { city_name: city_name }, (response) => {
 
-				alert(response.message);
-				var modal = $("#delete-city").modal();
-				modal.closeModal();
-				$(".jquery-modal").fadeOut(500);
-				window.location.reload(false);
+				if (response.success) {
 
-			} else {
-				alert(response.message);
-			}
+					alert(response.message);
+					var modal = $("#delete-city").modal();
+					modal.closeModal();
+					$(".jquery-modal").fadeOut(500);
+					window.location.reload(false);
 
-		});
+				} else {
+					alert(response.message);
+				}
+
+			});
+
+		}
 
 
 	});
+
+	// Salvar edição de cidade
 
 	$('#save-edit-city').click((e) => {
 
 		e.preventDefault();
 		var old_name = $("#city-edit-select").val();
 		var new_name = $("#city-edit").val();
+		if (validate_form([old_name, new_name]) && (new_name !== old_name))
 
-		$.get("/update_city", { city_name: new_name, primary_key: old_name }, (response) => {
+			if (window.confirm(`Realmente deseja alterar o nome  da cidade ${old_name} para ${new_name} ?`)) {
 
-			if (response.success) {
+				$.get("/update_city", { city_name: new_name, primary_key: old_name }, (response) => {
 
-				alert(response.message);
-				var modal = $("#edit-city").modal();
-				modal.closeModal();
-				$(".jquery-modal").fadeOut(500);
-				window.location.reload(false);
+					if (response.success) {
 
-			} else {
-				alert(response.message);
+						alert(response.message);
+						var modal = $("#edit-city").modal();
+						modal.closeModal();
+						$(".jquery-modal").fadeOut(500);
+						window.location.reload(false);
+
+					} else {
+						alert(response.message);
+					}
+
+				});
 			}
 
-		});
+	});
+
+	// Salvar edição de produto
+
+	$('body').on('click', '#save-edit-product', (e) => {
+
+		e.preventDefault();
+
+		var product_name = $("#product_name_edit").val();
+		var primary_key = $("primary_key_product").attr('value');
+		var keywords = $("#keywords_edit").val();
+
+		if (validate_form([product_name, keywords]))
+
+			if (window.confirm(`Realmente deseja alterar os valores inseridos ?`)) {
+
+				$.get("/update_product", { product_name: product_name, keywords: keywords, primary_key: primary_key }, (response) => {
+
+					if (response.success) {
+
+						alert(response.message);
+						var modal = $("#edit-modal-product").modal();
+						modal.closeModal();
+						$(".jquery-modal").fadeOut(500);
+						window.location.reload(false);
+
+					} else {
+						alert(response.message);
+					}
+
+				});
+			}
 
 	});
+
+	// Macro para fechar modal
 
 	$(".cancel").click((e) => {
 
@@ -256,32 +442,37 @@ $(document).ready(function () {
 
 	});
 
+	// Adicionar cidade
+
 	$("#add-city").click((e) => {
 		e.preventDefault();
 
 		var new_city = $("#save-city").val();
 		console.log({ new_city });
+		if (validate_form([new_city]))
 
-		$.get("/insert_city", { city_name: new_city }, (response) => {
+			$.get("/insert_city", { city_name: new_city }, (response) => {
 
-			if (response.success) {
+				if (response.success) {
 
-				alert(response.message);
-				var modal = $("#add-city-modal").modal();
-				modal.closeModal();
-				$(".jquery-modal").fadeOut(500);
-				var element = `<option value="${new_city}">${new_city}</option>`
-				$("#city-select").append(element);
-				window.location.reload(false);
+					alert(response.message);
+					var modal = $("#add-city-modal").modal();
+					modal.closeModal();
+					$(".jquery-modal").fadeOut(500);
+					var element = `<option value="${new_city}">${new_city}</option>`
+					$("#city-select").append(element);
+					window.location.reload(false);
 
-			} else {
-				alert(response.message);
-			}
+				} else {
+					alert(response.message);
+				}
 
-		});
+			});
 
 
 	});
+
+	// Adicionar estab
 
 	$("#save-add").click((e) => {
 
@@ -290,25 +481,59 @@ $(document).ready(function () {
 		var web_name = $("#web_name-save").val();
 		var adress = $("#adress-save").val();
 
-		$.get("/insert_estab", { city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
+		if (validate_form([city_name, estab_name, web_name, adress]))
 
-			if (response.success) {
+			$.get("/insert_estab", { city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
 
-				alert(response.message);
-				var modal = $("#add-modal").modal();
-				modal.closeModal();
-				$(".jquery-modal").fadeOut(500);
-				// $(".estab-config").remove();
-				// list_estab();
-				create_estab_element(estab_name);
+				if (response.success) {
 
-			} else {
-				alert(response.message);
-			}
+					alert(response.message);
+					var modal = $("#add-modal").modal();
+					modal.closeModal();
+					$(".jquery-modal").fadeOut(500);
 
-		});
+					ESTAB_DATA.push([city_name, estab_name, adress, web_name]);
+					create_estab_element(estab_name);
+
+				} else {
+					alert(response.message);
+				}
+
+			});
 
 	});
+
+	// Adicionar produto
+
+	$("#save-add-product").click((e) => {
+
+		var product_name = $("#product_name").val();
+		var keywords = $("#keywords").val();
+
+		if (validate_form([product_name, keywords]))
+
+			$.get("/insert_product", { product_name: product_name, keywords: keywords }, (response) => {
+
+				if (response.success) {
+
+					alert(response.message);
+					var modal = $("#add-modal-product").modal();
+					modal.closeModal();
+					$(".jquery-modal").fadeOut(500);
+					// $(".estab-config").remove();
+					// list_estab();
+					PRODUCT_DATA.push([product_name, keywords]);
+					create_product_element(product_name);
+
+				} else {
+					alert(response.message);
+				}
+
+			});
+
+	});
+
+	// Abrir modal dinamico de estab
 
 	$('body').on('click', '.edit', (event) => {
 		event.preventDefault();
@@ -327,6 +552,24 @@ $(document).ready(function () {
 
 	});
 
+	// Abrir modal dinamico de product
+
+	$('body').on('click', '.edit-product', (event) => {
+		event.preventDefault();
+
+		if ($("#edit-modal-product").find('.modal-content').length !== 0) {
+			$('#edit-modal-product .modal-content').remove();
+			$('#edit-modal-product .modal-title').remove();
+		}
+
+		let product_name = $(event.currentTarget).attr('value');
+		get_modal_content_product(product_name);
+
+
+	});
+
+	// Cancelar edição de estab
+
 	$('body').on('click', '#cancel', (event) => {
 		event.preventDefault();
 
@@ -334,6 +577,8 @@ $(document).ready(function () {
 		modal.closeModal();
 		$(".jquery-modal").fadeOut(500);
 	});
+
+	// Salvar edição de estab
 
 	$('body').on('click', '#save-edit', (event) => {
 		event.stopPropagation();
@@ -344,23 +589,27 @@ $(document).ready(function () {
 		var web_name = $("#web_name").val();
 		var adress = $("#adress").val();
 
-		$.get("/update_estab", { primary_key: primary_key, city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
+		if (validate_form([city_name, estab_name, web_name, adress]))
 
-			if (response.success) {
+			$.get("/update_estab", { primary_key: primary_key, city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
 
-				alert(response.message);
-				var modal = $("#edit-modal").modal();
-				modal.closeModal();
-				$(".jquery-modal").fadeOut(500);
-				$(".estab-config").remove();
-				list_estab();
+				if (response.success) {
 
-			} else {
-				alert(response.message);
-			}
+					alert(response.message);
+					var modal = $("#edit-modal").modal();
+					modal.closeModal();
+					$(".jquery-modal").fadeOut(500);
+					$(".estab-config").remove();
+					list_estab();
 
-		});
+				} else {
+					alert(response.message);
+				}
+
+			});
 	});
+
+	// Botões de seleção de estab
 
 	$('body').on('click', 'a.estab', (e) => {
 
@@ -379,6 +628,8 @@ $(document).ready(function () {
 		}
 
 	});
+
+	// Botões de seleção de cidade
 
 	$('.city').click((e) => {
 
@@ -401,6 +652,8 @@ $(document).ready(function () {
 
 	});
 
+	// Botão de iniciar pesquisa
+
 	$("#start").click(() => {
 
 		if (!$('.estab').hasClass("select-item-active")) {
@@ -411,6 +664,8 @@ $(document).ready(function () {
 		}
 
 	});
+
+	// Botão de ir para seleção de estabelecimentos
 
 	$("#select").click(() => {
 
@@ -437,6 +692,8 @@ $(document).ready(function () {
 
 	});
 
+	// Botão selecionar todos
+
 	$("#select-all").click(() => {
 
 		if (!$('.estab').hasClass("select-item-active")) {
@@ -447,20 +704,51 @@ $(document).ready(function () {
 
 	});
 
+	// Voltar da seleção
+
 	$("#back").click(() => {
 		$('ul.tabs').tabs('select', 'pesquisar');
 		$(".tabs a").addClass('enable');
 		$(".estab").remove();
 	});
 
+	// Remover estabelecimento
+
 	$('body').on('click', 'a.remove-estab', (e) => {
 
 		e.stopPropagation();
 		e.preventDefault();
-		console.log($(this).attr('value'));
 		let estab_name = $(e.currentTarget).attr('value');
 		if (window.confirm(`Realmente deseja deletar o estabelecimento ${estab_name} permanentemente ?`)) {
 			$.get("/remove_estab", { estab_name: estab_name }, (response) => {
+
+				if (response.success) {
+					$(e.currentTarget).parent().parent().fadeOut(250, () => {
+						$(this).remove();
+					});
+					alert(response.message);
+					console.log(response);
+				} else {
+					alert(response.message);
+					console.log(response);
+				}
+
+
+			});
+		}
+
+
+	});
+
+	// Remover product
+
+	$('body').on('click', 'a.remove-product', (e) => {
+
+		e.stopPropagation();
+		e.preventDefault();
+		let product_name = $(e.currentTarget).attr('value');
+		if (window.confirm(`Realmente deseja deletar o produto ${product_name} permanentemente ?`)) {
+			$.get("/remove_product", { product_name: product_name }, (response) => {
 
 				if (response.success) {
 					$(e.currentTarget).parent().parent().fadeOut(250, () => {

@@ -31,29 +31,34 @@
 	</head>
 	{% block content %}
 		<city value={{city}} />
-		<header class="z-depth-5">
+		<header>
 			<div class="top-logo">
 				<img
-					src="{{ url_for('static',filename='img/uesc.png') }}"
+					src="{{ url_for('static',filename='img/uesc_brasão.png') }}"
 					alt="Uesc Logo"
 				/>
 				<img
 					src="{{ url_for('static',filename='img/accb.png') }}"
 					alt="ACCB Logo"
 				/>
+				<img
+					src="{{ url_for('static',filename='img/proex.png') }}"
+					alt="ACCB Logo"
+				/>
 			</div>
 			<ul id="main-navigation" class="tabs">
 				<li class="tab col s3"><a id="search" href="#pesquisar"> <i class="fa fa-map-marker"> </i> Município</a></li>
-				<li class="tab col s3"></i><a id="list" href="#listagem" > <i class="fa fa-cogs"> </i>
+				<li class="tab col s3"></i><a id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
 					Estabelecimentos</a></li>
 				<li class="tab col s3"><a id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
-				<li class="tab col s3"></i><a href="#configurar"  id="config" class="active"> <i class="fa fa-cogs"> </i>
+				<li class="tab col s3"></i><a href="#configurar"  id="config" > <i class="fa fa-cogs"> </i>
 					Configurar</a></li>
+				<li class="tab col s3"></i><a href="#produtos"  id="config" class="active"> <i class="fa fa-cogs"> </i>
+					Produtos</a></li>
 			</ul>
 		</header>
 		<main class="main-content row z-depth-5">
 			<div id="pesquisar" class="tab">
-				{% if search == false %}
 					<div class="tab-content">
 						<h5>Selecione um município para prosseguir com a pesquisa</h5>
 						<div class="select-wrapper-main">
@@ -63,7 +68,6 @@
 						</div>
 						<button id="select" class=" btn-large">Selecionar Estabelecimentos</button>
 					</div>
-				{% endif %}
 			</div>
 			<div id="progress" class="col s12 tab">
 				<div class="tab-content">
@@ -91,7 +95,7 @@
 			</div>
 			<div id="configurar" class="col s12 tab" >
 				<div class="config-menu">
-					<div class="left">
+					<div style="margin-top: 1px ;" class="left">
 						<select id="city-select" class="browser-default">
 							{% for city in data %}
 								<option value="{{decode(city[0])}}">{{decode(city[0])}}</option>
@@ -114,12 +118,54 @@
 					</div>
 				</div>
 			</div>
+			<div id="produtos" class="col s12 tab" >
+				<div class="tab-content-config">
+					<div class="config-title">
+						<h5>Listagem de Produtos</h5>
+						<a class="right round btn-floating btn-large  primary_color" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
+					</div>
+					<div id="list-product">
+
+					</div>
+				</div>
+			</div>
 		</main>
 
 		<!-- MODAL DINAMICO PARA EDIÇÃO DE ESTAB -->
 
 		<div id="edit-modal" class="modal">
 			<a href="#" rel="modal:close" />
+		</div>
+
+		<!-- MODAL DINAMICO PARA EDIÇÃO DE PRODUTO -->
+
+		<div style="height: 45%;"id="edit-modal-product" class="modal">
+			<a href="#" rel="modal:close" />
+		</div>
+
+		<!-- MODAL ADICIONANDO PRODUTO -->
+		<div style="height: 45%;" id="add-modal-product" class="modal">
+			<div class="modal-content">
+				<div>
+					<h5 class="modal-title">Adicionar Estabelecimento</h5>
+				</div>
+					<div class="row">
+						<div style="margin: 20px 0;">
+							<div class="input-field col s12">
+								<input placeholder="" id="product_name" type="text" >
+								<label class="active" for="product_name">Produto</label>
+							</div>
+							<div class="input-field col s12">
+								<input  placeholder="Palavras Chave" id="keywords" type="text" >
+								<label class="active" for="">Palavras Chave</label>
+							</div>
+						</div>
+					</div>
+					<div class="modal-menu">
+						<button  class="cancel primary_color btn-large" href="#add-modal-product" rel="modal:close">Cancelar</button>
+						<button id="save-add-product" class="primary_color btn-large">Adicionar Produto</button>
+					</div>
+			</div>
 		</div>
 
 		<!-- MODAL ADICIONANDO ESTAB -->
@@ -140,15 +186,15 @@
 							</div>
 							<div class="input-field col s6">
 								<input placeholder="Estabelecimento" id="estab_name-save" type="text" >
-								<label class="active" for="estab_name">Estabelecimento</label>
+								<label class="active" for="estab_name-save">Estabelecimento</label>
 							</div>
 							<div class="input-field col s6">
 								<input  placeholder="Nome na Plataforma" id="web_name-save" type="text" >
-								<label class="active" for="web_name">Nome na Plataforma</label>
+								<label class="active" for="web_name-save">Nome na Plataforma</label>
 							</div>
 							<div class="input-field col s6">
 								<input placeholder="Endereço" id="adress-save" type="text" >
-								<label class="active" for="adress">Endereço</label>
+								<label class="active" for="adress-save">Endereço</label>
 							</div>
 						</div>
 					</div>
