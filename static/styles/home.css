@@ -242,15 +242,15 @@ main {
 
 /* Progress Bar  */
 
-#myProgress {
+#progress_container {
 	width: 100%;
 	background-color: #4c6577;
 	margin: 2.5em 0;
 	border-radius: 10px;
 }
 
-#myBar {
-	width: 10%;
+#progress_bar {
+	width: 0%;
 	height: 3em;
 	/* background-color: #04aa6d; */
 	background-color: #17527b;

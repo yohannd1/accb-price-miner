@@ -3,7 +3,7 @@ import sys
 from os.path import exists
 import subprocess
 
-
+# corrigir select , ASC
 class Database:
 
     conn = None
@@ -89,7 +89,7 @@ class Database:
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
-        cursor = self.conn.execute("SELECT * FROM city ASC")
+        cursor = self.conn.execute("SELECT * FROM city ORDER BY city_name ASC")
         cities = cursor.fetchall()
         self.db_end_conn()
 
@@ -99,7 +99,8 @@ class Database:
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
-        cursor = self.conn.execute("SELECT * FROM product")
+        cursor = self.conn.execute(
+            "SELECT * FROM product ORDER BY product_name ASC")
         products = cursor.fetchall()
         self.db_end_conn()
 

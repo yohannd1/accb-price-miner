@@ -27,7 +27,7 @@
 
 .modal input{
   color: #fff !important;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
 }
 
 .modal-menu button{

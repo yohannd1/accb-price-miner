@@ -1,19 +1,21 @@
 from flask import Flask, render_template, request, g
 from flask_material import Material
 from numpy import broadcast
-from flask_socketio import SocketIO, send, emit
+from flask_socketio import SocketIO, Namespace, send, emit
 import time
 import json
 import sqlite3
 import sys
 import database
 import traceback
+import scrapper
 
 app = Flask(__name__)
 Material(app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+# Quando usar list_estab ou list_product novamente e atualizar, lembrar da rota anterior.
 
 def log_error(err):
 
@@ -24,6 +26,7 @@ def log_error(err):
             outfile.write(str(error))
 
     return
+
 
 @app.route("/")
 def home():
@@ -275,9 +278,18 @@ def delete_city():
 # SocketIO
 
 @socketio.on('message')
-def handle_message(data):
-    print(data)
-    send(data, broadcast=True)
+def handle_message(msg):
+
+    scrap = scrapper.Scrap('b')
+    send(msg['data'], broadcast=True)
+    for i in range(1, 13):
+
+        print('URL')
+        send('Searching', broadcast=True)
+
+    scrap.run()
+
+
 # Insere a função para ser chamada em todos os templates a qualquer momento
 
 

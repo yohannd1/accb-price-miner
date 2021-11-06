@@ -51,10 +51,10 @@
 				<li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
 				<li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
 					Estabelecimentos</a></li>
-				<li class="tab col s3"><a class="disable" id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
+				<li class="tab col s3"><a class="disable active " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
 				<li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
 					Configurar</a></li>
-				<li class="tab col s3"></i><a href="#produtos"  id="config-product" class="active tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
+				<li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
 					Produtos</a></li>
 			</ul>
 		</header>
@@ -88,10 +88,10 @@
 			<div id="progress" class="col s12 tab">
 				<div class="tab-content">
 					<h5>Pesquisando Produto [{{product}}]</h5>
-					<div id="myProgress">
-						<div id="myBar">10%</div>
+					<div id="progress_container">
+						<div id="progress_bar">0%</div>
 					</div>
-					<button onclick="move()" id="pause" class=" btn-large">Pausar Pesquisa</button>
+					<button id="pause" class=" btn-large">Pausar Pesquisa</button>
 				</div>
 			</div>
 			<div id="configurar" class="col s12 tab" >

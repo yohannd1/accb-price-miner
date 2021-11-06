@@ -3,22 +3,18 @@ let PRODUCT_DATA = undefined;
 let EDIT_FORM_DATA = undefined;
 
 var i = 0;
-function move() {
-	if (i == 0) {
-		i = 1;
-		var elem = document.getElementById("myBar");
-		var width = 10;
-		var id = setInterval(frame, 10);
-		function frame() {
-			if (width >= 100) {
-				clearInterval(id);
-				i = 0;
-			} else {
-				width++;
-				elem.style.width = width + "%";
-				elem.innerHTML = width + "%";
-			}
-		}
+var width = 0;
+function move(val = 100 / 13) {
+	i = 1;
+	var elem = document.getElementById("progress_bar");
+	if (width >= 100) {
+		i = 0;
+	} else {
+		width += val;
+		var floor = Math.floor(width);
+		console.log(floor);
+		elem.style.width = floor.toString() + "%";
+		elem.innerHTML = floor.toString() + "%";
 	}
 }
 
@@ -325,6 +321,7 @@ $(document).ready(function () {
 
 	socket.on('message', (msg) => {
 		console.log(msg);
+		move(100 / 13);
 	});
 
 	var city = undefined;
@@ -334,10 +331,19 @@ $(document).ready(function () {
 	list_product();
 	custom_select();
 
+	$("#pause").click(function (e) {
+
+		e.preventDefault();
+		move(100 / 13);
+		$(this).html("PAUSANDO PESQUISA");
+		$(this).addClass('disable');
+
+	});
+
 	// Mascara para keywords
 	// ACUCAR CRISTAL, ACUCAR CRISTAL 1KG, A
 
-	$('body').on('keyup', '#keywords', (e) => {
+	$('body').on('keyup', '#keywords', function (e) {
 
 		var pattern = new RegExp(',+(?=[/\s])', 'i');
 		var keywords = $('#keywords').val().toUpperCase();
@@ -349,14 +355,14 @@ $(document).ready(function () {
 
 	// Salvar deleção de cidade
 
-	$('#save-delete-city').click((e) => {
+	$('#save-delete-city').click(function (e) {
 
 		e.preventDefault();
-		var city_name = $("#city-delete-select").val().toUpperCase();
+		var city_name = $("#city-delete-select").val();
 
 		if (window.confirm(`Realmente deseja deletar a cidade ${city_name} e todos os estabelecimentos pertencentes permanentemente ?`)) {
 
-			$.get("/delete_city", { city_name: city_name.U }, (response) => {
+			$.get("/delete_city", { city_name: city_name }, (response) => {
 
 				if (response.success) {
 
@@ -379,11 +385,11 @@ $(document).ready(function () {
 
 	// Salvar edição de cidade
 
-	$('#save-edit-city').click((e) => {
+	$('#save-edit-city').click(function (e) {
 
 		e.preventDefault();
-		var old_name = $("#city-edit-select").val().toUpperCase();
-		var new_name = $("#city-edit").val().toUpperCase();
+		var old_name = $("#city-edit-select").val();
+		var new_name = $("#city-edit").val();
 		if (validate_form([old_name, new_name]) && (new_name !== old_name))
 
 			if (window.confirm(`Realmente deseja alterar o nome  da cidade ${old_name} para ${new_name} ?`)) {
@@ -409,7 +415,7 @@ $(document).ready(function () {
 
 	// Salvar edição de produto
 
-	$('body').on('click', '#save-edit-product', (e) => {
+	$('body').on('click', '#save-edit-product', function (e) {
 
 		e.preventDefault();
 
@@ -442,10 +448,10 @@ $(document).ready(function () {
 
 	// Macro para fechar modal
 
-	$(".cancel").click((e) => {
+	$(".cancel").click(function (e) {
 
 		e.preventDefault();
-		let id = $(e.currentTarget).attr('href');
+		let id = $(this).attr('href');
 		var modal = $(id).modal();
 		modal.closeModal();
 		$(".jquery-modal").fadeOut(500);
@@ -454,11 +460,10 @@ $(document).ready(function () {
 
 	// Adicionar cidade
 
-	$("#add-city").click((e) => {
+	$("#add-city").click(function (e) {
 		e.preventDefault();
 
-		var new_city = $("#save-city").val().toUpperCase();
-		console.log({ new_city });
+		var new_city = $("#save-city").val();
 		if (validate_form([new_city]))
 
 			$.get("/insert_city", { city_name: new_city }, (response) => {
@@ -484,16 +489,16 @@ $(document).ready(function () {
 
 	// Adicionar estab
 
-	$("#save-add").click((e) => {
+	$("#save-add").click(function (e) {
 
-		var city_name = $("#city_name-save").val().toUpperCase();
-		var estab_name = $("#estab_name-save").val().toUpperCase();
+		var city_name = $("#city_name-save").val();
+		var estab_name = $("#estab_name-save").val();
 		var web_name = $("#web_name-save").val().toUpperCase();
 		var adress = $("#adress-save").val().toUpperCase();
 
 		if (validate_form([city_name, estab_name, web_name, adress]))
 
-			$.get("/insert_estab", { city_name: city_name.U, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
+			$.get("/insert_estab", { city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
 
 				if (response.success) {
 
@@ -515,7 +520,7 @@ $(document).ready(function () {
 
 	// Adicionar produto
 
-	$("#save-add-product").click((e) => {
+	$("#save-add-product").click(function (e) {
 
 		var product_name = $("#product_name").val().toUpperCase();
 		var keywords = $("#keywords").val().toUpperCase();
@@ -555,7 +560,7 @@ $(document).ready(function () {
 
 		$.get("/select_city", (response) => {
 
-			let estab_name = $(event.currentTarget).attr('value').toUpperCase();
+			let estab_name = $(event.currentTarget).attr('value');
 			get_modal_content(estab_name, JSON.parse(response));
 
 		});
@@ -593,15 +598,15 @@ $(document).ready(function () {
 	$('body').on('click', '#save-edit', (event) => {
 		event.stopPropagation();
 		event.preventDefault();
-		var city_name = $("#city_name").val().toUpperCase();
-		var estab_name = $("#estab_name").val().toUpperCase();
-		var primary_key = $("primary_key").attr("value").toUpperCase();
+		var city_name = $("#city_name").val();
+		var estab_name = $("#estab_name").val();
+		var primary_key = $("primary_key").attr("value");
 		var web_name = $("#web_name").val().toUpperCase();
 		var adress = $("#adress").val().toUpperCase();
 
 		if (validate_form([city_name, estab_name, web_name, adress]))
 
-			$.get("/update_estab", { primary_key: primary_key, city_name: city_name.U, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
+			$.get("/update_estab", { primary_key: primary_key, city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
 
 				if (response.success) {
 
@@ -621,12 +626,12 @@ $(document).ready(function () {
 
 	// Botões de seleção de estab
 
-	$('body').on('click', 'a.estab', (e) => {
+	$('body').on('click', 'a.estab', function (e) {
 
 		$('.city').removeClass("select-item-active")
 		city = undefined;
 
-		let id = $(e.currentTarget).attr('id');
+		let id = $(this).attr('id');
 
 		if ($(`#${id}`).hasClass('select-item-active')) {
 
@@ -642,9 +647,9 @@ $(document).ready(function () {
 
 	// Botões de seleção de cidade
 
-	$('.city').click((e) => {
+	$('.city').click(function (e) {
 
-		let id = $(e.currentTarget).attr('id');
+		let id = $(this).attr('id');
 		$('.estab').removeClass("select-item-active");
 
 		if (city === undefined) {
@@ -691,12 +696,12 @@ $(document).ready(function () {
 		}
 		let city_name = $('.select-item-active').html();
 
-		$.get("/select_estab", { city: city_name.U }, (response) => {
+		$.get("/select_estab", { city: city_name }, (response) => {
 
 			response = JSON.parse(response);
 			response.map((value, index) => {
 				var delay = 400 + index * 100;
-				$("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay));
+				$("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay))
 			});
 			$("#loader").hide();
 
@@ -730,16 +735,16 @@ $(document).ready(function () {
 
 	// Remover estabelecimento
 
-	$('body').on('click', 'a.remove-estab', (e) => {
+	$('body').on('click', 'a.remove-estab', function (e) {
 
 		e.stopPropagation();
 		e.preventDefault();
-		let estab_name = $(e.currentTarget).attr('value').toUpperCase();
+		let estab_name = $(this).attr('value').toUpperCase();
 		if (window.confirm(`Realmente deseja deletar o estabelecimento ${estab_name} permanentemente ?`)) {
 			$.get("/remove_estab", { estab_name: estab_name }, (response) => {
 
 				if (response.success) {
-					$(e.currentTarget).parent().parent().fadeOut(250, () => {
+					$(this).parent().parent().fadeOut(250, () => {
 						$(this).remove();
 					});
 					Materialize.toast(response.message, 2000);
@@ -758,16 +763,16 @@ $(document).ready(function () {
 
 	// Remover product
 
-	$('body').on('click', 'a.remove-product', (e) => {
+	$('body').on('click', 'a.remove-product', function (e) {
 
 		e.stopPropagation();
 		e.preventDefault();
-		let product_name = $(e.currentTarget).attr('value').toUpperCase();
+		let product_name = $(this).attr('value').toUpperCase();
 		if (window.confirm(`Realmente deseja deletar o produto ${product_name} permanentemente ?`)) {
 			$.get("/remove_product", { product_name: product_name }, (response) => {
 
 				if (response.success) {
-					$(e.currentTarget).parent().parent().fadeOut(250, () => {
+					$(this).parent().parent().fadeOut(250, () => {
 						$(this).remove();
 					});
 					Materialize.toast(response.message, 2000);
