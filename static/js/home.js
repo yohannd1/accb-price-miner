@@ -1,10 +1,11 @@
 let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
+let CANCEL_CAPTCHA = false;
 let EDIT_FORM_DATA = undefined;
 
 var i = 0;
 var width = 0;
-function move(val = 100 / 13) {
+function move(val = 100 / 12) {
 	i = 1;
 	var elem = document.getElementById("progress_bar");
 	if (width >= 100) {
@@ -100,17 +101,25 @@ const list_estab = (city = undefined) => {
 
 		response = JSON.parse(response);
 		ESTAB_DATA = response;
-		response.map((value, index) => {
-			$(`
-				<div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
-					<p>${value[1]}</p>
-					<div class="right">
-						<a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit "  ><i class="fa fa-edit"></i></a>
-						<a  value="${value[1]}" class="remove-estab btn-floating btn-large  red " data-position="left" ><i class="fa fa-minus"></i></a>
+		if (response.length == 0) {
+
+			$(`<div class="z-depth-3 estab-config" id="no-result" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal" rel="modal:open">
+			<p>Nenhum estabelecimento cadastrado, pressione para adicionar.</p>
+			</a></div>`).appendTo("#list-config").hide().slideDown();
+
+		} else {
+			response.map((value, index) => {
+				$(`
+					<div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
+						<p>${value[1]}</p>
+						<div class="right">
+							<a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit "  ><i class="fa fa-edit"></i></a>
+							<a  value="${value[1]}" class="remove-estab btn-floating btn-large  red " data-position="left" ><i class="fa fa-minus"></i></a>
+						</div>
 					</div>
-				</div>
-			`).appendTo("#list-config").hide().slideDown("slow");
-		});
+				`).appendTo("#list-config").hide().slideDown("slow");
+			});
+		}
 
 	});
 
@@ -125,17 +134,26 @@ const list_product = () => {
 
 		response = JSON.parse(response);
 		PRODUCT_DATA = response;
-		response.map((value, index) => {
-			$(`
-				<div class="z-depth-3 product-config edit-product" id="ed-${value[0]}" value="${value[0]}">
-					<p>${value[0]}</p>
-					<div class="right">
-						<a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large   primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
-						<a  value="${value[0]}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
+		if (response.length == 0) {
+
+			$(`<div class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
+			<p>Nenhum produto cadastrado, pressione para adicionar.</p>
+			</a></div>`).appendTo("#list-product").hide().slideDown();
+
+		} else {
+
+			response.map((value, index) => {
+				$(`
+					<div class="z-depth-3 product-config edit-product" id="ed-${value[0]}" value="${value[0]}">
+						<p>${value[0]}</p>
+						<div class="right">
+							<a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large   primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
+							<a  value="${value[0]}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
+						</div>
 					</div>
-				</div>
-			`).appendTo("#list-product").hide().slideDown("slow");
-		});
+				`).appendTo("#list-product").hide().slideDown("slow");
+			});
+		}
 
 	});
 
@@ -266,6 +284,8 @@ const create_estab_element = (new_estab) => {
 
 	$("#list-config").prepend(element).hide().fadeIn(1000);
 
+	$("#no-result").fadeOut("500").remove();
+
 }
 
 // Cria novo produto adidiconado e o coloca no front end
@@ -284,6 +304,7 @@ const create_product_element = (new_product) => {
 		`
 
 	$("#list-product").prepend(element).hide().fadeIn(1000);
+	$("#no-result-product").fadeOut("500").remove();
 
 }
 
@@ -301,7 +322,7 @@ const validate_form = (info, edit = false) => {
 		});
 
 		if (validated.some(elem => elem == false)) {
-			Materialize.toast("Preencha todos os campos para realizar esta ação.");
+			Materialize.toast("Preencha todos os campos para realizar esta ação.", 2000, 'rounded');
 			return false
 
 		} else
@@ -314,14 +335,49 @@ const validate_form = (info, edit = false) => {
 
 $(document).ready(function () {
 
+	if (Notification.permission === "granted") {
+		// alert("we have permission");
+		// new Notification("Teste message", {
+		// 	body: "Teste body",
+		// });
+
+	} else if (Notification.permission !== "denied") {
+		Notification.requestPermission().then(permission => {
+			console.log(permission);
+		});
+	}
+
 	var socket = io().connect("http://127.0.0.1:5000/");
-	socket.on('connect', function () {
-		socket.emit('message', { data: 'I\'m connected!' });
+	socket.on('captcha', (msg) => {
+		if (msg['type'] == 'notification') {
+			Materialize.toast(msg['message'], 8000, 'rounded');
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
+		} else if (msg['type'] == 'progress') {
+			$("#progress h5").html(`Pesquisando produto ${msg['product']}`);
+			move(100 / 12);
+			if (msg['done'] == 1) {
+				$("#progress_bar").css("width", "0%");
+				$("#progress_bar").html("0%");
+			}
+		} else if (msg['type'] == 'captcha') {
+			Materialize.toast(msg['message'], 8000, 'rounded');
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
+		}
 	});
 
-	socket.on('message', (msg) => {
-		console.log(msg);
-		move(100 / 13);
+	socket.on('search', (msg) => {
+
+		if (msg['type'] == 'error') {
+			Materialize.toast("Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.", 8000, 'rounded');
+			new Notification("ACCB - Pesquisa Automática", {
+				body: "Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.",
+			});
+		}
+
 	});
 
 	var city = undefined;
@@ -370,10 +426,11 @@ $(document).ready(function () {
 					var modal = $("#delete-city").modal();
 					modal.closeModal();
 					$(".jquery-modal").fadeOut(500);
-					window.location.reload(false);
+					window.location = window.location.origin + "#configurar";
+					window.location.reload(true);
 
 				} else {
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 				}
 
 			});
@@ -402,10 +459,11 @@ $(document).ready(function () {
 						var modal = $("#edit-city").modal();
 						modal.closeModal();
 						$(".jquery-modal").fadeOut(500);
-						window.location.reload(false);
+						window.location = window.location.origin + "#configurar";
+						window.location.reload(true);
 
 					} else {
-						Materialize.toast(response.message, 2000);
+						Materialize.toast(response.message, 2000, 'rounded');
 					}
 
 				});
@@ -435,10 +493,11 @@ $(document).ready(function () {
 						var modal = $("#edit-modal-product").modal();
 						modal.closeModal();
 						$(".jquery-modal").fadeOut(500);
-						window.location.reload(false);
+						window.location = window.location.origin + "#configurar";
+						window.location.reload(true);
 
 					} else {
-						Materialize.toast(response.message, 2000);
+						Materialize.toast(response.message, 2000, 'rounded');
 					}
 
 				});
@@ -476,10 +535,11 @@ $(document).ready(function () {
 					$(".jquery-modal").fadeOut(500);
 					var element = `<option value="${new_city}">${new_city}</option>`
 					$("#city-select").append(element);
-					window.location.reload(false);
+					window.location = window.location.origin + "#configurar";
+					window.location.reload(true);
 
 				} else {
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 				}
 
 			});
@@ -502,7 +562,7 @@ $(document).ready(function () {
 
 				if (response.success) {
 
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 					var modal = $("#add-modal").modal();
 					modal.closeModal();
 					$(".jquery-modal").fadeOut(500);
@@ -511,7 +571,7 @@ $(document).ready(function () {
 					create_estab_element(estab_name);
 
 				} else {
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 				}
 
 			});
@@ -531,7 +591,7 @@ $(document).ready(function () {
 
 				if (response.success) {
 
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 					var modal = $("#add-modal-product").modal();
 					modal.closeModal();
 					$(".jquery-modal").fadeOut(500);
@@ -541,7 +601,7 @@ $(document).ready(function () {
 					create_product_element(product_name);
 
 				} else {
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 				}
 
 			});
@@ -610,7 +670,7 @@ $(document).ready(function () {
 
 				if (response.success) {
 
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 					var modal = $("#edit-modal").modal();
 					modal.closeModal();
 					$(".jquery-modal").fadeOut(500);
@@ -618,7 +678,7 @@ $(document).ready(function () {
 					list_estab();
 
 				} else {
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 				}
 
 			});
@@ -661,7 +721,7 @@ $(document).ready(function () {
 				$(`#${id}`).removeClass('select-item-active');
 				city = undefined;
 			} else {
-				Materialize.toast('Você só pode selecionar um municipio por vez ...', 1000);
+				Materialize.toast('Você só pode selecionar um municipio por vez ...', 1000, 'rounded');
 			}
 
 		}
@@ -670,12 +730,26 @@ $(document).ready(function () {
 
 	// Botão de iniciar pesquisa
 
-	$("#start").click(() => {
+	$("#start").click((e) => {
+
+		e.preventDefault();
 
 		if (!$('.estab').hasClass("select-item-active")) {
-			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000);
+			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
 		} else {
-			Materialize.toast('Pesquisa iniciada ...', 3000);
+			Materialize.toast('Pesquisa iniciada ...', 3000, 'rounded');
+			var estabs = $(".select-item-active");
+			var names = [];
+			var city = $(".select-item-active").attr("city");
+
+			estabs.each(function (estab) {
+
+				names.push($(this).attr("value"));
+
+			});
+
+			console.log(city);
+			socket.emit('search', { names: JSON.stringify(names), city: city, backup: 0 });
 			$('ul.tabs').tabs('select', 'progress');
 		}
 
@@ -688,22 +762,36 @@ $(document).ready(function () {
 		$("#loader").show();
 
 		if (!$('.city').hasClass("select-item-active")) {
-			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000);
+			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
 		} else {
 			// Materialize.toast('Pesquisa iniciada ...', 1000);
 			$('ul.tabs').tabs('select', 'listagem');
-			$(".tabs a").addClass('disable');
 		}
 		let city_name = $('.select-item-active').html();
 
 		$.get("/select_estab", { city: city_name }, (response) => {
 
 			response = JSON.parse(response);
-			response.map((value, index) => {
-				var delay = 400 + index * 100;
-				$("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay))
-			});
-			$("#loader").hide();
+			if (response.length == 0) {
+
+				$("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
+				$("#select-all").addClass("disabled");
+				$("#start").addClass("disabled");
+
+			} else {
+
+				$("#select-all").removeClass("disabled");
+				$("#start").removeClass("disabled");
+
+				$("#listagem h5").html("Selecione pelo menos um estabelecimento para prosseguir");
+				$(".tabs a").addClass('disable');
+				response.map((value, index) => {
+					var delay = 400 + index * 100;
+					$("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay))
+				});
+				$("#loader").hide();
+
+			}
 
 		});
 
@@ -739,7 +827,7 @@ $(document).ready(function () {
 
 		e.stopPropagation();
 		e.preventDefault();
-		let estab_name = $(this).attr('value').toUpperCase();
+		let estab_name = $(this).attr('value');
 		if (window.confirm(`Realmente deseja deletar o estabelecimento ${estab_name} permanentemente ?`)) {
 			$.get("/remove_estab", { estab_name: estab_name }, (response) => {
 
@@ -747,10 +835,13 @@ $(document).ready(function () {
 					$(this).parent().parent().fadeOut(250, () => {
 						$(this).remove();
 					});
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 					console.log(response);
+					// window.location = window.location.origin + "#configurar";
+					// window.location.reload(true);
+
 				} else {
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 					console.log(response);
 				}
 
@@ -775,10 +866,13 @@ $(document).ready(function () {
 					$(this).parent().parent().fadeOut(250, () => {
 						$(this).remove();
 					});
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 					console.log(response);
+					// window.location = window.location.origin + "#produtos";
+					// window.location.reload(true);
+
 				} else {
-					Materialize.toast(response.message, 2000);
+					Materialize.toast(response.message, 2000, 'rounded');
 					console.log(response);
 				}
 

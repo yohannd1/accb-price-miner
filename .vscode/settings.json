@@ -1,0 +1,3 @@
+{
+	"python.defaultInterpreterPath": "${workspaceFolder:WEB}/Scripts/python.exe"
+}

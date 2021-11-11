@@ -1,10 +1,43 @@
 DROP TABLE IF EXISTS city;
 DROP TABLE IF EXISTS estab;
 DROP TABLE IF EXISTS product;
+DROP TABLE IF EXISTS search_item;
+DROP TABLE IF EXISTS search;
+DROP TABLE IF EXISTS backup;
 
 CREATE TABLE city (
 	city_name text,
 	PRIMARY KEY(city_name)
+);
+
+CREATE TABLE search (
+	id INTEGER,
+	done text,
+	search_date text,
+	PRIMARY KEY(id)
+);
+
+CREATE TABLE search_item (
+	search_id text,
+	city_name text,
+	product_name text,
+	web_name text,
+	adress text,
+	price text,
+	FOREIGN KEY (search_id) REFERENCES search (id)
+            ON UPDATE CASCADE,
+	FOREIGN KEY (city_name) REFERENCES city (city_name)
+            ON UPDATE CASCADE
+);
+
+CREATE TABLE backup (
+	active text,
+	city text,
+	done int,
+	estab_info text,
+	product_info text,
+	search_id text,
+	FOREIGN KEY (search_id) REFERENCES search (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE product (
@@ -22,6 +55,7 @@ CREATE TABLE estab (
 	FOREIGN KEY (city_name) REFERENCES city (city_name)
             ON DELETE CASCADE ON UPDATE CASCADE
 );
+
 
 INSERT INTO city VALUES ("Itabuna"),("Ilhéus");
 

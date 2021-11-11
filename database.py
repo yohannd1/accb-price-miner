@@ -1,7 +1,9 @@
+import re
 import sqlite3
 import sys
 from os.path import exists
 import subprocess
+from datetime import date
 
 # corrigir select , ASC
 class Database:
@@ -56,6 +58,18 @@ class Database:
         self.conn.commit()
         self.db_end_conn()
 
+    def db_save_search(self, done):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+
+        sql_query = """INSERT INTO search(done, search_date) VALUES(?,?)"""
+        cursor = cursor.execute(sql_query, (done, str(date.today()), ))
+        self.conn.commit()
+        self.db_end_conn()
+
+        return cursor.lastrowid
+
     def db_save_estab(self, estab):
 
         self.conn = self.db_connection()
@@ -63,6 +77,28 @@ class Database:
         sql_query = """INSERT INTO estab(city_name, estab_name, adress, web_name) VALUES(?,?,?,?)"""
         cursor = cursor.execute(
             sql_query, (estab["city_name"], estab["estab_name"], estab["adress"], estab["web_name"]))
+        self.conn.commit()
+        self.db_end_conn()
+
+    def db_save_backup(self, backup):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+
+        sql_query = """INSERT INTO backup(active, city, done, estab_info,product_info, search_id ) VALUES(?,?,?,?,?,?)"""
+        cursor = cursor.execute(
+            sql_query, (backup["active"], backup["city"], backup["done"], backup["estab_info"], backup["product_info"], backup["search_id"]))
+        self.conn.commit()
+        self.db_end_conn()
+
+    def db_save_search_item(self, search_item):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+
+        sql_query = """INSERT INTO search_item(search_id, city_name, product_name, web_name,adress, price) VALUES(?,?,?,?,?,?)"""
+        cursor = cursor.execute(
+            sql_query, (search_item["search_id"], search_item["city_name"], search_item["product_name"], search_item["web_name"], search_item["adress"], search_item["price"]))
         self.conn.commit()
         self.db_end_conn()
 
@@ -75,6 +111,7 @@ class Database:
         self.conn.commit()
         self.db_end_conn()
 
+    # query
     def db_delete(self, table, where, value):
 
         self.conn = self.db_connection()
@@ -94,6 +131,55 @@ class Database:
         self.db_end_conn()
 
         return cities
+
+    # query
+    def db_get_search(self, where=None, value=None):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+        if value != None:
+            cursor = self.conn.execute(
+                "SELECT * FROM search WHERE {} = '{}' ORDER BY id ASC".format(where, value))
+            search = cursor.fetchall()
+        else:
+            cursor = self.conn.execute("SELECT * FROM search ORDER BY id ASC")
+            search = cursor.fetchall()
+        self.db_end_conn()
+
+        return search
+
+    # query
+    def db_get_search_item(self, search_id=None):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+        if search_id != None:
+            cursor = self.conn.execute(
+                "SELECT * FROM search_item WHERE search_id = '{}' ORDER BY search_id ASC".format(search_id))
+            search_item = cursor.fetchall()
+        else:
+            cursor = self.conn.execute(
+                "SELECT * FROM search_item ORDER BY search_id ASC")
+            search_item = cursor.fetchall()
+        self.db_end_conn()
+
+        return search_item
+
+    # query
+    def db_get_backup(self, id=None):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+        if id != None:
+            cursor = self.conn.execute(
+                "SELECT * FROM backup WHERE search_id = '{}'".format(id))
+            backup = cursor.fetchall()
+        else:
+            cursor = self.conn.execute("SELECT * FROM backup")
+            backup = cursor.fetchall()
+        self.db_end_conn()
+
+        return backup
 
     def db_get_product(self):
 
@@ -145,6 +231,28 @@ class Database:
         cursor = cursor.execute(sql_query)
         self.conn.commit()
         self.db_end_conn()
+
+    # query
+    def db_update_search(self, search):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+        sql_query = """UPDATE search SET done="{}" WHERE id = "{}" """.format(
+            search['done'], search['id'])
+        cursor = cursor.execute(sql_query)
+        self.conn.commit()
+        self.db_end_conn()
+
+    def db_run_query(self, query):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+        cursor = cursor.execute(query)
+        values = cursor.fetchall()
+        self.conn.commit()
+        self.db_end_conn()
+
+        return values
 
     def db_end_conn(self):
 

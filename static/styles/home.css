@@ -9,6 +9,7 @@ button, a{
 }
 
 a.red{
+	background-color: #9d2727;
 	transition: background .3 ease-in-out;
 }
 
@@ -140,7 +141,7 @@ main {
 }
 
 .btn-large {
-	border-radius: 10px !important;
+	border-radius: 10px;
 }
 
 .tab {
@@ -256,6 +257,7 @@ main {
 	background-color: #17527b;
 	text-align: center;
 	line-height: 45px;
+	transition: width .8s ease;
 	border-radius: 10px;
 	color: white !important;
 }
@@ -289,7 +291,8 @@ main {
 	display: flex;
 	justify-content: space-between;
 	width: 100%;
-	padding: .5em;
+	/* padding: .5em; */
+	align-items: center;
 	padding-left: 1em;
 	background-color: #0e3049;
 	color: white;
@@ -330,6 +333,10 @@ main {
 	height: 80%;
 	overflow: auto;
 	padding: 1em;
+}
+
+#list-config .right{
+	padding: .5em;
 }
 
 #list-product {

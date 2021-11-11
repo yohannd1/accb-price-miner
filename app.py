@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, g
+from engineio.async_drivers import gevent
 from flask_material import Material
-from numpy import broadcast
-from flask_socketio import SocketIO, Namespace, send, emit
+from flask_socketio import SocketIO, send, emit
 import time
 import json
 import sqlite3
@@ -9,13 +9,15 @@ import sys
 import database
 import traceback
 import scrapper
+from datetime import date
 
 app = Flask(__name__)
-Material(app)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app)
+Material(app)
+socketio = SocketIO(app,  async_mode='threading')
 
 # Quando usar list_estab ou list_product novamente e atualizar, lembrar da rota anterior.
+
 
 def log_error(err):
 
@@ -32,11 +34,30 @@ def log_error(err):
 def home():
 
     db = database.Database()
-    g.city = db.db_get_city()
-    g.estab = db.db_get_estab()
-    g.product = db.db_get_product()
 
-    return render_template("pages/home.html", data=g.city, search=False, product="Açúcar", city=g.city[0][0], estab_names=g.estab, products=g.product)
+    search = db.db_get_search('search_date', str(date.today()))
+    search_id = search[0][0] if len(search) != 0 else None
+    search = True
+
+    backup_info = db.db_get_backup(search_id)
+
+    if len(backup_info) != 0:
+
+        active, city, done, estab_info, product_info, search_id = backup_info[0]
+        estab_info = json.loads(estab_info)
+        estab_names = estab_info['names']
+        estab_data = estab_info['info']
+        product = json.loads(product_info)
+
+        if done == 0:
+
+            search = True
+
+    city = db.db_get_city()
+    estab = db.db_get_estab()
+    product = db.db_get_product()
+
+    return render_template("pages/home.html", data=city, search=search, product="Açúcar", city=city[0][0], estab_names=estab, products=product)
 
 
 @app.route("/insert_product")
@@ -277,34 +298,77 @@ def delete_city():
 
 # SocketIO
 
-@socketio.on('message')
-def handle_message(msg):
+@socketio.on('search')
+def handle_search(msg):
 
-    scrap = scrapper.Scrap('b')
-    send(msg['data'], broadcast=True)
-    for i in range(1, 13):
+    db = database.Database()
 
-        print('URL')
-        send('Searching', broadcast=True)
+    search = db.db_get_search('search_date', str(date.today()))
+    search_id = search[0][0] if len(search) != 0 else None
 
-    scrap.run()
+    backup_info = db.db_get_backup(search_id)
 
+    if len(backup_info) != 0 and msg['backup'] == 1:
+
+        emit('captcha', {"type": 'notification',
+             "message": "Retomando pesquisa ..."}, broadcast=True)
+        active, city, done, estab_info, product_info, search_id = backup_info[0]
+        estab_info = json.loads(estab_info)
+        estab_names = estab_info['names']
+        estab_data = estab_info['info']
+        product = json.loads(product_info)
+
+        if done == 0:
+            scrap = scrapper.Scrap(
+                estab_data, city, estab_names, product, active, search_id, False)
+
+    else:
+        emit('captcha', {"type": 'notification',
+             "message": "Iniciando pesquisa ..."}, broadcast=True)
+        if(msg['backup'] == 1 and len(backup_info) != 0):
+            query = "DELETE * FROM search WHERE id = {}".format(search_id)
+            db.db_run_query(query)
+
+        search_id = db.db_save_search(0)
+        active = 0.0
+        city = msg['city']
+        estab_names = json.loads(msg['names'])
+        estabs = db.db_get_estab()
+        product = db.db_get_product()
+
+        estab_data = [estab for estab in estabs if estab[0]
+                      == city and estab[1] in estab_names]
+
+        scrap = scrapper.Scrap(estab_data, city, estab_names,
+                               product, active, search_id, False)
+
+        db.db_save_backup({'active': 0.0, 'city': city, 'done': 0, 'estab_info': json.dumps(
+            {'names': estab_names, 'info': estab_data}), 'product_info': json.dumps(product), 'search_id': search_id})
+
+    try:
+
+        scrap.run()
+
+    except:
+
+        send({"type": 'error',
+             "message": "Ocorreu um erro durante a pesquisa."}, broadcast=True)
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
 # Insere a função para ser chamada em todos os templates a qualquer momento
 
 
 @app.context_processor
 def utility_processor():
-    def format_price(amount, currency="€"):
-        return f"{amount:.2f}{currency}"
 
     def decode(text):
         return text.encode("utf8").decode("utf8")
 
-    return dict(format_price=format_price, enumerate=enumerate, decode=decode)
+    return dict(enumerate=enumerate, decode=decode)
 
 
 if __name__ == '__main__':
 
     # app.run(debug=True)
-    socketio.run(app,  debug=True)
+    socketio.run(app, debug=True)

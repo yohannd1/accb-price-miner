@@ -51,7 +51,7 @@
 				<li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
 				<li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
 					Estabelecimentos</a></li>
-				<li class="tab col s3"><a class="disable active " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
+				<li class="tab col s3"><a class="disable  " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
 				<li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
 					Configurar</a></li>
 				<li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
@@ -287,10 +287,31 @@
 	{% block scripts %}
 		{{super()}}
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-		<script type="text/javascript" charset="utf-8">
-
-		</script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/materialize.js')}}"></script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/modal.js')}}"></script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
+		<script type="text/javascript" charset="utf-8">
+			var search = '{{search}}';
+			var socket = io().connect("http://127.0.0.1:5000/");
+
+			const search_loaded = () => {
+
+				if (search === 'True'){
+
+					if(confirm("Uma pesquisa foi encontrada em progresso, deseja retoma-la?")){
+
+						socket.emit('search', { names: '', city: '', backup: 1});
+
+						if(!window.location.toString().includes("#progress"))
+							window.location = window.location + "#progress"
+
+					}
+
+				}
+
+			}
+
+			window.onload = search_loaded
+
+		</script>
 	{% endblock %}

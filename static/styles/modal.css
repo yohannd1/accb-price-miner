@@ -28,6 +28,10 @@
 .modal input{
   color: #fff !important;
   /* text-transform: uppercase; */
+  /* border: 1px solid white !important;
+  border-radius: 5px !important;
+  padding: 10px !important;
+  margin-top: 10px !important; */
 }
 
 .modal-menu button{
