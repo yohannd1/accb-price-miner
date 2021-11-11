@@ -1,3 +1,6 @@
+# from eventlet.hubs import epolls, kqueue, selects
+# from dns import dnssec, e164, hash, namedict, tsigkeyring, update, version, zone
+
 from flask import Flask, render_template, request, g
 from engineio.async_drivers import gevent
 from flask_material import Material
@@ -14,7 +17,7 @@ from datetime import date
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 Material(app)
-socketio = SocketIO(app,  async_mode='threading')
+socketio = SocketIO(app)
 
 # Quando usar list_estab ou list_product novamente e atualizar, lembrar da rota anterior.
 
@@ -57,7 +60,7 @@ def home():
     estab = db.db_get_estab()
     product = db.db_get_product()
 
-    return render_template("pages/home.html", data=city, search=search, product="Açúcar", city=city[0][0], estab_names=estab, products=product)
+    return render_template("home.html", data=city, search=search, product="Açúcar", city=city[0][0], estab_names=estab, products=product)
 
 
 @app.route("/insert_product")

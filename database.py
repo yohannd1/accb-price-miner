@@ -4,8 +4,10 @@ import sys
 from os.path import exists
 import subprocess
 from datetime import date
+import os
+from os import path
 
-# corrigir select , ASC
+
 class Database:
 
     conn = None
@@ -14,10 +16,20 @@ class Database:
 
         self.conn = self.db_connection()
 
+    def resource_path(self, path):
+
+        try:
+            base_path = sys._MEIPASS
+        except:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, path)
+
     def db_start(self):
 
+        schema = self.resource_path("schema.sql")
         cursor = sqlite3.connect("accb.sqlite").cursor()
-        sql_file = open("schema.sql")
+        sql_file = open(schema)
         sql_as_string = sql_file.read()
         cursor.executescript(sql_as_string)
         # subprocess.check_call(["attrib", "+H", "accb.sqlite"])
