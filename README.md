@@ -12,6 +12,22 @@
   </p>
 </p>
 
+
+## Progresso de Desenvolvimento
+
+- [x] Interface
+- [x] Banco de Dados
+- [x] Log de Erros
+- [x] CRUD de Componentes
+- [x] Backup de Pesquisa
+- [x] Configuração de Estabelecimentos
+- [x] Configuração de Produtos
+- [ ] Listagem de Pesquisas
+- [ ] Melhoria de reconhecimento de produto
+- [ ] Limitar à somente uma aba de navegação
+- [ ] Transformar csv_to_xlsx em db_to_xlsx
+
+
 ## Informações de Desenvolvimento
 
 Para rodar o projeto preferencialmente inicie um ambiente virtual com :

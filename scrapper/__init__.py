@@ -492,8 +492,8 @@ class Scrap:
         self.resource_path("logo.ico")
         chrome_options = Options()
         # DISABLES DEVTOOLS LISTENING ON
-        # chrome_options.add_argument("--headless")
-        # chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-features=NetworkService")
@@ -577,14 +577,14 @@ class Scrap:
 
         for index, (product, keywords) in enumerate(self.PRODUCT_INFO[self.index :]):
 
-            # emit(
-            #     "captcha",
-            #     {
-            #         "type": "notification",
-            #         "message": "Pesquisando produto {}".format(product),
-            #     },
-            #     broadcast=True,
-            # )
+            emit(
+                "captcha",
+                {
+                    "type": "notification",
+                    "message": "Pesquisando produto {}".format(product),
+                },
+                broadcast=True,
+            )
 
             emit(
                 "captcha",
