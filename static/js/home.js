@@ -5,18 +5,13 @@ let EDIT_FORM_DATA = undefined;
 
 var i = 0;
 var width = 0;
-function move(val = 100 / 12) {
+function move(val) {
 	i = 1;
 	var elem = document.getElementById("progress_bar");
-	if (width >= 100) {
-		i = 0;
-	} else {
-		width += val;
-		var floor = Math.floor(width);
-		console.log(floor);
-		elem.style.width = floor.toString() + "%";
-		elem.innerHTML = floor.toString() + "%";
-	}
+	width += val;
+	var floor = Math.floor(width);
+	elem.style.width = width.toString() + "%";
+	elem.innerHTML = width.toString() + "%";
 }
 
 const custom_select = () => {
@@ -356,7 +351,8 @@ $(document).ready(function () {
 			});
 		} else if (msg['type'] == 'progress') {
 			$("#progress h5").html(`Pesquisando produto ${msg['product']}`);
-			move(100 / 12);
+			if (msg['value'] != '')
+				move(msg['value']);
 			if (msg['done'] == 1) {
 				$("#progress_bar").css("width", "0%");
 				$("#progress_bar").html("0%");
@@ -748,7 +744,6 @@ $(document).ready(function () {
 
 			});
 
-			console.log(city);
 			socket.emit('search', { names: JSON.stringify(names), city: city, backup: 0 });
 			$('ul.tabs').tabs('select', 'progress');
 		}

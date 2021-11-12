@@ -291,19 +291,27 @@
 		<script type='text/javascript' src="{{url_for('static', filename='js/modal.js')}}"></script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
 		<script type="text/javascript" charset="utf-8">
+
 			var search = '{{search}}';
+			var active = '{{active}}';
 			var socket = io().connect("http://127.0.0.1:5000/");
 
 			const search_loaded = () => {
 
-				if (search === 'True'){
+				if (search == 'True'){
 
 					if(confirm("Uma pesquisa foi encontrada em progresso, deseja retoma-la?")){
 
 						socket.emit('search', { names: '', city: '', backup: 1});
 
-						if(!window.location.toString().includes("#progress"))
-							window.location = window.location + "#progress"
+						var width = active.split('.')[0];
+						var elem = document.getElementById("progress_bar");
+
+						elem.style.width = width.toString() + "%";
+						elem.innerHTML = width.toString() + "%";
+
+						$('ul.tabs').tabs('select', 'progress');
+
 
 					}
 
