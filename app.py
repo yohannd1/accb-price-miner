@@ -9,7 +9,6 @@ import sys
 import database
 import traceback
 import scrapper
-import webbrowser
 from datetime import date
 
 app = Flask(__name__)
@@ -487,4 +486,4 @@ if __name__ == "__main__":
     # app.run(debug=True)
     # url = 'http://127.0.0.1:5000'
     # webbrowser.open(url)
-    socketio.run(app, debug=False)
+    socketio.run(app, debug=True)

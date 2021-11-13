@@ -70,3 +70,23 @@ Para que seja possível gerar um exe sem uma janela de console do windows é nec
 ```
 
 E em seguida é só executar o comando pyinstaller app.spec.
+
+## Criando um .spec Novo
+
+```
+pyi-makespec --noconsole --onefile app.py
+```
+
+.spec Completo :
+
+```
+pyi-makespec --noconsole --onefile
+--add-data="templates;templates"
+--add-data="static;static"
+--add-data="schema.sql;."
+--name="ACCB"
+--icon=logo.ico
+--paths="D:\Uesc\Scrapper\Versão Web\ACCB\Lib\flask_material\templates\material"
+--hidden-import=engineio.async_drivers.eventlet
+--hidden-import=flask_material —uac-admin app.py
+```

@@ -66,6 +66,7 @@ class Scrap:
         print(ACTIVE)
         print("\n")
         print(ID)
+        self.log_progress([LOCALS, LOCALS_NAME, CITY, PRODUCT_INFO, BACKUP, ACTIVE, ID])
 
         self.win = tk.Tk()
 
@@ -89,6 +90,26 @@ class Scrap:
         self.ico = None
         self.stop = False
         self.exit = False
+
+    def log_progress(self, progress):
+
+        with open("progress.log", "w+") as outfile:
+
+            outfile.write("Date : {} \n".format(time.asctime()))
+            for index, error in enumerate(progress):
+                outfile.write("Index {} : {}\n".format(index, error))
+
+        return
+
+    def log_product(self, progress):
+
+        with open("progress.log", "a+") as outfile:
+
+            outfile.write("Date : {} \n".format(time.asctime()))
+            for index, error in enumerate(progress):
+                outfile.write("Index {} : {}\n".format(index, error))
+
+        return
 
     def filter_word(self, product_name, product):
 
@@ -283,6 +304,17 @@ class Scrap:
                 )
             )
 
+            self.log_product(
+                [
+                    self.ID,
+                    self.CITY,
+                    product_local,
+                    product_local,
+                    product_name,
+                    product_price,
+                ]
+            )
+
             self.db.db_save_search_item(
                 {
                     "search_id": self.ID,
@@ -360,14 +392,13 @@ class Scrap:
         """Trata por erro de rede e inicia um loop para conferir se o usuário resolveu o captcha."""
         # Se eu tenho conexão o captcha foi ativado, se não, é erro de rede.
 
-        webbrowser.open(self.url)
-
         if self.connect():
 
             while True:
 
                 if self.check_captcha(1):
 
+                    webbrowser.open(self.url)
                     self.pop_up()
 
                 else:
@@ -481,6 +512,7 @@ class Scrap:
                 start_key (int): Indíce de inicio de palavra chave caso seja uma pesquisa por backup.
 
         """
+
         URL = "https://precodahora.ba.gov.br/produtos"
         self.url = URL
         times = 4
@@ -489,7 +521,6 @@ class Scrap:
         restart = True
         csvfile = ""
 
-        self.resource_path("logo.ico")
         chrome_options = Options()
         # DISABLES DEVTOOLS LISTENING ON
         chrome_options.add_argument("--headless")
@@ -502,8 +533,11 @@ class Scrap:
         driver = webdriver.Chrome(
             executable_path=ChromeDriverManager().install(), options=chrome_options
         )
+        # driver.set_window_position(-10000, 0)
+
         self.driver = driver
-        self.set_viewport_size(800, 600)
+
+        # self.set_viewport_size(800, 600)
 
         os.system("cls" if os.name == "nt" else "clear")
 
@@ -522,11 +556,20 @@ class Scrap:
             # print("Pop Up Error")
             pass
 
-        # # * Processo de pesquisa de produto
+            # # * Processo de pesquisa de produto
 
-        # time.sleep(times)
+            # time.sleep(times)
 
-        # * Processo para definir a região desejada para ser realizada a pesquisa
+            # * Processo para definir a região desejada para ser realizada a pesquisa
+
+            emit(
+                "captcha",
+                {
+                    "type": "notification",
+                    "message": "Pesquisando Localização",
+                },
+                broadcast=True,
+            )
 
         # Botão que abre o modal referente a localização
         try:
@@ -594,6 +637,13 @@ class Scrap:
 
             for index_k, keyword in enumerate(keywords.split(",")[self.index_k :]):
 
+                self.log_progress(
+                    [
+                        {"produto": product},
+                        {"keyword": keyword},
+                    ]
+                )
+
                 # if not self.connect():
 
                 # 	self.exit_thread(None, None, None, None, None)
@@ -611,7 +661,7 @@ class Scrap:
 
                 # self.backup_save(index + start_prod, day, 0,self.LOCALS_NAME, self.CITY,  self.LOCALS)
                 active = "{}.{}".format(index + self.index, index_k + self.index_k)
-                print("active = {}".format(active))
+                # print("active = {}".format(active))
                 self.db.db_update_backup(
                     {
                         "active": active,
@@ -724,6 +774,7 @@ class Scrap:
         # self.csv_to_xlsx(all_file)
         # self.remove_duplicates(self.all_file_dir)
         # self.filter_xlsx(self.all_file_dir + ".xlsx", self.CITY, self.folder_name)
+
         # GERAR O XLSX BASEADO NO BANCO DE DADOS , SEARCH_ITEM COM JOIN EM SEARCH_ID = self.ID
 
         self.db.db_update_search({"id": self.ID, "done": 1})

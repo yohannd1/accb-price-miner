@@ -331,14 +331,14 @@ const validate_form = (info, edit = false) => {
 $(document).ready(function () {
 
 	if (Notification.permission === "granted") {
-		// alert("we have permission");
+		//  alert("we have permission");
 		// new Notification("Teste message", {
 		// 	body: "Teste body",
 		// });
 
 	} else if (Notification.permission !== "denied") {
 		Notification.requestPermission().then(permission => {
-			console.log(permission);
+			// console.log(permission);
 		});
 	}
 
@@ -350,12 +350,15 @@ $(document).ready(function () {
 				body: msg['message'],
 			});
 		} else if (msg['type'] == 'progress') {
-			$("#progress h5").html(`Pesquisando produto ${msg['product']}`);
+			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`);
 			if (msg['value'] != '')
 				move(msg['value']);
 			if (msg['done'] == 1) {
 				$("#progress_bar").css("width", "0%");
 				$("#progress_bar").html("0%");
+				$('ul.tabs').tabs('select', 'pesquisar');
+				$("#progress h5").html(`Pesquisando Produto [Iniciando Pesquisa]`);
+
 			}
 		} else if (msg['type'] == 'captcha') {
 			Materialize.toast(msg['message'], 8000, 'rounded');
@@ -371,6 +374,28 @@ $(document).ready(function () {
 			Materialize.toast("Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.", 8000, 'rounded');
 			new Notification("ACCB - Pesquisa Automática", {
 				body: "Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.",
+			});
+		}
+		if (msg['type'] == 'notification') {
+			Materialize.toast(msg['message'], 8000, 'rounded');
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
+		} else if (msg['type'] == 'pesquisar') {
+			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`);
+			if (msg['value'] != '')
+				move(msg['value']);
+			if (msg['done'] == 1) {
+				$("#progress_bar").css("width", "0%");
+				$("#progress_bar").html("0%");
+				$('ul.tabs').tabs('select', 'pesquisar');
+				$("#progress h5").html(`Pesquisando Produto [Iniciando Pesquisa]`);
+
+			}
+		} else if (msg['type'] == 'captcha') {
+			Materialize.toast(msg['message'], 8000, 'rounded');
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
 			});
 		}
 
