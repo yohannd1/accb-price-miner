@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(['app.py'],
-             pathex=['D:\\Uesc\\Scrapper\\Versão Web\\ACCB', 'D:\\Uesc\\Scrapper\\Versão Web\\ACCB\\Lib\\flask_material\\templates\\material'],
+             pathex=['D:\\Uesc\\Scrapper\\web\\ACCB', 'D:\\Uesc\\Scrapper\\web\\ACCB\\Lib\\flask_material\\templates\\material'],
              binaries=[],
              datas=[('templates', 'templates'), ('static', 'static'), ('schema.sql', '.')],
              hiddenimports=['engineio.async_drivers.eventlet', 'flask_material'],
@@ -39,5 +39,5 @@ exe = EXE(pyz,
           codesign_identity=None,
           entitlements_file=None,
           uac_admin=True,
-          icon='D:\\Uesc\\Scrapper\\Versão Web\\ACCB\\logo.ico',
+          icon='D:\\Uesc\\Scrapper\\web\\ACCB\\logo.ico',
           )

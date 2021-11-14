@@ -9,6 +9,7 @@ function move(val) {
 	i = 1;
 	var elem = document.getElementById("progress_bar");
 	width += val;
+	width = width.toFixed(2);
 	var floor = Math.floor(width);
 	elem.style.width = width.toString() + "%";
 	elem.innerHTML = width.toString() + "%";
@@ -345,58 +346,74 @@ $(document).ready(function () {
 	var socket = io().connect("http://127.0.0.1:5000/");
 	socket.on('captcha', (msg) => {
 		if (msg['type'] == 'notification') {
+
 			Materialize.toast(msg['message'], 8000, 'rounded');
 			new Notification("ACCB - Pesquisa Automática", {
 				body: msg['message'],
 			});
+
 		} else if (msg['type'] == 'progress') {
-			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`);
+
+			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
 			if (msg['value'] != '')
 				move(msg['value']);
 			if (msg['done'] == 1) {
 				$("#progress_bar").css("width", "0%");
 				$("#progress_bar").html("0%");
 				$('ul.tabs').tabs('select', 'pesquisar');
-				$("#progress h5").html(`Pesquisando Produto [Iniciando Pesquisa]`);
-
+				$("#progress h5").html(`Iniciando Pesquisa`);
+				$(".tabs a").addClass('enable');
+				$(".log_item").remove();
+				$("#progress_log").css("height", "100%");
 			}
+
 		} else if (msg['type'] == 'captcha') {
+
 			Materialize.toast(msg['message'], 8000, 'rounded');
 			new Notification("ACCB - Pesquisa Automática", {
 				body: msg['message'],
 			});
+
+		} else if (msg['type'] == 'log') {
+
+			var log_data = JSON.parse(msg['data'])
+			console.table(log_data);
+			$("#progress_log").css("height", "fit-content");
+			log_data.map((data) => {
+				$("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
+			});
+
+			$("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
+
 		}
 	});
 
 	socket.on('search', (msg) => {
 
 		if (msg['type'] == 'error') {
+
 			Materialize.toast("Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.", 8000, 'rounded');
 			new Notification("ACCB - Pesquisa Automática", {
 				body: "Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.",
 			});
-		}
-		if (msg['type'] == 'notification') {
-			Materialize.toast(msg['message'], 8000, 'rounded');
-			new Notification("ACCB - Pesquisa Automática", {
-				body: msg['message'],
-			});
-		} else if (msg['type'] == 'pesquisar') {
-			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`);
-			if (msg['value'] != '')
-				move(msg['value']);
-			if (msg['done'] == 1) {
-				$("#progress_bar").css("width", "0%");
-				$("#progress_bar").html("0%");
-				$('ul.tabs').tabs('select', 'pesquisar');
-				$("#progress h5").html(`Pesquisando Produto [Iniciando Pesquisa]`);
 
-			}
-		} else if (msg['type'] == 'captcha') {
+		} else if (msg['type'] == 'notification') {
+
 			Materialize.toast(msg['message'], 8000, 'rounded');
 			new Notification("ACCB - Pesquisa Automática", {
 				body: msg['message'],
 			});
+
+		} else if (msg['type'] == 'done') {
+
+			$("#progress_bar").css("width", "0%");
+			$("#progress_bar").html("0%");
+			$('ul.tabs').tabs('select', 'pesquisar');
+			$("#progress h5").html(`Iniciando Pesquisa`);
+			$(".tabs a").addClass('enable');
+			$(".log_item").remove();
+			$("#progress_log").css("height", "100%");
+
 		}
 
 	});
@@ -758,7 +775,7 @@ $(document).ready(function () {
 		if (!$('.estab').hasClass("select-item-active")) {
 			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
 		} else {
-			Materialize.toast('Pesquisa iniciada ...', 3000, 'rounded');
+			// Materialize.toast('Pesquisa iniciada ...', 3000, 'rounded');
 			var estabs = $(".select-item-active");
 			var names = [];
 			var city = $(".select-item-active").attr("city");

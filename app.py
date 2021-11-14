@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from flask import Flask, render_template, request, g
 from engineio.async_drivers import gevent
 from flask_material import Material
@@ -6,28 +9,148 @@ import time
 import json
 import sqlite3
 import sys
+import os
 import database
 import traceback
 import scrapper
+import pandas as pd
+import webbrowser
 from datetime import date
+from xlsxwriter.workbook import Workbook
+from openpyxl.styles import Border, Side, Alignment
+
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
 Material(app)
 socketio = SocketIO(app)
 
-# Quando usar list_estab ou list_product novamente e atualizar, lembrar da rota anterior.
+
+def xlsx_to_bd(db):
+
+    df = pd.read_excel("TODOS.xlsx", skiprows=0, index_col=0)
+    db.db_save_search(0)
+
+    for index, row in df.iterrows():
+
+        name, local, keyword, adress, price = row
+        # print(name, local, keyword, adress, price)
+
+        try:
+            db.db_save_search_item(
+                {
+                    "search_id": 1,
+                    "city_name": "Itabuna",
+                    "web_name": local,
+                    "adress": adress,
+                    "product_name": name,
+                    "price": price,
+                    "keyword": keyword,
+                }
+            )
+        except:
+            print("Index: {} Repeated".format(index))
+            pass
 
 
 def log_error(err):
 
-    with open("err.log", "w+") as outfile:
+    with open("error.log", "w+") as outfile:
 
         outfile.write("Date : {} \n".format(time.asctime()))
         for error in err:
             outfile.write(str(error))
 
     return
+
+
+def bd_to_xlsx(self, file_name, city_name, folder_name):
+
+    df = pd.read_excel(file_name, skiprows=0, index_col=0)
+    estab_list = self.LOCALS
+    local = self.LOCALS_NAME
+    keywords = self.KEYWORDS
+    appended_data = []
+
+    for index, (product, keyword) in enumerate(keywords):
+
+        keyword = keyword.split(" ")
+        appended_data.append(
+            df[df.apply(lambda r: all([kw in r[0] for kw in keyword]), axis=1)]
+        )
+
+    df = pd.concat(appended_data)
+    df = df.sort_values(by=["KEYWORD", "PRECO"], ascending=[True, True])
+    df = df.reset_index(drop=True)
+
+    for index, (new_file, adress, estab, date) in enumerate(estab_list):
+
+        new_file = local[index]
+        print("Gerando Arquivo ... {}.xlsx , CIDADE : {}".format(new_file, city_name))
+
+        temp_df = df
+        path = "{}\{}.xlsx".format(folder_name, new_file)
+        print(estab.upper())
+        temp_df = temp_df[temp_df.ESTABELECIMENTO.str.match(estab.upper())]
+        temp_df = temp_df[temp_df.ENDERECO.str.contains(adress.upper())]
+
+        writer = pd.ExcelWriter(path, engine="openpyxl")
+
+        temp_df = temp_df.to_excel(
+            writer, sheet_name="Pesquisa", index=False, startrow=0, startcol=1
+        )
+        border = Border(
+            left=Side(border_style="thin", color="FF000000"),
+            right=Side(border_style="thin", color="FF000000"),
+            top=Side(border_style="thin", color="FF000000"),
+            bottom=Side(border_style="thin", color="FF000000"),
+            diagonal=Side(border_style="thin", color="FF000000"),
+            diagonal_direction=0,
+            outline=Side(border_style="thin", color="FF000000"),
+            vertical=Side(border_style="thin", color="FF000000"),
+            horizontal=Side(border_style="thin", color="FF000000"),
+        )
+
+        workbook = writer.book["Pesquisa"]
+        worksheet = workbook
+        for cell in worksheet["B"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["C"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["D"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["E"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["F"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for col in worksheet.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2) * 1.2
+            worksheet.column_dimensions[column].width = adjusted_width
+
+        writer.save()
 
 
 @app.route("/")
@@ -41,6 +164,7 @@ def home():
     active = "0.0"
 
     backup_info = db.db_get_backup(search_id)
+    product_len = db.db_run_query("SELECT product_name FROM product")
 
     if len(backup_info) != 0:
 
@@ -68,6 +192,7 @@ def home():
         estab_names=estab,
         products=product,
         active=active,
+        product_len=len(product_len),
     )
 
 
@@ -390,11 +515,10 @@ def delete_city():
 
 # SocketIO
 
-
+# Inicia pesquisa
 @socketio.on("search")
 def handle_search(search_info):
 
-    print(search_info["city"])
     db = database.Database()
 
     search = db.db_get_search("search_date", str(date.today()))
@@ -459,6 +583,15 @@ def handle_search(search_info):
     try:
 
         scrap.run()
+        send(
+            {"type": "notification", "message": "Pesquisa concluida."},
+            broadcast=True,
+        )
+        send(
+            {"type": "done"},
+            broadcast=True,
+        )
+        bd_to_xlsx(search_id, estab_data, city)
 
     except:
 
@@ -468,6 +601,13 @@ def handle_search(search_info):
         )
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+
+@socketio.on("quit")
+def handle_quit(quit_info):
+
+    print("quitting")
+    os._exit(0)
 
 
 # Insere a função para ser chamada em todos os templates a qualquer momento
@@ -484,6 +624,6 @@ def utility_processor():
 if __name__ == "__main__":
 
     # app.run(debug=True)
-    # url = 'http://127.0.0.1:5000'
+    url = "http://127.0.0.1:5000"
     # webbrowser.open(url)
     socketio.run(app, debug=True)

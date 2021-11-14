@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """ Script responsável por realizar o scrapping na plataforma do Preço da Hora Bahia. """
 import re
 import time
@@ -11,15 +14,12 @@ import sys
 import urllib.request
 import database
 from numpy import append, product
-import pandas as pd
-from xlsxwriter.workbook import Workbook
 from tkinter import messagebox
 from datetime import date
 from tkinter import *
 import tkinter as tk
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from openpyxl.styles import Border, Side, Alignment
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -53,23 +53,7 @@ class Scrap:
 
     def __init__(self, LOCALS, CITY, LOCALS_NAME, PRODUCT_INFO, ACTIVE, ID, BACKUP):
 
-        print(LOCALS)
-        print("\n")
-        print(LOCALS_NAME)
-        print("\n")
-        print(CITY)
-        print("\n")
-        print(PRODUCT_INFO)
-        print("\n")
-        print(BACKUP)
-        print("\n")
-        print(ACTIVE)
-        print("\n")
-        print(ID)
-        self.log_progress([LOCALS, LOCALS_NAME, CITY, PRODUCT_INFO, BACKUP, ACTIVE, ID])
-
         self.win = tk.Tk()
-
         self.win.withdraw()
 
         # OUT
@@ -96,42 +80,10 @@ class Scrap:
         with open("progress.log", "w+") as outfile:
 
             outfile.write("Date : {} \n".format(time.asctime()))
-            for index, error in enumerate(progress):
-                outfile.write("Index {} : {}\n".format(index, error))
+            for index, line in enumerate(progress):
+                outfile.write("Index {} : {}\n".format(index, line))
 
         return
-
-    def log_product(self, progress):
-
-        with open("progress.log", "a+") as outfile:
-
-            outfile.write("Date : {} \n".format(time.asctime()))
-            for index, error in enumerate(progress):
-                outfile.write("Index {} : {}\n".format(index, error))
-
-        return
-
-    def filter_word(self, product_name, product):
-
-        # Se o endereço não tiver sido cadastrado
-        if product_name == "":
-            return True
-
-        words = product_name.split(" ")
-
-        found_product = False
-
-        for word in words:
-
-            if word in product:
-
-                found_product = True
-
-            else:
-
-                found_product = False
-
-        return found_product
 
     def connect(self):
         """Confere a conexão com o host desejado."""
@@ -141,16 +93,6 @@ class Scrap:
             return True
         except:
             return False
-
-    def resource_path(self, relative_path):
-        """Retorna o caminho relativo do ícone dentro da pasta de cache gerada pelo pyinstaller (Pacote usado para gerar o arquivo executável da aplicação)."""
-        try:
-            # PyInstaller creates a temp folder and stores path in _MEIPASS
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-
-        self.ico = os.path.join(base_path, relative_path)
 
     # CHECK
 
@@ -196,61 +138,6 @@ class Scrap:
             self.driver.quit()
             return
 
-    def remove_duplicates(self, file_name):
-        """Remove entradas duplicadas do arquivo final xlsx."""
-        file_df = pd.read_excel(file_name + ".xlsx", skiprows=0, index_col=0)
-
-        # Mantem somente a primeira duplicata
-        pd_first = file_df.drop_duplicates(
-            subset=["PRODUTO", "ESTABELECIMENTO", "PRECO"], keep="first"
-        )
-        # pd_first = file_df.drop_duplicates(subset=["PRODUTO", "ESTABELECIMENTO", "ENDERECO", "PRECO"], keep="first")
-        size = pd_first["PRODUTO"].count()
-        writer = pd.ExcelWriter(file_name + ".xlsx", engine="xlsxwriter")
-        pd_first = pd_first.to_excel(
-            writer, sheet_name="Pesquisa", index=False, startrow=0, startcol=1
-        )
-
-        workbook = writer.book
-        worksheet = writer.sheets["Pesquisa"]
-        formats = workbook.add_format({"border": 2})
-
-        worksheet.set_column(1, size, None, formats)
-        worksheet.set_column(1, 1, 35)
-        worksheet.set_column(2, 2, 60)
-        worksheet.set_column(3, 3, 23)
-        worksheet.set_column(4, 4, 60)
-        worksheet.set_column(5, 5, 12)
-
-        writer.save()
-
-    # OUT
-    def csv_to_xlsx(self, csvfile):
-        """Converte um arquivo csv em um arquivo xlsx."""
-        with pd.ExcelWriter(csvfile[:-4] + ".xlsx") as ew:
-            pd.read_csv(csvfile[:-4] + ".csv").to_excel(ew, sheet_name="Pesquisa")
-
-        # workbook = Workbook(csvfile[:-4] + '.xlsx')
-        # worksheet = workbook.add_worksheet()
-        # formats = workbook.add_format({'border': 2})
-
-        # with open(csvfile, 'rt', encoding='latin-1') as f:
-        # 	reader = csv.reader(f)
-        # 	for r, row in enumerate(reader):
-        # 		for c, col in enumerate(row):
-
-        # 			if r == 3 and c == 3:
-
-        # 				worksheet.set_column(r+1, c+1, 15)
-
-        # 			else:
-
-        # 				worksheet.set_column(r+1, c+1, 50)
-
-        # 			worksheet.write(r+1, c+1, col, formats)
-
-        # workbook.close()
-
     def set_viewport_size(self, width, height):
         """Muda o tamanho da janela do navegador."""
         window_size = self.driver.execute_script(
@@ -277,6 +164,7 @@ class Scrap:
 
         elements = self.driver.page_source
         soup = bs4.BeautifulSoup(elements, "html.parser")
+        arr = []
         # search_item["search_id"], search_item["city_name"], search_item["estab_name"], search_item["web_name"], search_item["adress"], search_item["price"])
         for item in soup.findAll(True, {"class": "flex-item2"}):
 
@@ -303,32 +191,43 @@ class Scrap:
                     product_adress, product_local, product_price, product_name
                 )
             )
-
-            self.log_product(
-                [
-                    self.ID,
-                    self.CITY,
-                    product_local,
-                    product_local,
-                    product_name,
-                    product_price,
-                ]
-            )
-
-            self.db.db_save_search_item(
-                {
-                    "search_id": self.ID,
-                    "city_name": self.CITY,
-                    "web_name": product_local,
-                    "adress": product_local,
-                    "product_name": product_name,
-                    "price": product_price,
-                }
-            )
+            try:
+                self.db.db_save_search_item(
+                    {
+                        "search_id": self.ID,
+                        "city_name": self.CITY,
+                        "web_name": product_local,
+                        "adress": product_adress,
+                        "product_name": product_name,
+                        "price": product_price,
+                        "keyword": keyword,
+                    }
+                )
+                arr.append(
+                    [
+                        str(product_name),
+                        str(product_local),
+                        str(keyword),
+                        str(product_adress),
+                        str(product_price),
+                    ]
+                )
+                self.log_progress(item)
+            except:
+                pass
             # writer.writerow([str(product_name), str(product_local), str(keyword),  str(product_adress), str(product_price)])
             print(
                 "------------------------------------------------------------------------------------"
             )
+
+        emit(
+            "captcha",
+            {
+                "type": "log",
+                "data": json.dumps(arr),
+            },
+            broadcast=True,
+        )
 
     def check_captcha(self, request=0):
         """Função que confere se o captcha foi resolvido com sucesso pelo usuário."""
@@ -409,97 +308,6 @@ class Scrap:
 
             self.exit_thread(None, None, None, None, None)
 
-    # REDO
-    def filter_xlsx(self, file_name, city_name, folder_name):
-
-        df = pd.read_excel(file_name, skiprows=0, index_col=0)
-        estab_list = self.LOCALS
-        local = self.LOCALS_NAME
-        keywords = self.KEYWORDS
-        appended_data = []
-
-        for index, (product, keyword) in enumerate(keywords):
-
-            keyword = keyword.split(" ")
-            appended_data.append(
-                df[df.apply(lambda r: all([kw in r[0] for kw in keyword]), axis=1)]
-            )
-
-        df = pd.concat(appended_data)
-        df = df.sort_values(by=["KEYWORD", "PRECO"], ascending=[True, True])
-        df = df.reset_index(drop=True)
-
-        for index, (new_file, adress, estab, date) in enumerate(estab_list):
-
-            new_file = local[index]
-            print(
-                "Gerando Arquivo ... {}.xlsx , CIDADE : {}".format(new_file, city_name)
-            )
-
-            temp_df = df
-            path = "{}\{}.xlsx".format(folder_name, new_file)
-            print(estab.upper())
-            temp_df = temp_df[temp_df.ESTABELECIMENTO.str.match(estab.upper())]
-            # temp_df = temp_df[temp_df.ENDERECO.str.contains(adress.upper())]
-
-            writer = pd.ExcelWriter(path, engine="openpyxl")
-
-            temp_df = temp_df.to_excel(
-                writer, sheet_name="Pesquisa", index=False, startrow=0, startcol=1
-            )
-            border = Border(
-                left=Side(border_style="thin", color="FF000000"),
-                right=Side(border_style="thin", color="FF000000"),
-                top=Side(border_style="thin", color="FF000000"),
-                bottom=Side(border_style="thin", color="FF000000"),
-                diagonal=Side(border_style="thin", color="FF000000"),
-                diagonal_direction=0,
-                outline=Side(border_style="thin", color="FF000000"),
-                vertical=Side(border_style="thin", color="FF000000"),
-                horizontal=Side(border_style="thin", color="FF000000"),
-            )
-
-            workbook = writer.book["Pesquisa"]
-            worksheet = workbook
-            for cell in worksheet["B"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["C"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["D"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["E"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["F"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for col in worksheet.columns:
-                max_length = 0
-                column = col[0].column_letter  # Get the column name
-                for cell in col:
-                    try:  # Necessary to avoid error on empty cells
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                adjusted_width = (max_length + 2) * 1.2
-                worksheet.column_dimensions[column].width = adjusted_width
-
-            writer.save()
-
     def run(self):
         """
         Realiza a pesquisa na plataforma do Preço da Hora Bahia.
@@ -562,14 +370,14 @@ class Scrap:
 
             # * Processo para definir a região desejada para ser realizada a pesquisa
 
-            emit(
-                "captcha",
-                {
-                    "type": "notification",
-                    "message": "Pesquisando Localização",
-                },
-                broadcast=True,
-            )
+            # emit(
+            #     "captcha",
+            #     {
+            #         "type": "notification",
+            #         "message": "Pesquisando Localização",
+            #     },
+            #     broadcast=True,
+            # )
 
         # Botão que abre o modal referente a localização
         try:
@@ -620,14 +428,14 @@ class Scrap:
 
         for index, (product, keywords) in enumerate(self.PRODUCT_INFO[self.index :]):
 
-            emit(
-                "captcha",
-                {
-                    "type": "notification",
-                    "message": "Pesquisando produto {}".format(product),
-                },
-                broadcast=True,
-            )
+            # emit(
+            #     "captcha",
+            #     {
+            #         "type": "notification",
+            #         "message": "Pesquisando produto {}".format(product),
+            #     },
+            #     broadcast=True,
+            # )
 
             emit(
                 "captcha",
@@ -636,13 +444,6 @@ class Scrap:
             )
 
             for index_k, keyword in enumerate(keywords.split(",")[self.index_k :]):
-
-                self.log_progress(
-                    [
-                        {"produto": product},
-                        {"keyword": keyword},
-                    ]
-                )
 
                 # if not self.connect():
 
@@ -771,11 +572,7 @@ class Scrap:
             self.exit = True
             return
 
-        # self.csv_to_xlsx(all_file)
-        # self.remove_duplicates(self.all_file_dir)
-        # self.filter_xlsx(self.all_file_dir + ".xlsx", self.CITY, self.folder_name)
-
-        # GERAR O XLSX BASEADO NO BANCO DE DADOS , SEARCH_ITEM COM JOIN EM SEARCH_ID = self.ID
+        # CALL BD_TO_XLSX
 
         self.db.db_update_search({"id": self.ID, "done": 1})
 
@@ -790,13 +587,6 @@ class Scrap:
                 "product_info": json.dumps(self.PRODUCT_INFO),
                 "search_id": self.ID,
             }
-        )
-
-        emit("captcha", {"type": "notification", "message": "Pesquisa concluida."})
-        emit(
-            "captcha",
-            {"type": "progress", "product": product, "done": 1},
-            broadcast=True,
         )
 
         driver.close()

@@ -86,7 +86,7 @@ pyi-makespec --noconsole --onefile
 --add-data="schema.sql;."
 --name="ACCB"
 --icon=logo.ico
---paths="D:\Uesc\Scrapper\Versão Web\ACCB\Lib\flask_material\templates\material"
+--paths="D:\Uesc\Scrapper\web\ACCB\Lib\flask_material\templates\material"
 --hidden-import=engineio.async_drivers.eventlet
 --hidden-import=flask_material —uac-admin app.py
 ```

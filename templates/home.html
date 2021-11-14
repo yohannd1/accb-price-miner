@@ -86,10 +86,14 @@
 				</div>
 			</div>
 			<div id="progress" class="col s12 tab">
-				<div class="tab-content">
-					<h5>Pesquisando Produto [{{product}}]</h5>
+				<div class="tab-content" style="top: -50%">
+					<h5>Iniciando Pesquisa</h5>
 					<div id="progress_container">
 						<div id="progress_bar">0%</div>
+					</div>
+					<div id="progress_scroll" style="overflow: auto; height: 100%; margin: 2.5em 0; padding: 1em; border-radius: 10px; display: block;">
+						<div id="progress_log">
+						</div>
 					</div>
 					<button id="pause" class=" btn-large">Pausar Pesquisa</button>
 				</div>
@@ -294,7 +298,18 @@
 
 			var search = '{{search}}';
 			var active = '{{active}}';
+			var product_len = '{{product_len}}';
 			var socket = io().connect("http://127.0.0.1:5000/");
+
+			window.onbeforeunload = function() {
+				var msg = "Really leave?";
+				if (window.event) {
+					window.event.returnValue = msg;
+				}
+
+				socket.emit('quit', { quit : true });
+				return msg;
+			};
 
 			const search_loaded = () => {
 
@@ -302,11 +317,12 @@
 
 					if(confirm("Uma pesquisa foi encontrada em progresso, deseja retoma-la?")){
 
+						$("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
 						socket.emit('search', { names: '', city: '', backup: 1});
 
 						var width = active.split('.')[0];
 						var elem = document.getElementById("progress_bar");
-
+						width = width * (100/product_len).toFixed(2)
 						elem.style.width = width.toString() + "%";
 						elem.innerHTML = width.toString() + "%";
 

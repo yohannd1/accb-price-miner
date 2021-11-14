@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import re
 import sqlite3
 import sys
@@ -130,7 +133,7 @@ class Database:
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
 
-        sql_query = """INSERT INTO search_item(search_id, city_name, product_name, web_name,adress, price) VALUES(?,?,?,?,?,?)"""
+        sql_query = """INSERT INTO search_item(search_id, city_name, product_name, web_name,adress, price, keyword) VALUES(?,?,?,?,?,?,?)"""
         cursor = cursor.execute(
             sql_query,
             (
@@ -140,6 +143,7 @@ class Database:
                 search_item["web_name"],
                 search_item["adress"],
                 search_item["price"],
+                search_item["keyword"],
             ),
         )
         self.conn.commit()
@@ -320,9 +324,9 @@ class Database:
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
+        self.conn.commit()
         cursor = cursor.execute(query)
         values = cursor.fetchall()
-        self.conn.commit()
         self.db_end_conn()
 
         return values

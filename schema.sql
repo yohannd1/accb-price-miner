@@ -18,12 +18,14 @@ CREATE TABLE search (
 );
 
 CREATE TABLE search_item (
-	search_id text,
+	search_id text NOT NULL,
 	city_name text,
-	product_name text,
-	web_name text,
-	adress text,
-	price text,
+	product_name text NOT NULL,
+	web_name text NOT NULL,
+	adress text NOT NULL,
+	price text NOT NULL,
+	keyword text NOT NULL,
+	PRIMARY KEY (search_id, web_name, adress, product_name, price),
 	FOREIGN KEY (search_id) REFERENCES search (id)
             ON UPDATE CASCADE,
 	FOREIGN KEY (city_name) REFERENCES city (city_name)
