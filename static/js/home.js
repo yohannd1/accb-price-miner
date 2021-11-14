@@ -9,7 +9,7 @@ function move(val) {
 	i = 1;
 	var elem = document.getElementById("progress_bar");
 	width += val;
-	width = width.toFixed(2);
+	// width = width.toFixed(2);
 	var floor = Math.floor(width);
 	elem.style.width = width.toString() + "%";
 	elem.innerHTML = width.toString() + "%";
@@ -83,6 +83,74 @@ const custom_select = () => {
 	});
 
 }
+const custom_select_search = () => {
+
+	$('#pesquisa select').each(function () {
+
+		// Cache the number of options
+		var $this = $(this),
+			numberOfOptions = $(this).children('option').length;
+
+		// Hides the select element
+		$this.addClass('s-hidden');
+
+		// Wrap the select element in a div
+		$this.wrap('<div class="select"></div>');
+
+		// Insert a styled div to sit over the top of the hidden select element
+		$this.after('<div class="styledSelect z-depth-2"></div>');
+
+		// Cache the styled div
+		var $styledSelect = $this.next('div.styledSelect');
+
+		// Show the first select option in the styled div
+		$styledSelect.text($this.children('option').eq(0).text());
+
+		// Insert an unordered list after the styled div and also cache the list
+		var $list = $('<ul />', {
+			'class': 'options'
+		}).insertAfter($styledSelect);
+
+		// Insert a list item into the unordered list for each select option
+		for (var i = 0; i < numberOfOptions; i++) {
+			$('<li />', {
+				text: $this.children('option').eq(i).text(),
+				rel: $this.children('option').eq(i).val()
+			}).appendTo($list);
+		}
+
+		// Cache the list items
+		var $listItems = $list.children('li');
+
+		// Show the unordered list when the styled div is clicked (also hides it if the div is clicked again)
+		$styledSelect.click(function (e) {
+			e.stopPropagation();
+			$('div.styledSelect.active').each(function () {
+				$(this).removeClass('active').next('ul.options').hide();
+			});
+			$(this).toggleClass('active').next('ul.options').toggle();
+		});
+
+		// Hides the unordered list when a list item is clicked and updates the styled div to show the selected list item
+		// Updates the select element to have the value of the equivalent option
+		$listItems.click(function (e) {
+			e.stopPropagation();
+			$styledSelect.text($(this).text()).removeClass('active');
+			$this.val($(this).attr('rel'));
+			$list.hide();
+			// Materialize.toast($this.val());
+			list_search($this.val());
+		});
+
+		// Hides the unordered list when clicking outside of it
+		$(document).click(function () {
+			$styledSelect.removeClass('active');
+			$list.hide();
+		});
+
+	});
+
+}
 
 // Listagem de cidades
 
@@ -114,6 +182,75 @@ const list_estab = (city = undefined) => {
 						</div>
 					</div>
 				`).appendTo("#list-config").hide().slideDown("slow");
+			});
+		}
+
+	});
+
+
+}
+
+// Lista Pesquisas
+
+const list_search = (search_id = undefined) => {
+
+
+
+	$("#search-loader").show();
+
+	if (search_id == undefined)
+		search_id = $("#search-select").val();
+	else if (search_id == null) {
+		$(`
+			<tr class="no-result">
+				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+			</tr>
+		`).appendTo("#search-tbody").hide().slideDown("slow");
+		$("#search-loader").fadeOut(500);
+		return;
+	} else {
+		$(".no-result").remove();
+		$("#search-tbody tr").remove();
+	}
+
+	console.log(search_id);
+
+	$.get("/select_search_data", { search_id: search_id }, (response) => {
+
+		response = JSON.parse(response);
+		console.table(response);
+		$("#search-loader").fadeOut(500);
+		if (response.length == 0) {
+
+			$(`
+				<tr class="no-result">
+					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+				</tr>
+			`).appendTo("#search-tbody").hide().slideDown("slow");
+
+		} else {
+			// 4 = city , 5 = product , 6 = local, 7 = adress, 8 = price, 9 = keyword
+			response.map((value, index) => {
+				$(`
+					<tr>
+						<td>${value[4]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[6]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[7]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[9]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[5]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[8]}</td>
+					</tr>
+				`).appendTo("#search-tbody");
 			});
 		}
 
@@ -423,7 +560,9 @@ $(document).ready(function () {
 	$('.tooltipped').tooltip();
 	list_estab();
 	list_product();
+	list_search();
 	custom_select();
+	custom_select_search();
 
 	$("#pause").click(function (e) {
 
@@ -778,7 +917,7 @@ $(document).ready(function () {
 			// Materialize.toast('Pesquisa iniciada ...', 3000, 'rounded');
 			var estabs = $(".select-item-active");
 			var names = [];
-			var city = $(".select-item-active").attr("city");
+			// var city = $(".select-item-active").attr("city");
 
 			estabs.each(function (estab) {
 
@@ -920,5 +1059,65 @@ $(document).ready(function () {
 
 	});
 
+	// Search bar - Search
+
+	$('#search_bar').on("keyup", function (e) {
+		var row_len = $("#list-search table tr").length;
+
+		if (row_len == 0) {
+			return;
+		}
+
+		if (e.key === 'Enter' || e.keyCode === 13) {
+
+			var hide_len = 0;
+
+			var value = $('#search_bar').val().toUpperCase();
+			if (value == '') {
+				$("#list-search table tr").fadeIn();
+				$(".no-result").hide();
+				return;
+			}
+
+			$("#list-search table tr").each(function (index) {
+				if (index != 0) {
+
+					var id = $($(this).find("td")[1]).text().toUpperCase();
+					// console.log(`${id} == ${value}`);
+
+					if (id.includes(value)) {
+						$(this).fadeIn(200);
+					}
+					else {
+						$(this).fadeOut(200);
+						hide_len += 1;
+					}
+
+				}
+			});
+
+			if (hide_len + 1 == row_len) {
+				$(`
+					<tr class="no-result">
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+					</tr>
+				`).appendTo("#search-tbody").hide().slideDown("slow");
+			} else {
+				$(".no-result").fadeOut(500);
+			}
+
+		}
+	});
+
+	$("#search_check").one("click", (e) => {
+		e.preventDefault();
+		if ($("#search-select").val() == null)
+			alert("Realize uma pesquisa para utilizar essa função.");
+	});
 
 });

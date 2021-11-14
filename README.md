@@ -22,10 +22,11 @@
 - [x] Backup de Pesquisa
 - [x] Configuração de Estabelecimentos
 - [x] Configuração de Produtos
-- [ ] Listagem de Pesquisas
-- [ ] Melhoria de reconhecimento de produto
-- [ ] Limitar à somente uma aba de navegação
+- [x] Log de Produtos
+- [x] Melhoria de reconhecimento de produto
 - [ ] Transformar csv_to_xlsx em db_to_xlsx
+- [ ] Listagem de Pesquisas
+- [ ] Limitar à somente uma aba de navegação
 
 
 ## Informações de Desenvolvimento

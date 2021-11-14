@@ -16,6 +16,7 @@ import scrapper
 import pandas as pd
 import webbrowser
 from datetime import date
+import datetime
 from xlsxwriter.workbook import Workbook
 from openpyxl.styles import Border, Side, Alignment
 
@@ -26,10 +27,10 @@ Material(app)
 socketio = SocketIO(app)
 
 
-def xlsx_to_bd(db):
+def xlsx_to_bd(db, search_id):
 
     df = pd.read_excel("TODOS.xlsx", skiprows=0, index_col=0)
-    db.db_save_search(0)
+    db.db_save_search(1)
 
     for index, row in df.iterrows():
 
@@ -39,7 +40,7 @@ def xlsx_to_bd(db):
         try:
             db.db_save_search_item(
                 {
-                    "search_id": 1,
+                    "search_id": search_id,
                     "city_name": "Itabuna",
                     "web_name": local,
                     "adress": adress,
@@ -49,7 +50,6 @@ def xlsx_to_bd(db):
                 }
             )
         except:
-            print("Index: {} Repeated".format(index))
             pass
 
 
@@ -64,39 +64,49 @@ def log_error(err):
     return
 
 
-def bd_to_xlsx(self, file_name, city_name, folder_name):
+def bd_to_xlsx(db, search_id, estab_data, city):
 
-    df = pd.read_excel(file_name, skiprows=0, index_col=0)
-    estab_list = self.LOCALS
-    local = self.LOCALS_NAME
-    keywords = self.KEYWORDS
-    appended_data = []
+    print("BD TO XLSX")
+    today = date.today()
+    # day = today.strftime("%d-%m-%Y")
+    day = datetime.datetime.now()
+    day = "[{}-{}]  [{} {}]".format(day.day, day.month, day.hour, day.minute)
+    dic = "{} {}".format(city, day)
 
-    for index, (product, keyword) in enumerate(keywords):
+    folder_name = dic
 
-        keyword = keyword.split(" ")
-        appended_data.append(
-            df[df.apply(lambda r: all([kw in r[0] for kw in keyword]), axis=1)]
+    if not os.path.exists(dic):
+
+        os.makedirs(dic)
+
+    for city, name, adress, web_name in estab_data:
+
+        print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+        new_file = name
+        path = "{}\{}.xlsx".format(folder_name, new_file)
+        products = db.db_run_query(
+            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
+                search_id, web_name, adress
+            )
         )
 
-    df = pd.concat(appended_data)
-    df = df.sort_values(by=["KEYWORD", "PRECO"], ascending=[True, True])
-    df = df.reset_index(drop=True)
+        print("QUERY RESULTS:")
+        df = pd.DataFrame(
+            data=products,
+            columns=[
+                "PRODUTO",
+                "ESTABELECIMENTO",
+                "PALAVRA-CHAVE",
+                "ENDEREÇO",
+                "PREÇO",
+            ],
+        )
 
-    for index, (new_file, adress, estab, date) in enumerate(estab_list):
-
-        new_file = local[index]
-        print("Gerando Arquivo ... {}.xlsx , CIDADE : {}".format(new_file, city_name))
-
-        temp_df = df
-        path = "{}\{}.xlsx".format(folder_name, new_file)
-        print(estab.upper())
-        temp_df = temp_df[temp_df.ESTABELECIMENTO.str.match(estab.upper())]
-        temp_df = temp_df[temp_df.ENDERECO.str.contains(adress.upper())]
+        # df = df[df.ENDEREÇO.str.contains(adress.upper())]
 
         writer = pd.ExcelWriter(path, engine="openpyxl")
 
-        temp_df = temp_df.to_excel(
+        df = df.to_excel(
             writer, sheet_name="Pesquisa", index=False, startrow=0, startcol=1
         )
         border = Border(
@@ -158,6 +168,9 @@ def home():
 
     db = database.Database()
 
+    db.db_run_query("DELETE * FROM search WHERE id = 3")
+    sys.exit()
+
     search = db.db_get_search("search_date", str(date.today()))
     search_id = search[0][0] if len(search) != 0 else None
     search = False
@@ -165,6 +178,7 @@ def home():
 
     backup_info = db.db_get_backup(search_id)
     product_len = db.db_run_query("SELECT product_name FROM product")
+    search_info = db.db_get_search()
 
     if len(backup_info) != 0:
 
@@ -193,6 +207,7 @@ def home():
         products=product,
         active=active,
         product_len=len(product_len),
+        search_info=search_info,
     )
 
 
@@ -258,6 +273,21 @@ def select_product():
     products = db.db_get_product()
 
     return json.dumps([product for product in products])
+
+
+@app.route("/select_search_data")
+def select_search_data():
+
+    search_id = request.args.get("search_id")
+
+    db = database.Database()
+    search_data = db.db_run_query(
+        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = {} ORDER BY search_item.product_name, search_item.price ASC".format(
+            search_id
+        )
+    )
+
+    return json.dumps(search_data)
 
 
 @app.route("/update_product")
@@ -554,7 +584,8 @@ def handle_search(search_info):
             query = "DELETE * FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
 
-        search_id = db.db_save_search(0)
+        search_id = 2
+        # search_id = db.db_save_search(0)
         active = "0.0"
         city = search_info["city"]
         estab_names = json.loads(search_info["names"])
@@ -565,49 +596,54 @@ def handle_search(search_info):
             estab for estab in estabs if estab[0] == city and estab[1] in estab_names
         ]
 
-        scrap = scrapper.Scrap(
-            estab_data, city, estab_names, product, active, search_id, False
-        )
+        # scrap = scrapper.Scrap(
+        #     estab_data, city, estab_names, product, active, search_id, False
+        # )
 
-        db.db_save_backup(
-            {
-                "active": "0.0",
-                "city": city,
-                "done": 0,
-                "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
-                "product_info": json.dumps(product),
-                "search_id": search_id,
-            }
-        )
+        # db.db_save_backup(
+        #     {
+        #         "active": "0.0",
+        #         "city": city,
+        #         "done": 0,
+        #         "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
+        #         "product_info": json.dumps(product),
+        #         "search_id": search_id,
+        #     }
+        # )
 
     try:
 
-        scrap.run()
-        send(
-            {"type": "notification", "message": "Pesquisa concluida."},
-            broadcast=True,
-        )
-        send(
-            {"type": "done"},
-            broadcast=True,
-        )
-        bd_to_xlsx(search_id, estab_data, city)
+        # scrap.run()
+        # emit(
+        #     "captcha",
+        #     {"type": "notification", "message": "Pesquisa concluida."},
+        #     broadcast=True,
+        # )
+        # emit(
+        #     "captcha",
+        #     {"type": "progress", "done": 1},
+        #     broadcast=True,
+        # )
+
+        xlsx_to_bd(db, search_id)
+        bd_to_xlsx(db, search_id, estab_data, city)
 
     except:
 
-        send(
-            {"type": "error", "message": "Ocorreu um erro durante a pesquisa."},
+        emit(
+            "captcha",
+            {"type": "notification", "message": "Ocorreu um erro durante a pesquisa."},
             broadcast=True,
         )
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
 
-@socketio.on("quit")
-def handle_quit(quit_info):
+# @socketio.on("quit")
+# def handle_quit(quit_info):
 
-    print("quitting")
-    os._exit(0)
+#     print("quitting")
+#     os._exit(0)
 
 
 # Insere a função para ser chamada em todos os templates a qualquer momento
@@ -618,7 +654,7 @@ def utility_processor():
     def decode(text):
         return text.encode("utf8").decode("utf8")
 
-    return dict(enumerate=enumerate, decode=decode)
+    return dict(enumerate=enumerate, decode=decode, len=len)
 
 
 if __name__ == "__main__":

@@ -47,16 +47,22 @@
 					alt="ACCB Logo"
 				/>
 			</div>
-			<ul id="main-navigation" class="tabs">
-				<li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
-				<li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
-					Estabelecimentos</a></li>
-				<li class="tab col s3"><a class="disable  " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
-				<li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
-					Configurar</a></li>
-				<li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
-					Produtos</a></li>
-			</ul>
+			<div>
+				<p class="title">Ferramentas computacionais para a coleta de preços de itens da cesta básica do projeto ACCB</p>
+
+				<ul id="main-navigation" class="tabs" style="width: fit-content;">
+					<li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
+					<li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
+						Estabelecimentos</a></li>
+					<li class="tab col s3"><a class="disable  " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
+					<li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
+						Configurar</a></li>
+					<li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
+						Produtos</a></li>
+					<li class="tab col s3"></i><a href="#pesquisa" id="search_check"  id="config-product" class="tooltipped active" data-position="bottom" data-tooltip="Visualizar Pesquisas"> <i class="fa fa-database"> </i>
+						Pesquisas</a></li>
+				</ul>
+			</div>
 		</header>
 		<main class="main-content row z-depth-5">
 			<div id="pesquisar" class="tab">
@@ -64,7 +70,7 @@
 						<h5>Selecione um município para prosseguir com a pesquisa</h5>
 						<div class="select-wrapper-main">
 							{% for city in data %}
-								<a class="select-item city z-depth-2" id="C{{city[0]}}" >{{decode(city[0])}}</a>
+								<a class="select-item city z-depth-2" id="{{city[0]}}" >{{decode(city[0])}}</a>
 							{% endfor %}
 						</div>
 						<button id="select" class=" btn-large">Selecionar Estabelecimentos</button>
@@ -134,6 +140,45 @@
 					</div>
 					<div id="list-product">
 
+					</div>
+				</div>
+			</div>
+			<div id="pesquisa" class="col s12 tab" >
+				<div class="tab-content-search">
+					<div class="config-title" style="margin: 0;">
+						<div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa" >
+							<select id="search-select" class="browser-default">
+								{% if len(search_info) == 0 %}
+									<option value="null">Nenhuma Pesquisa</option>
+								{% endif %}
+								{% for search in search_info %}
+									<option value="{{search[0]}}">{{search[2]}}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<h5 style="width: 70%;">Listagem de Pesquisa</h5>
+						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
+					</div>
+					<div class="input-field ">
+						<input placeholder="Nome do Estabelecimento : dalnordes .." class="browser-default" id="search_bar">
+						<i class="fa fa-search errspan"></i>
+					</div>
+					<div id="list-search">
+							<table class="centered striped">
+								<thead>
+								<tr style="position:sticky; top: -3%; color: #fff;" class="primary_color">
+									<th>Cidade</th>
+									<th>Estabelecimento</th>
+									<th>Endereço</th>
+									<th>Palavra Chave</th>
+									<th>Produto</th>
+									<th>Preço</th>
+								</tr>
+								</thead>
+								<tbody id="search-tbody">
+								</tbody>
+							</table>
+						<i class="fa fa-spinner fa-pulse" id="search-loader"></i>
 					</div>
 				</div>
 			</div>

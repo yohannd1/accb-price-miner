@@ -47,6 +47,7 @@ class Database:
             self.db_start()
             conn = sqlite3.connect("accb.sqlite")
             conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute("PRAGMA case_sensitive_like = true")
             self.db_update_city({"city_name": "Ilhéus", "primary_key": "IlhÃ©us"})
 
         return conn
