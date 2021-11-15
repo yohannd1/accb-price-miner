@@ -170,27 +170,34 @@ def home():
 
     db = database.Database()
 
-    search = db.db_get_search("search_date", str(date.today()))
-    search_id = search[0][0] if len(search) != 0 else None
+    search_id = db.db_run_query(
+        "SELECT id FROM search WHERE done = 0 AND search_date = '{}'".format(
+            str(date.today())
+        )
+    )
     search = False
     active = "0.0"
+    try:
+        search_id = search_id[0]
 
-    backup_info = db.db_get_backup(search_id)
+        backup_info = db.db_get_backup(search_id)
+        if len(backup_info) != 0:
+
+            active, city, done, estab_info, product_info, search_id = backup_info[0]
+            estab_info = json.loads(estab_info)
+            estab_names = estab_info["names"]
+            estab_data = estab_info["info"]
+            product = json.loads(product_info)
+
+            if done == 0:
+
+                search = True
+
+    except:
+        pass
+
     product_len = db.db_run_query("SELECT product_name FROM product")
-    search_info = db.db_get_search()
-
-    if len(backup_info) != 0:
-
-        active, city, done, estab_info, product_info, search_id = backup_info[0]
-        print("active = {}".format(active))
-        estab_info = json.loads(estab_info)
-        estab_names = estab_info["names"]
-        estab_data = estab_info["info"]
-        product = json.loads(product_info)
-
-        if done == 0:
-
-            search = True
+    search_info = db.db_run_query("SELECT * FROM search WHERE done = 1")
 
     city = db.db_get_city()
     estab = db.db_get_estab()
@@ -281,7 +288,7 @@ def select_search_data():
 
     db = database.Database()
     search_data = db.db_run_query(
-        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = {} ORDER BY search_item.product_name, search_item.price ASC".format(
+        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = {} AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC".format(
             search_id
         )
     )
@@ -583,7 +590,7 @@ def handle_search(search_info):
             query = "DELETE * FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
 
-        # search_id = db.db_save_search(0)
+        search_id = db.db_save_search(0)
         active = "0.0"
         city = search_info["city"]
         estab_names = json.loads(search_info["names"])
@@ -594,34 +601,34 @@ def handle_search(search_info):
             estab for estab in estabs if estab[0] == city and estab[1] in estab_names
         ]
 
-        # scrap = scrapper.Scrap(
-        #     estab_data, city, estab_names, product, active, search_id, False
-        # )
+        scrap = scrapper.Scrap(
+            estab_data, city, estab_names, product, active, search_id, False
+        )
 
-        # db.db_save_backup(
-        #     {
-        #         "active": "0.0",
-        #         "city": city,
-        #         "done": 0,
-        #         "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
-        #         "product_info": json.dumps(product),
-        #         "search_id": search_id,
-        #     }
-        # )
+        db.db_save_backup(
+            {
+                "active": "0.0",
+                "city": city,
+                "done": 0,
+                "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
+                "product_info": json.dumps(product),
+                "search_id": search_id,
+            }
+        )
 
     try:
 
-        # scrap.run()
-        # emit(
-        #     "captcha",
-        #     {"type": "notification", "message": "Pesquisa concluida."},
-        #     broadcast=True,
-        # )
-        # emit(
-        #     "captcha",
-        #     {"type": "progress", "done": 1},
-        #     broadcast=True,
-        # )
+        scrap.run()
+        emit(
+            "captcha",
+            {"type": "notification", "message": "Pesquisa concluida."},
+            broadcast=True,
+        )
+        emit(
+            "captcha",
+            {"type": "progress", "done": 1},
+            broadcast=True,
+        )
         # search_id = xlsx_to_bd(db)
         bd_to_xlsx(db, search_id, estab_data, city)
 
@@ -651,7 +658,10 @@ def utility_processor():
     def decode(text):
         return text.encode("utf8").decode("utf8")
 
-    return dict(enumerate=enumerate, decode=decode, len=len)
+    def replace(text, char):
+        return text.replace(char, "")
+
+    return dict(enumerate=enumerate, decode=decode, len=len, replace=replace)
 
 
 if __name__ == "__main__":

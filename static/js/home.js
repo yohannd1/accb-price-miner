@@ -124,6 +124,7 @@ const custom_select = () => {
 	});
 
 }
+
 const custom_select_search = () => {
 
 	$('#pesquisa select').each(function () {
@@ -199,8 +200,10 @@ const list_estab = (city = undefined) => {
 
 	if (city == undefined)
 		city = $("city").attr('value');
-	else
+	else {
 		$(".estab-config").remove();
+		$("#no-result").hide();
+	}
 
 	$.get("/select_estab", { city: city }, (response) => {
 
@@ -208,9 +211,7 @@ const list_estab = (city = undefined) => {
 		ESTAB_DATA = response;
 		if (response.length == 0) {
 
-			$(`<div class="z-depth-3 estab-config" id="no-result" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal" rel="modal:open">
-			<p>Nenhum estabelecimento cadastrado, pressione para adicionar.</p>
-			</a></div>`).appendTo("#list-config").hide().slideDown();
+			$("#no-result").fadeIn(500);
 
 		} else {
 			response.map((value, index) => {
@@ -259,7 +260,7 @@ const list_search = (search_id = undefined) => {
 		$("#search-tbody tr").remove();
 	}
 
-	// console.log(search_id);
+	console.log(search_id);
 
 	$.get("/select_search_data", { search_id: search_id }, (response) => {
 
@@ -310,9 +311,7 @@ const list_product = () => {
 		PRODUCT_DATA = response;
 		if (response.length == 0) {
 
-			$(`<div class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
-			<p>Nenhum produto cadastrado, pressione para adicionar.</p>
-			</a></div>`).appendTo("#list-product").hide().slideDown();
+			$("#no-result-product").fadeIn(500);
 
 		} else {
 
@@ -458,7 +457,7 @@ const create_estab_element = (new_estab) => {
 
 	$("#list-config").prepend(element).hide().fadeIn(1000);
 
-	$("#no-result").fadeOut("500").remove();
+	$("#no-result").fadeOut("500");
 
 }
 
@@ -478,7 +477,7 @@ const create_product_element = (new_product) => {
 		`
 
 	$("#list-product").prepend(element).hide().fadeIn(1000);
-	$("#no-result-product").fadeOut("500").remove();
+	$("#no-result-product").fadeOut("500");
 
 }
 
@@ -928,14 +927,15 @@ $(document).ready(function () {
 	$('.city').click(function (e) {
 
 		let id = $(this).attr('id');
+		let value = $(this).attr('value');
 		$('.estab').removeClass("select-item-active");
 
 		if (city === undefined) {
-			city = id;
+			city = value;
 			$(`#${id}`).addClass('select-item-active');
 		} else {
 
-			if (city === id) {
+			if (city === value) {
 				$(`#${id}`).removeClass('select-item-active');
 				city = undefined;
 			} else {
@@ -1034,6 +1034,7 @@ $(document).ready(function () {
 		$("#config-product").addClass('enable');
 		$("#search").addClass('enable');
 		$("#config").addClass('enable');
+		$("#search_check").addClass('enable');
 
 		$(".estab").remove();
 	});
@@ -1049,11 +1050,12 @@ $(document).ready(function () {
 			$.get("/remove_estab", { estab_name: estab_name }, (response) => {
 
 				if (response.success) {
-					$(this).parent().parent().fadeOut(250, () => {
-						$(this).remove();
-					});
+					$(this).parent().parent().remove();
 					Materialize.toast(response.message, 2000, 'rounded');
-					console.log(response);
+					// console.log(response);
+					if ($(".estab-config .edit").length == 0) {
+						$("#no-result").fadeIn(500);
+					}
 					// window.location = window.location.origin + "#configurar";
 					// window.location.reload(true);
 
@@ -1080,11 +1082,12 @@ $(document).ready(function () {
 			$.get("/remove_product", { product_name: product_name }, (response) => {
 
 				if (response.success) {
-					$(this).parent().parent().fadeOut(250, () => {
-						$(this).remove();
-					});
+					$(this).parent().parent().remove();
 					Materialize.toast(response.message, 2000, 'rounded');
 					console.log(response);
+					if ($(".product-config .edit").length == 0) {
+						$("#no-result-product").fadeIn(500);
+					}
 					// window.location = window.location.origin + "#produtos";
 					// window.location.reload(true);
 
@@ -1105,6 +1108,9 @@ $(document).ready(function () {
 	$('#search_bar').on("keyup", function (e) {
 		var row_len = $("#list-search table tr").length;
 		var value = $('#search_bar').val().toUpperCase();
+
+		if ($("#search-select").val() == "null")
+			return
 
 		if (row_len == 0) {
 			return;
@@ -1183,12 +1189,14 @@ $(document).ready(function () {
 	});
 
 	$('#do_search').on("click", function (e) {
+
 		var row_len = $("#list-search table tr").length;
 		var value = $('#search_bar').val().toUpperCase();
+		if ($("#search-select").val() == "null")
+			return
 
-		if (row_len == 0) {
+		if (row_len == 0)
 			return;
-		}
 
 		if (value == '') {
 			$("#list-search table tr").fadeIn();
@@ -1259,7 +1267,7 @@ $(document).ready(function () {
 
 	$("#search_check").one("click", (e) => {
 		e.preventDefault();
-		if ($("#search-select").val() == null)
+		if ($("#search-select").val() == "null")
 			alert("Realize uma pesquisa para utilizar essa função.");
 	});
 

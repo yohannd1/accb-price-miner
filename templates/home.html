@@ -69,11 +69,20 @@
 					<div class="tab-content">
 						<h5>Selecione um município para prosseguir com a pesquisa</h5>
 						<div class="select-wrapper-main">
-							{% for city in data %}
-								<a class="select-item city z-depth-2" id="{{city[0]}}" >{{decode(city[0])}}</a>
-							{% endfor %}
+							{% if len(city) == 0 %}
+								<a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
+							{% else %}
+								{% for city in data %}
+									<a class="select-item city z-depth-2" value="city[0]" id="{{replace(city[0], ' ')}}" >{{decode(city[0])}}</a>
+								{% endfor %}
+							{% endif %}
 						</div>
-						<button id="select" class=" btn-large">Selecionar Estabelecimentos</button>
+						{% if len(city) == 0 %}
+							<button id="select" class="disable  btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
+
+						{% else %}
+							<button id="select" class="btn-large">Selecionar Estabelecimentos</button>
+						{% endif %}
 					</div>
 			</div>
 			<div id="listagem" class="col s12 tab">
@@ -128,6 +137,10 @@
 						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Estabelecimento" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
 					</div>
 					<div id="list-config">
+						<div style="display: none;" class="z-depth-3 estab-config-result" id="no-result" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal" rel="modal:open">
+							<p>Nenhum estabelecimento cadastrado, pressione para adicionar.</p>
+							</a>
+						</div>
 
 					</div>
 				</div>
@@ -139,6 +152,11 @@
 						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
 					</div>
 					<div id="list-product">
+
+						<div style="display: none;" class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
+							<p>Nenhum produto cadastrado, pressione para adicionar.</p>
+							</a>
+						</div>
 
 					</div>
 				</div>

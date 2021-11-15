@@ -333,6 +333,28 @@ main {
 	font-size: 1.1em;
 }
 
+.estab-config-result:hover{
+	background-color: #17527b;
+	cursor: pointer;
+}
+
+.estab-config-result{
+	text-transform: uppercase;
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
+	/* padding: .5em; */
+	align-items: center;
+	padding-left: 1em;
+	background-color: #0e3049;
+	color: white;
+	font-weight: bold;
+	border-radius: 10px;
+	margin-bottom: 1em;
+	transition: background .2s ease-in-out;
+	font-size: 1.1em;
+}
+
 .estab-config:hover{
 	background-color: #17527b;
 	cursor: pointer;
