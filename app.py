@@ -27,10 +27,10 @@ Material(app)
 socketio = SocketIO(app)
 
 
-def xlsx_to_bd(db, search_id):
+def xlsx_to_bd(db):
 
     df = pd.read_excel("TODOS.xlsx", skiprows=0, index_col=0)
-    db.db_save_search(1)
+    search_id = db.db_save_search(1)
 
     for index, row in df.iterrows():
 
@@ -51,6 +51,8 @@ def xlsx_to_bd(db, search_id):
             )
         except:
             pass
+
+    return search_id
 
 
 def log_error(err):
@@ -167,9 +169,6 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 def home():
 
     db = database.Database()
-
-    db.db_run_query("DELETE * FROM search WHERE id = 3")
-    sys.exit()
 
     search = db.db_get_search("search_date", str(date.today()))
     search_id = search[0][0] if len(search) != 0 else None
@@ -584,7 +583,6 @@ def handle_search(search_info):
             query = "DELETE * FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
 
-        search_id = 2
         # search_id = db.db_save_search(0)
         active = "0.0"
         city = search_info["city"]
@@ -624,8 +622,7 @@ def handle_search(search_info):
         #     {"type": "progress", "done": 1},
         #     broadcast=True,
         # )
-
-        xlsx_to_bd(db, search_id)
+        # search_id = xlsx_to_bd(db)
         bd_to_xlsx(db, search_id, estab_data, city)
 
     except:

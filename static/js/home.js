@@ -15,6 +15,47 @@ function move(val) {
 	elem.innerHTML = width.toString() + "%";
 }
 
+function similarity(s1, s2) {
+	var longer = s1;
+	var shorter = s2;
+	if (s1.length < s2.length) {
+		longer = s2;
+		shorter = s1;
+	}
+	var longerLength = longer.length;
+	if (longerLength == 0) {
+		return 1.0;
+	}
+	return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+}
+
+function editDistance(s1, s2) {
+	s1 = s1.toLowerCase();
+	s2 = s2.toLowerCase();
+
+	var costs = new Array();
+	for (var i = 0; i <= s1.length; i++) {
+		var lastValue = i;
+		for (var j = 0; j <= s2.length; j++) {
+			if (i == 0)
+				costs[j] = j;
+			else {
+				if (j > 0) {
+					var newValue = costs[j - 1];
+					if (s1.charAt(i - 1) != s2.charAt(j - 1))
+						newValue = Math.min(Math.min(newValue, lastValue),
+							costs[j]) + 1;
+					costs[j - 1] = lastValue;
+					lastValue = newValue;
+				}
+			}
+		}
+		if (i > 0)
+			costs[s2.length] = lastValue;
+	}
+	return costs[s2.length];
+}
+
 const custom_select = () => {
 
 	$('.config-menu select').each(function () {
@@ -218,12 +259,12 @@ const list_search = (search_id = undefined) => {
 		$("#search-tbody tr").remove();
 	}
 
-	console.log(search_id);
+	// console.log(search_id);
 
 	$.get("/select_search_data", { search_id: search_id }, (response) => {
 
 		response = JSON.parse(response);
-		console.table(response);
+		// console.table(response);
 		$("#search-loader").fadeOut(500);
 		if (response.length == 0) {
 
@@ -248,7 +289,7 @@ const list_search = (search_id = undefined) => {
 						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[7]}</td>
 						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[9]}</td>
 						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[5]}</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[8]}</td>
+						<td>${value[8]}</td>
 					</tr>
 				`).appendTo("#search-tbody");
 			});
@@ -1063,55 +1104,157 @@ $(document).ready(function () {
 
 	$('#search_bar').on("keyup", function (e) {
 		var row_len = $("#list-search table tr").length;
+		var value = $('#search_bar').val().toUpperCase();
 
 		if (row_len == 0) {
 			return;
+		}
+
+		if (e.key === 'Backspace' || e.keyCode === 8) {
+
+			if (value == '') {
+				$("#list-search table tr").fadeIn();
+				$(".no-result").hide();
+				$("#list-search table tr").css("background", "transparent");
+				$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
+				return;
+			}
 		}
 
 		if (e.key === 'Enter' || e.keyCode === 13) {
 
 			var hide_len = 0;
 
-			var value = $('#search_bar').val().toUpperCase();
 			if (value == '') {
 				$("#list-search table tr").fadeIn();
 				$(".no-result").hide();
+				$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
 				return;
 			}
 
+			$("#list-search table tr").css("background", "transparent");
+
+			var odd = true;
 			$("#list-search table tr").each(function (index) {
+
 				if (index != 0) {
+					var found = false;
 
-					var id = $($(this).find("td")[1]).text().toUpperCase();
-					// console.log(`${id} == ${value}`);
+					$(this).find("td").each(function (index) {
 
-					if (id.includes(value)) {
-						$(this).fadeIn(200);
+						var id = $(this).text().toUpperCase();
+
+						if (id.includes(value) || similarity(id, value) >= 0.6) {
+							// console.log(`${index} ${id} == ${value}`);
+							found = true;
+							return false;
+						}
+						else {
+							// console.log(`${index} ${id} == ${value}`);
+							found = false;
+						}
+
+					});
+
+					if (found) {
+						$(this).show();
+						if (odd) {
+							odd = !odd;
+							$(this).css("background", "rgba(242, 242, 242, 0.5)");
+						} else {
+							odd = !odd;
+						}
 					}
 					else {
-						$(this).fadeOut(200);
+						$(this).hide();
 						hide_len += 1;
 					}
-
 				}
 			});
 
+
 			if (hide_len + 1 == row_len) {
-				$(`
-					<tr class="no-result">
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-					</tr>
-				`).appendTo("#search-tbody").hide().slideDown("slow");
+				$(".no-result").fadeIn(500);
 			} else {
 				$(".no-result").fadeOut(500);
 			}
 
 		}
+	});
+
+	$('#do_search').on("click", function (e) {
+		var row_len = $("#list-search table tr").length;
+		var value = $('#search_bar').val().toUpperCase();
+
+		if (row_len == 0) {
+			return;
+		}
+
+		if (value == '') {
+			$("#list-search table tr").fadeIn();
+			$(".no-result").hide();
+			$("#list-search table tr").css("background", "transparent");
+			$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
+			return;
+		}
+
+
+		var hide_len = 0;
+
+		if (value == '') {
+			$("#list-search table tr").fadeIn();
+			$(".no-result").hide();
+			$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
+			return;
+		}
+
+		$("#list-search table tr").css("background", "transparent");
+
+		var odd = true;
+		$("#list-search table tr").each(function (index) {
+
+			if (index != 0) {
+				var found = false;
+
+				$(this).find("td").each(function (index) {
+
+					var id = $(this).text().toUpperCase();
+
+					if (id.includes(value) || similarity(id, value) >= 0.6) {
+						// console.log(`${index} ${id} == ${value}`);
+						found = true;
+						return false;
+					}
+					else {
+						// console.log(`${index} ${id} == ${value}`);
+						found = false;
+					}
+
+				});
+
+				if (found) {
+					$(this).show();
+					if (odd) {
+						odd = !odd;
+						$(this).css("background", "rgba(242, 242, 242, 0.5)");
+					} else {
+						odd = !odd;
+					}
+				}
+				else {
+					$(this).hide();
+					hide_len += 1;
+				}
+			}
+		});
+
+
+		if (hide_len + 1 == row_len) {
+			$(".no-result").fadeIn(500);
+		} else {
+			$(".no-result").fadeOut(500);
+		}
+
 	});
 
 	$("#search_check").one("click", (e) => {

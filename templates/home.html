@@ -160,8 +160,8 @@
 						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
 					</div>
 					<div class="input-field ">
-						<input placeholder="Nome do Estabelecimento : dalnordes .." class="browser-default" id="search_bar">
-						<i class="fa fa-search errspan"></i>
+						<input placeholder="Nome do Estabelecimento : dalnordes .." class="browser-default z-depth-2" id="search_bar">
+						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
 					</div>
 					<div id="list-search">
 							<table class="centered striped">
@@ -176,6 +176,14 @@
 								</tr>
 								</thead>
 								<tbody id="search-tbody">
+									<tr class="no-result" style="display: none;">
+										<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+										<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+										<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+										<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+										<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+										<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+									</tr>
 								</tbody>
 							</table>
 						<i class="fa fa-spinner fa-pulse" id="search-loader"></i>
