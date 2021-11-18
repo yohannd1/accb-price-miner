@@ -332,6 +332,41 @@ class Database:
 
         return values
 
+    # KEYWORD
+
+    # CREATE TABLE keyword (
+    # id INTEGER,
+    # product_name text,
+    # keyword varchar,
+    # rate decimal,
+    # similarity decimal,
+    # PRIMARY KEY(id),
+    # FOREIGN KEY (product_name) REFERENCES product (product_name) ON UPDATE CASCADE
+    # );
+
+    def db_update_keyword(self, keyword):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+        sql_query = """UPDATE keyword SET keyword="{}", rate={}, similarity={} WHERE id = {} """.format(
+            keyword["keyword"], keyword["rate"], keyword["similarity"]
+        )
+        cursor = cursor.execute(sql_query)
+        self.conn.commit()
+        self.db_end_conn()
+
+    def db_save_keyword(self, keyword):
+
+        self.conn = self.db_connection()
+        cursor = self.conn.cursor()
+
+        sql_query = """INSERT INTO keyword(product_name, keyword, rate, similarity) VALUES(?,?,?,?)"""
+        cursor = cursor.execute(
+            sql_query, (keyword["keyword"], keyword["rate"], keyword["similarity"])
+        )
+        self.conn.commit()
+        self.db_end_conn()
+
     def db_end_conn(self):
 
         if self.conn:

@@ -26,10 +26,10 @@ function similarity(s1, s2) {
 	if (longerLength == 0) {
 		return 1.0;
 	}
-	return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+	return (longerLength - distance(longer, shorter)) / parseFloat(longerLength);
 }
 
-function editDistance(s1, s2) {
+function distance(s1, s2) {
 	s1 = s1.toLowerCase();
 	s2 = s2.toLowerCase();
 
@@ -113,6 +113,12 @@ const custom_select = () => {
 			$list.hide();
 			// Materialize.toast($this.val());
 			list_estab($this.val());
+			$('#city_name-save').val($this.val()).change();
+			$('#city-edit-select').val($this.val()).change();
+			$('#city-delete-select').val($this.val()).change();
+			$('#city-delete-select').formSelect();
+			$('#city-edit-select').formSelect();
+			$('#city_name-save').formSelect();
 		});
 
 		// Hides the unordered list when clicking outside of it
@@ -604,6 +610,61 @@ $(document).ready(function () {
 	custom_select();
 	custom_select_search();
 
+	// M.AutoInit();
+	// M.Carousel.init({
+	// 	indicators: true,
+	// });
+
+	$('.carousel.carousel-slider').carousel({
+		fullWidth: true,
+		// indicators: true,
+	});
+
+	var carousel = jQuery('.carousel');
+	carousel.carousel({
+		fullWidth: true,
+		// indicators: true,
+		duration: 300,
+		onCycleTo: function ($current_item, dragged) {
+			// stopAutoplay();
+			// startAutoplay(carousel);
+		}
+	});
+
+	// $(".carousel-item").on("mousedown", function (e) {
+
+	// 	stopAutoplay();
+
+	// });
+
+	// $(".carousel-item").on("mouseup", function (e) {
+
+	// 	startAutoplay();
+
+	// });
+
+	$("#next").click(() => {
+		$(".carousel").carousel("next");
+	});
+	$("#prev").click(() => {
+		$(".carousel").carousel("prev");
+	});
+
+	// var autoplay_id;
+	// function startAutoplay($carousel, interval = 5000) {
+	// 	autoplay_id = setInterval(function () {
+	// 		$carousel.carousel('next');
+	// 	}, interval); // every 5 seconds
+	// 	// console.log("starting autoplay");
+	// }
+
+	// function stopAutoplay() {
+	// 	if (autoplay_id) {
+	// 		clearInterval(autoplay_id);
+	// 		// console.log("stoping autoplay");
+	// 	}
+	// }
+
 	$("#pause").click(function (e) {
 
 		e.preventDefault();
@@ -905,9 +966,6 @@ $(document).ready(function () {
 
 	$('body').on('click', 'a.estab', function (e) {
 
-		$('.city').removeClass("select-item-active")
-		city = undefined;
-
 		let id = $(this).attr('id');
 
 		if ($(`#${id}`).hasClass('select-item-active')) {
@@ -956,9 +1014,12 @@ $(document).ready(function () {
 			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
 		} else {
 			// Materialize.toast('Pesquisa iniciada ...', 3000, 'rounded');
+			var local_city = $($(".select-item-active")[0]).attr("value");
+			$('.city').removeClass("select-item-active")
+			city = undefined;
+
 			var estabs = $(".select-item-active");
 			var names = [];
-			// var city = $(".select-item-active").attr("city");
 
 			estabs.each(function (estab) {
 
@@ -966,8 +1027,13 @@ $(document).ready(function () {
 
 			});
 
-			socket.emit('search', { names: JSON.stringify(names), city: city, backup: 0 });
+			var form_data = { names: JSON.stringify(names), city: local_city, backup: 0 };
+			console.table(form_data);
+
+
+			socket.emit('search', form_data);
 			$('ul.tabs').tabs('select', 'progress');
+
 		}
 
 	});
@@ -1029,6 +1095,10 @@ $(document).ready(function () {
 	// Voltar da seleção
 
 	$("#back").click(() => {
+
+		$('.city').removeClass("select-item-active")
+		city = undefined;
+
 		$('ul.tabs').tabs('select', 'pesquisar');
 
 		$("#config-product").addClass('enable');
@@ -1270,5 +1340,24 @@ $(document).ready(function () {
 		if ($("#search-select").val() == "null")
 			alert("Realize uma pesquisa para utilizar essa função.");
 	});
+
+	$(".tabs a").click(function (e) {
+
+		// if ($(this).attr("id") == "sobre") {
+
+		// 	$("main").css("background", "transparent");
+		// 	$("main h5").css("background", "#f1f1f1f1");
+		// 	$("main h5").css("color", "#17527b");
+
+		// } else {
+
+		// 	$("main").css("background", "rgba(255,255,255,.54)")
+		// 	$("main h5").css("background", "#17527b");
+		// 	$("main h5").css("color", "#f1f1f1f1");
+
+		// }
+
+	});
+
 
 });

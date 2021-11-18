@@ -27,9 +27,19 @@ Material(app)
 socketio = SocketIO(app)
 
 
+def get_keywords(db):
+
+    keywords = db.db_run_query("SELECT keywords FROM product")
+    # Gera uma lista de lista de keywords
+    keywords = [keyword[0].split(",") for keyword in keywords]
+    # Flatten the list
+    keywords = [keyword for sublist in keywords for keyword in sublist]
+    print(keywords)
+
+
 def xlsx_to_bd(db):
 
-    df = pd.read_excel("TODOS.xlsx", skiprows=0, index_col=0)
+    df = pd.read_excel("keywords.xlsx", skiprows=0, index_col=0)
     search_id = db.db_save_search(1)
 
     for index, row in df.iterrows():
@@ -68,7 +78,6 @@ def log_error(err):
 
 def bd_to_xlsx(db, search_id, estab_data, city):
 
-    print("BD TO XLSX")
     today = date.today()
     # day = today.strftime("%d-%m-%Y")
     day = datetime.datetime.now()
@@ -169,6 +178,9 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 def home():
 
     db = database.Database()
+
+    # get_keywords(db)
+    # sys.exit()
 
     search_id = db.db_run_query(
         "SELECT id FROM search WHERE done = 0 AND search_date = '{}'".format(
@@ -668,5 +680,5 @@ if __name__ == "__main__":
 
     # app.run(debug=True)
     url = "http://127.0.0.1:5000"
-    # webbrowser.open(url)
-    socketio.run(app, debug=True)
+    webbrowser.open(url)
+    socketio.run(app, debug=False)

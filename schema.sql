@@ -48,6 +48,17 @@ CREATE TABLE product (
 	PRIMARY KEY(product_name)
 );
 
+CREATE TABLE keyword (
+	id INTEGER,
+	product_name text,
+	keyword varchar,
+	rate decimal,
+	similarity decimal,
+	valid boolean,
+	PRIMARY KEY(id),
+	FOREIGN KEY (product_name) REFERENCES product (product_name) ON UPDATE CASCADE
+);
+
 CREATE TABLE estab (
 	city_name text,
 	estab_name text,

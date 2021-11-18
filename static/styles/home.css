@@ -5,7 +5,7 @@
 }
 
 .title{
-	font-size:x-large;
+	font-size:xx-large;
 	color: #f1f1f1;
 }
 
@@ -120,7 +120,7 @@ h5{
 	text-align: center;
 	margin: 0 auto;
 	font-weight: bold;
-	color: #fff !important;
+	color: #fff;
 	background-color: #17527b ;
 }
 
@@ -131,6 +131,7 @@ main {
 	padding: 2.5em 1em;
 	margin-top: 1em;
 	text-align: center !important;
+	transition: background .5s ease-in-out;
 }
 
 .top-logo {
@@ -496,6 +497,33 @@ main {
 
 /* Search Item Scroll - Table */
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+	-webkit-text-fill-color: #f1f1f1  !important;
+	transition: background-color 5000s ease-in-out 0s;
+	-webkit-box-shadow: 0 0 0 30px transparent inset !important;
+	box-shadow: 0 0 0 30px transparent inset !important;
+	background-color: transparent !important;
+}
+
+.modal input:-webkit-autofill{
+	-webkit-text-fill-color: #f1f1f1  !important;
+	transition: background-color 5000s ease-in-out 0s;
+	-webkit-box-shadow: 0 0 0 30px transparent inset !important;
+	box-shadow: 0 0 0 30px transparent inset !important;
+	background-color: transparent !important;
+}
+
+.jquery-modal input:-webkit-autofill{
+	-webkit-text-fill-color: #f1f1f1  !important;
+	transition: background-color 5000s ease-in-out 0s;
+	-webkit-box-shadow: 0 0 0 30px transparent inset !important;
+	box-shadow: 0 0 0 30px transparent inset !important;
+	background-color: transparent !important;
+}
+
 .tab-content-search{
 	height: 100%;
 	margin: 0 auto;
@@ -530,11 +558,11 @@ td, th {
 #search_bar{
 	border: none;
 	border-radius: 10px;
-	background-color:#17527b;
+	background-color:#17527b !important;
 	padding: 1em;
 	height: 0%;
 	padding-left: 1em;
-	color: #f1f1f1;
+	color: #f1f1f1 !important;
 	width: 89%;
 	box-shadow: none !important;
 	margin: 0;
@@ -544,6 +572,40 @@ td, th {
 #search_bar:focus{
 	border: none !important;
 	box-shadow: none !important;
+}
+
+/* About - Carousel */
+.carousel {
+	max-height: 50% !important;
+	height: 30em !important;
+}
+
+
+.carousel-item{
+	min-height: auto !important;
+	width: 100%;
+	align-items: center;
+    display: flex;
+    z-index: 0;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0px) translateX(0px) translateX(0px) translateZ(0px);
+    background: transparent;
+}
+
+.carousel-item .right{
+	width: 50%;
+	margin: 0 auto;
+}
+
+.carousel img {
+	height: 60% !important;
+	width: 40% !important;
+    margin: 0 auto;
+}
+
+.carousel-item{
+	padding: 0 6em;
 }
 
 /* ScrollBar */

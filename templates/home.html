@@ -27,7 +27,7 @@
 				href="{{ url_for('static',filename='styles/modal.css') }}"
 			/>
 			<link rel="icon" href="{{ url_for('static',filename='icon/cart.svg') }}">
-			<title>ACCB - Pesquisa Automática</title>
+			<title>PH - Coleta Semi-Automática</title>
 		{% endblock %}
 	</head>
 	{% block content %}
@@ -48,7 +48,7 @@
 				/>
 			</div>
 			<div>
-				<p class="title">Ferramentas computacionais para a coleta de preços de itens da cesta básica do projeto ACCB</p>
+				<p class="title"><i class="fa fa-shopping-cart"> </i> Preço da Hora Bahia - Coleta Semi-Automática </p>
 
 				<ul id="main-navigation" class="tabs" style="width: fit-content;">
 					<li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
@@ -59,8 +59,11 @@
 						Configurar</a></li>
 					<li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
 						Produtos</a></li>
-					<li class="tab col s3"></i><a href="#pesquisa" id="search_check"  id="config-product" class="tooltipped active" data-position="bottom" data-tooltip="Visualizar Pesquisas"> <i class="fa fa-database"> </i>
+					<li class="tab col s3"></i><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar Pesquisas"> <i class="fa fa-database"> </i>
 						Pesquisas</a></li>
+					<!-- SOBRE -->
+					<li class="tab col s3"></i><a href="#about" id="sobre" class="tooltipped active" data-position="left" data-tooltip="Sobre o Programa"> <i class="fa fa-info-circle"> </i>
+						Sobre</a></li>
 				</ul>
 			</div>
 		</header>
@@ -73,7 +76,7 @@
 								<a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
 							{% else %}
 								{% for city in data %}
-									<a class="select-item city z-depth-2" value="city[0]" id="{{replace(city[0], ' ')}}" >{{decode(city[0])}}</a>
+									<a class="select-item city z-depth-2" value="{{city[0]}}" id="{{replace(city[0], ' ')}}" >{{decode(city[0])}}</a>
 								{% endfor %}
 							{% endif %}
 						</div>
@@ -153,14 +156,15 @@
 					</div>
 					<div id="list-product">
 
-						<div style="display: none;" class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
+						<div style="display: none;" class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;">
+							<a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
 							<p>Nenhum produto cadastrado, pressione para adicionar.</p>
 							</a>
 						</div>
-
 					</div>
 				</div>
 			</div>
+
 			<div id="pesquisa" class="col s12 tab" >
 				<div class="tab-content-search">
 					<div class="config-title" style="margin: 0;">
@@ -207,6 +211,36 @@
 						<i class="fa fa-spinner fa-pulse" id="search-loader"></i>
 					</div>
 				</div>
+			</div>
+			<div id="about" class="col s12 tab" >
+				<div class="tab-content-config">
+					<div class="config-title">
+						<h5>Sobre o Programa</h5>
+					</div>
+					<div>
+						<div class="carousel carousel-slider center" style="height: 100%;">
+							<a id="prev" class="white-text left" onclick="" style="z-index: 999; position: absolute; left: 4%; top: 50%; cursor:pointer;"><i class="fa fa-arrow-left fa-lg"></i></a>
+							<a id="next" class="white-text right" onclick="" style="z-index: 999; position: absolute; right: 4%; top: 50%; cursor:pointer;"><i class="fa fa-arrow-right fa-lg"></i></a>
+							<div class="carousel-item white-text" href="#one!">
+								<img class="responsive-img left" src="{{url_for('static', filename='img/browser.svg')}}">
+								<div class="right" style="display: flex; flex-direction: column; justify-content: center;  height: 70%;">
+									<p class="white-text">Este programa realiza um processo de Scrapping na plataforma do Preço da Hora - Bahia e armazena os dados coletados em um banco local para futuro acesso. Após tal pesquisa é possível gerar uma coleção de arquivos excel com filtros costumizáveis pelo usuário para análises futuras.</p>
+								</div>
+							</div>
+							<div class="carousel-item white-text" href="#one!">
+								<img class="responsive-img left" src="{{url_for('static', filename='img/organization.svg')}}">
+								<div class="right" style="display: flex; flex-direction: column; justify-content: center;  height: 70%;">
+									<p class="white-text">A plataforma foi desenvolvida em python com a ferramenta Flask, para servir como servidor básico para ferramenta Web. </p>
+								</div>
+							</div>
+							<div class="carousel-item white-text" href="#one!">
+								<img class="responsive-img left" src="{{url_for('static', filename='img/ph_background.svg')}}">
+								<div class="right" style="display: flex; flex-direction: column; justify-content: center;  height: 70%;">
+									<p class="white-text">Este programa realiza um processo de Scrapping na plataforma do Preço da Hora - Bahia e armazena os dados coletados em um banco local para futuro acesso. Após tal pesquisa é possível gerar uma coleção de arquivos excel com filtros costumizáveis pelo usuário para análises futuras.</p>
+								</div>
+							</div>
+						</div>
+					</div>
 			</div>
 		</main>
 
