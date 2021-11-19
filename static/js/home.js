@@ -613,12 +613,12 @@ $(document).ready(function () {
 	custom_select();
 	custom_select_search();
 
-	// M.AutoInit();
+	M.AutoInit();
 
-	// $('.carousel.carousel-slider').carousel({
-	// 	fullWidth: true,
-	// 	// indicators: true,
-	// });
+	$('.carousel.carousel-slider').carousel({
+		fullWidth: true,
+		// indicators: true,
+	});
 
 	var carousel = jQuery('.carousel');
 	carousel.carousel({
@@ -1422,7 +1422,7 @@ $(document).ready(function () {
 				if (response["status"] == "success") {
 					console.log(response);
 					$('.estab').removeClass("select-item-active");
-					Materialize.toast(`Arquivos gerados com sucesso no diretório ${response.dic}.`, 2000, 'rounded');
+					Materialize.toast(`Arquivos gerados com sucesso no diretório ${response.dic}.`, 15000, 'rounded');
 					// new Notification("ACCB - Pesquisa Automática", {
 					// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
 					// });

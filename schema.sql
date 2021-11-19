@@ -16,7 +16,7 @@ CREATE TABLE search (
 	city_name text,
 	search_date text,
 	PRIMARY KEY(id),
-	FOREIGN KEY (city_name) REFERENCES city (city_name) ON UPDATE CASCADE
+	FOREIGN KEY (city_name) REFERENCES city (city_name) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE search_item (

@@ -330,18 +330,22 @@ class Scrap:
         csvfile = ""
 
         chrome_options = Options()
-        # DISABLES DEVTOOLS LISTENING ON
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-features=NetworkService")
-        chrome_options.add_argument("--window-size=1920x1080")
-        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+        # # DISABLES DEVTOOLS LISTENING ON
+        # chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--no-sandbox")
+        # chrome_options.add_argument("--disable-dev-shm-usage")
+        # chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--disable-features=NetworkService")
+        # chrome_options.add_argument("--window-size=1920x1080")
+        # chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+        print("aki")
         driver = webdriver.Chrome(
-            executable_path=ChromeDriverManager().install(), options=chrome_options
+            executable_path=ChromeDriverManager().install(),
+            options=chrome_options,
         )
         # driver.set_window_position(-10000, 0)
+
+        return
 
         self.driver = driver
 

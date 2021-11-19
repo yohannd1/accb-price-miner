@@ -18,6 +18,7 @@ import webbrowser
 from datetime import date
 import datetime
 from xlsxwriter.workbook import Workbook
+import subprocess
 from openpyxl.styles import Border, Side, Alignment
 
 
@@ -25,6 +26,24 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
 Material(app)
 socketio = SocketIO(app)
+
+# ERRO DE PRODUTO, CASO NÃO EXISTA PRODUTO, NÃO DEIXA PASSAR DA PRIMEIRA ETAPA DE PESQUISA, ATÉ O FILTRO DA PAGINA DE PESQUISAS
+
+# POP UP QUANDO INICIAR A PESQUISA, NOTIFICAR QUE SE FECHAR A PESQUISA SERÁ PARADA.
+
+# METODO PARA PARAR PESQUISA
+
+# QUANDO EPSQUISA MANUALMENTE, VC TEM QUE DE FATO RESOLVER O CAPTCHA
+
+
+def process_exists(process_name):
+    call = "TASKLIST", "/FI", "imagename eq %s" % process_name
+    # use buildin check_output right away
+    output = subprocess.check_output(call).decode("latin-1")
+    # check in last line for process name
+    last_line = output.strip().split("\r\n")[-1]
+    # because Fail message could be translated
+    return last_line.lower().startswith(process_name.lower())
 
 
 def get_keywords(db):
@@ -608,7 +627,7 @@ def bd_to_xlsx_route():
 
         # day = today.strftime("%d-%m-%Y")
         day = datetime.datetime.now()
-        day = "[{}-{}]  [{} {}]".format(day.day, day.month, day.hour, day.minute)
+        day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
         dic = "{} {}".format(city, day)
 
         folder_name = dic
@@ -776,18 +795,18 @@ def handle_search(search_info):
     try:
 
         scrap.run()
-        emit(
-            "captcha",
-            {"type": "notification", "message": "Pesquisa concluida."},
-            broadcast=True,
-        )
-        emit(
-            "captcha",
-            {"type": "progress", "done": 1},
-            broadcast=True,
-        )
+        # emit(
+        #     "captcha",
+        #     {"type": "notification", "message": "Pesquisa concluida."},
+        #     broadcast=True,
+        # )
+        # emit(
+        #     "captcha",
+        #     {"type": "progress", "done": 1},
+        #     broadcast=True,
+        # )
         # search_id = xlsx_to_bd(db, search_info["city"])
-        bd_to_xlsx(db, search_id, estab_data, city)
+        # bd_to_xlsx(db, search_id, estab_data, city)
 
     except:
 
@@ -801,17 +820,16 @@ def handle_search(search_info):
 
 
 # @socketio.on("quit")
-# def handle_quit(quit_info):
+# def handle_quit():
 
 #     print("quitting")
 #     os._exit(0)
 
 
-# Insere a função para ser chamada em todos os templates a qualquer momento
-
-
 @app.context_processor
 def utility_processor():
+    """Insere a função para ser chamada em todos os templates a qualquer momento"""
+
     def decode(text):
         return text.encode("utf8").decode("utf8")
 
@@ -823,7 +841,25 @@ def utility_processor():
 
 if __name__ == "__main__":
 
-    # app.run(debug=True)
+    config_name = "ACCB.cfg"
     url = "http://127.0.0.1:5000"
-    webbrowser.open(url)
-    socketio.run(app, debug=False)
+
+    # determine if application is a script file or frozen exe
+    if getattr(sys, "frozen", False):
+        application_path = os.path.dirname(sys.executable)
+        config_path = os.path.join(application_path, config_name)
+        if not process_exists("ACCB.exe"):
+            socketio.run(app, debug=False)
+            webbrowser.open(url)
+        else:
+            webbrowser.open(url)
+    elif __file__:
+        application_path = os.path.dirname(__file__)
+        config_path = os.path.join(application_path, config_name)
+        if not process_exists("ACCB.exe"):
+            socketio.run(app, debug=True)
+            webbrowser.open(url)
+        else:
+            webbrowser.open(url)
+
+    # app.run(debug=True)
