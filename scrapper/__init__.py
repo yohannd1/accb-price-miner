@@ -192,10 +192,10 @@ class Scrap:
                 )
             )
             try:
+                # "city_name": self.CITY,
                 self.db.db_save_search_item(
                     {
                         "search_id": self.ID,
-                        "city_name": self.CITY,
                         "web_name": product_local,
                         "adress": product_adress,
                         "product_name": product_name,

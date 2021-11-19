@@ -74,16 +74,17 @@ class Database:
         self.conn.commit()
         self.db_end_conn()
 
-    def db_save_search(self, done):
+    def db_save_search(self, done, city_name):
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
 
-        sql_query = """INSERT INTO search(done, search_date) VALUES(?,?)"""
+        sql_query = """INSERT INTO search(done, city_name,search_date) VALUES(?,?,?)"""
         cursor = cursor.execute(
             sql_query,
             (
                 done,
+                city_name,
                 str(date.today()),
             ),
         )
@@ -134,12 +135,11 @@ class Database:
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
 
-        sql_query = """INSERT INTO search_item(search_id, city_name, product_name, web_name,adress, price, keyword) VALUES(?,?,?,?,?,?,?)"""
+        sql_query = """INSERT INTO search_item(search_id, product_name, web_name,adress, price, keyword) VALUES(?,?,?,?,?,?)"""
         cursor = cursor.execute(
             sql_query,
             (
                 search_item["search_id"],
-                search_item["city_name"],
                 search_item["product_name"],
                 search_item["web_name"],
                 search_item["adress"],

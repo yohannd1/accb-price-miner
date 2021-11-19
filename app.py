@@ -37,10 +37,10 @@ def get_keywords(db):
     print(keywords)
 
 
-def xlsx_to_bd(db):
+def xlsx_to_bd(db, city_name):
 
-    df = pd.read_excel("keywords.xlsx", skiprows=0, index_col=0)
-    search_id = db.db_save_search(1)
+    df = pd.read_excel("TODOS.xlsx", skiprows=0, index_col=0)
+    search_id = db.db_save_search(1, city_name)
 
     for index, row in df.iterrows():
 
@@ -51,7 +51,6 @@ def xlsx_to_bd(db):
             db.db_save_search_item(
                 {
                     "search_id": search_id,
-                    "city_name": "Itabuna",
                     "web_name": local,
                     "adress": adress,
                     "product_name": name,
@@ -204,7 +203,6 @@ def home():
             if done == 0:
 
                 search = True
-
     except:
         pass
 
@@ -297,6 +295,7 @@ def select_product():
 def select_search_data():
 
     search_id = request.args.get("search_id")
+    # print(search_id)
 
     db = database.Database()
     search_data = db.db_run_query(
@@ -304,6 +303,8 @@ def select_search_data():
             search_id
         )
     )
+
+    # print(search_data)
 
     return json.dumps(search_data)
 
@@ -561,6 +562,150 @@ def delete_city():
         }
 
 
+# Gerando Arquivos
+
+
+@app.route("/delete_search")
+def delete_search():
+
+    try:
+
+        db = database.Database()
+        search_id = request.args.get("search_id")
+
+        db.db_delete("search", "id", search_id)
+        # products = db.db_run_query(
+        #     "SELECT* WHERE search_id = {} ORDER BY price ASC".format(search_id)
+        # )
+
+        # print(products)
+        return {"status": "success", "message": "Pesquisa deletada com sucesso."}
+
+    except:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+        return {
+            "status": "error",
+            "message": "Ocorreu um erro durante a deleção da pesquisa, mais detalhes no arquivo err.log.",
+        }
+
+
+@app.route("/generate_file")
+def bd_to_xlsx_route():
+
+    db = database.Database()
+
+    try:
+        city = request.args.get("city_name")
+        estab_names = json.loads(request.args.get("names"))
+        estabs = db.db_get_estab()
+        product = db.db_get_product()
+        search_id = request.args.get("search_id")
+
+        estab_data = [
+            estab for estab in estabs if estab[0] == city and estab[1] in estab_names
+        ]
+
+        # day = today.strftime("%d-%m-%Y")
+        day = datetime.datetime.now()
+        day = "[{}-{}]  [{} {}]".format(day.day, day.month, day.hour, day.minute)
+        dic = "{} {}".format(city, day)
+
+        folder_name = dic
+
+        if not os.path.exists(dic):
+
+            os.makedirs(dic)
+
+        for city, name, adress, web_name in estab_data:
+
+            print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+            new_file = name
+            path = "{}\{}.xlsx".format(folder_name, new_file)
+            products = db.db_run_query(
+                "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
+                    search_id, web_name, adress
+                )
+            )
+
+            df = pd.DataFrame(
+                data=products,
+                columns=[
+                    "PRODUTO",
+                    "ESTABELECIMENTO",
+                    "PALAVRA-CHAVE",
+                    "ENDEREÇO",
+                    "PREÇO",
+                ],
+            )
+
+            # df = df[df.ENDEREÇO.str.contains(adress.upper())]
+
+            writer = pd.ExcelWriter(path, engine="openpyxl")
+
+            df = df.to_excel(
+                writer, sheet_name="Pesquisa", index=False, startrow=0, startcol=1
+            )
+            border = Border(
+                left=Side(border_style="thin", color="FF000000"),
+                right=Side(border_style="thin", color="FF000000"),
+                top=Side(border_style="thin", color="FF000000"),
+                bottom=Side(border_style="thin", color="FF000000"),
+                diagonal=Side(border_style="thin", color="FF000000"),
+                diagonal_direction=0,
+                outline=Side(border_style="thin", color="FF000000"),
+                vertical=Side(border_style="thin", color="FF000000"),
+                horizontal=Side(border_style="thin", color="FF000000"),
+            )
+
+            workbook = writer.book["Pesquisa"]
+            worksheet = workbook
+            for cell in worksheet["B"]:
+
+                cell.border = border
+                cell.alignment = Alignment(horizontal="center")
+
+            for cell in worksheet["C"]:
+
+                cell.border = border
+                cell.alignment = Alignment(horizontal="center")
+
+            for cell in worksheet["D"]:
+
+                cell.border = border
+                cell.alignment = Alignment(horizontal="center")
+
+            for cell in worksheet["E"]:
+
+                cell.border = border
+                cell.alignment = Alignment(horizontal="center")
+
+            for cell in worksheet["F"]:
+
+                cell.border = border
+                cell.alignment = Alignment(horizontal="center")
+
+            for col in worksheet.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = (max_length + 2) * 1.2
+                worksheet.column_dimensions[column].width = adjusted_width
+
+            writer.save()
+        return {"status": "success", "dic": dic}
+
+    except:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+        return {"status": "error"}
+
+
 # SocketIO
 
 # Inicia pesquisa
@@ -602,7 +747,7 @@ def handle_search(search_info):
             query = "DELETE * FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
 
-        search_id = db.db_save_search(0)
+        search_id = db.db_save_search(0, search_info["city"])
         active = "0.0"
         city = search_info["city"]
         estab_names = json.loads(search_info["names"])
@@ -641,7 +786,7 @@ def handle_search(search_info):
             {"type": "progress", "done": 1},
             broadcast=True,
         )
-        # search_id = xlsx_to_bd(db)
+        # search_id = xlsx_to_bd(db, search_info["city"])
         bd_to_xlsx(db, search_id, estab_data, city)
 
     except:

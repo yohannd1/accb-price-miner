@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(['app.py'],
-             pathex=['D:\\Uesc\\Scrapper\\web\\ACCB\\Lib\\flask_material\\templates\\material', 'D:\\Uesc\\Scrapper\\web\\ACCB'],
+             pathex=['D:\\Uesc\\Scrapper\\web\\ACCB', 'D:\\Uesc\\Scrapper\\web\\ACCB\\Lib\\flask_material\\templates\\material'],
              binaries=[],
              datas=[('templates', 'templates'), ('static', 'static'), ('schema.sql', '.')],
              hiddenimports=['engineio.async_drivers.eventlet', 'flask_material'],

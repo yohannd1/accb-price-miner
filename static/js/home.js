@@ -242,31 +242,30 @@ const list_estab = (city = undefined) => {
 
 const list_search = (search_id = undefined) => {
 
-
-
 	$("#search-loader").show();
 
 	if (search_id == undefined)
 		search_id = $("#search-select").val();
 	else if (search_id == null) {
-		$(`
-			<tr class="no-result">
-				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-				<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-			</tr>
-		`).appendTo("#search-tbody").hide().slideDown("slow");
+		// $(`
+		// 	<tr class="no-result">
+		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+		// 	</tr>
+		// `).appendTo("#search-tbody").hide().slideDown("slow");
+		$(".no-result").fadeIn(500);
 		$("#search-loader").fadeOut(500);
 		return;
 	} else {
-		$(".no-result").remove();
-		$("#search-tbody tr").remove();
+		$(".no-result").hide();
+		// $("#search-tbody tr").remove();
 	}
 
-	console.log(search_id);
+	// console.log(search_id);
 
 	$.get("/select_search_data", { search_id: search_id }, (response) => {
 
@@ -275,23 +274,25 @@ const list_search = (search_id = undefined) => {
 		$("#search-loader").fadeOut(500);
 		if (response.length == 0) {
 
-			$(`
-				<tr class="no-result">
-					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-					<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-				</tr>
-			`).appendTo("#search-tbody").hide().slideDown("slow");
+			// $(`
+			// 	<tr class="no-result">
+			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
+			// 	</tr>
+			// `).appendTo("#search-tbody").hide().slideDown("slow");
+			$(".no-result").show();
+
 
 		} else {
 			// 4 = city , 5 = product , 6 = local, 7 = adress, 8 = price, 9 = keyword
 			response.map((value, index) => {
 				$(`
-					<tr>
-						<td>${value[4]}</td>
+					<tr class="tr-item">
+						<td>${value[2]}</td>
 						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[6]}</td>
 						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[7]}</td>
 						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[9]}</td>
@@ -601,6 +602,8 @@ $(document).ready(function () {
 
 	});
 
+	$('.modal').modal();
+
 	var city = undefined;
 	$("select").formSelect();
 	$('.tooltipped').tooltip();
@@ -611,14 +614,11 @@ $(document).ready(function () {
 	custom_select_search();
 
 	// M.AutoInit();
-	// M.Carousel.init({
-	// 	indicators: true,
-	// });
 
-	$('.carousel.carousel-slider').carousel({
-		fullWidth: true,
-		// indicators: true,
-	});
+	// $('.carousel.carousel-slider').carousel({
+	// 	fullWidth: true,
+	// 	// indicators: true,
+	// });
 
 	var carousel = jQuery('.carousel');
 	carousel.carousel({
@@ -646,6 +646,7 @@ $(document).ready(function () {
 	$("#next").click(() => {
 		$(".carousel").carousel("next");
 	});
+
 	$("#prev").click(() => {
 		$(".carousel").carousel("prev");
 	});
@@ -986,7 +987,7 @@ $(document).ready(function () {
 
 		let id = $(this).attr('id');
 		let value = $(this).attr('value');
-		$('.estab').removeClass("select-item-active");
+		$('.estab').removeClass("select-item-active"); ''
 
 		if (city === undefined) {
 			city = value;
@@ -1092,6 +1093,16 @@ $(document).ready(function () {
 
 	});
 
+	$("#select-all-file").click(() => {
+
+		if (!$('.estab').hasClass("select-item-active")) {
+			$(`.estab`).addClass('select-item-active');
+		} else {
+			$(`.estab`).removeClass('select-item-active');
+		}
+
+	});
+
 	// Voltar da seleção
 
 	$("#back").click(() => {
@@ -1176,6 +1187,8 @@ $(document).ready(function () {
 	// Search bar - Search
 
 	$('#search_bar').on("keyup", function (e) {
+		e.preventDefault();
+		e.stopPropagation();
 		var row_len = $("#list-search table tr").length;
 		var value = $('#search_bar').val().toUpperCase();
 
@@ -1187,11 +1200,12 @@ $(document).ready(function () {
 		}
 
 		if (e.key === 'Backspace' || e.keyCode === 8) {
-
 			if (value == '') {
-				$("#list-search table tr").fadeIn();
-				$(".no-result").hide();
-				$("#list-search table tr").css("background", "transparent");
+				if ($(".tr-item").is(":hidden"))
+					$(".tr-item").fadeIn();
+				if ($(".no-result").is(":visible"))
+					$(".no-result").hide();
+				$(".tr-item").css("background", "transparent");
 				$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
 				return;
 			}
@@ -1199,60 +1213,61 @@ $(document).ready(function () {
 
 		if (e.key === 'Enter' || e.keyCode === 13) {
 
+			console.log('enter', row_len, value);
 			var hide_len = 0;
 
 			if (value == '') {
-				$("#list-search table tr").fadeIn();
-				$(".no-result").hide();
+				if ($(".tr-item").is(":hidden"))
+					$(".tr-item").fadeIn();
+				if ($(".no-result").is(":visible"))
+					$(".no-result").hide();
+				$(".tr-item").css("background", "transparent");
 				$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
 				return;
 			}
 
-			$("#list-search table tr").css("background", "transparent");
+			$(".tr-item").css("background", "transparent");
 
 			var odd = true;
-			$("#list-search table tr").each(function (index) {
+			$(".tr-item").each(function (index) {
 
-				if (index != 0) {
-					var found = false;
+				var found = false;
 
-					$(this).find("td").each(function (index) {
+				$(this).find("td").each(function (index) {
 
-						var id = $(this).text().toUpperCase();
+					var id = $(this).text().toUpperCase();
 
-						if (id.includes(value) || similarity(id, value) >= 0.6) {
-							// console.log(`${index} ${id} == ${value}`);
-							found = true;
-							return false;
-						}
-						else {
-							// console.log(`${index} ${id} == ${value}`);
-							found = false;
-						}
-
-					});
-
-					if (found) {
-						$(this).show();
-						if (odd) {
-							odd = !odd;
-							$(this).css("background", "rgba(242, 242, 242, 0.5)");
-						} else {
-							odd = !odd;
-						}
+					if (id.includes(value) || similarity(id, value) >= 0.6) {
+						console.log(`${index} ${id} == ${value}`);
+						found = true;
+						return false;
 					}
 					else {
-						$(this).hide();
-						hide_len += 1;
+						// console.log(`${index} ${id} == ${value}`);
+						found = false;
 					}
+
+				});
+
+				if (found) {
+					$(this).show();
+					if (odd) {
+						odd = !odd;
+					} else {
+						$(this).css("background", "rgba(242, 242, 242, 0.5)");
+						odd = !odd;
+					}
+				}
+				else {
+					$(this).hide();
+					hide_len += 1;
 				}
 			});
 
-
-			if (hide_len + 1 == row_len) {
-				$(".no-result").fadeIn(500);
+			if (hide_len + 1 == row_len - 1) {
+				$(".no-result").show();
 			} else {
-				$(".no-result").fadeOut(500);
+				$(".no-result").hide();
 			}
 
 		}
@@ -1269,22 +1284,16 @@ $(document).ready(function () {
 			return;
 
 		if (value == '') {
-			$("#list-search table tr").fadeIn();
-			$(".no-result").hide();
-			$("#list-search table tr").css("background", "transparent");
+			if ($(".tr-item").is(":hidden"))
+				$(".tr-item").fadeIn();
+			if ($(".no-result").is(":visible"))
+				$(".no-result").hide();
+			$(".tr-item").css("background", "transparent");
 			$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
 			return;
 		}
-
 
 		var hide_len = 0;
-
-		if (value == '') {
-			$("#list-search table tr").fadeIn();
-			$(".no-result").hide();
-			$("table.striped > tbody > tr:nth-child(odd)").css("background", "rgba(242, 242, 242, 0.5)");
-			return;
-		}
 
 		$("#list-search table tr").css("background", "transparent");
 
@@ -1328,9 +1337,9 @@ $(document).ready(function () {
 
 
 		if (hide_len + 1 == row_len) {
-			$(".no-result").fadeIn(500);
+			$(".no-result").show();
 		} else {
-			$(".no-result").fadeOut(500);
+			$(".no-result").hide();
 		}
 
 	});
@@ -1341,23 +1350,121 @@ $(document).ready(function () {
 			alert("Realize uma pesquisa para utilizar essa função.");
 	});
 
-	$(".tabs a").click(function (e) {
+	$("#open-search-file").on("click", (e) => {
 
-		// if ($(this).attr("id") == "sobre") {
+		e.preventDefault();
+		e.stopPropagation();
+		$(".estab").remove();
 
-		// 	$("main").css("background", "transparent");
-		// 	$("main h5").css("background", "#f1f1f1f1");
-		// 	$("main h5").css("color", "#17527b");
+		var search_value = $("#search-select").val();
 
-		// } else {
+		if (search_value == "null") {
+			alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
+			return;
+		}
 
-		// 	$("main").css("background", "rgba(255,255,255,.54)")
-		// 	$("main h5").css("background", "#17527b");
-		// 	$("main h5").css("color", "#f1f1f1f1");
+		var city_name = $("#search-select option:selected").attr("city");
+		console.log();
 
-		// }
+		$.get("/select_estab", { city: city_name }, (response) => {
+
+			response = JSON.parse(response);
+			if (response.length == 0) {
+
+				$("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
+				alert("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração e tente novamente.");
+
+				$("#generate-file").addClass("disabled");
+
+			} else {
+
+
+				$("#generate-file").addClass("enabled");
+				response.map((value, index) => {
+					$("#file-list").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="F${index}" >${value[1]}</a>`).hide().fadeIn(200 * index))
+				});
+
+				$("#loader").fadeOut();
+
+				$("#search-file").modal({
+					fadeDuration: 200,
+				});
+
+			}
+
+		});
+
 
 	});
 
+	$("#generate-file").on('click', () => {
+
+		var city_name = $("#search-select option:selected").attr("city");
+
+		if (!$('.estab').hasClass("select-item-active")) {
+			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
+		} else {
+
+			var estabs = $(".select-item-active");
+			var names = [];
+
+			estabs.each(function (estab) {
+
+				names.push($(this).attr("value"));
+
+			});
+
+			var search_id = $("#search-select").val();
+			// console.table(form_data);
+			// socket.emit('search', form_data);
+			$.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id }, (response) => {
+
+				if (response["status"] == "success") {
+					console.log(response);
+					$('.estab').removeClass("select-item-active");
+					Materialize.toast(`Arquivos gerados com sucesso no diretório ${response.dic}.`, 2000, 'rounded');
+					// new Notification("ACCB - Pesquisa Automática", {
+					// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
+					// });
+				} else {
+					console.log(response);
+				}
+
+			});
+
+		}
+
+	});
+
+	$("#remove-search").on("click", () => {
+
+		var search_id = $("#search-select").val();
+		var search_info = $("#search-select  option:selected").html();
+
+		if (search_id == "null") {
+			alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
+			return;
+		}
+
+		if (window.confirm(`Realmente deseja remover a pesquisa ${search_info}`)) {
+
+			$.get("/delete_search", { search_id: search_id }, (response) => {
+
+				if (response["status"] == "success") {
+
+					alert(response["message"]);
+					Materialize.toast(response["message"], 2000, 'rounded');
+					window.location = window.location.origin + "#pesquisa";
+					window.location.reload(true);
+
+				} else {
+					Materialize.toast(response["message"], 2000, 'rounded');
+				}
+
+			});
+		}
+
+	});
 
 });
+
