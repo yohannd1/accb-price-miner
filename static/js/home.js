@@ -1166,7 +1166,7 @@ $(document).ready(function () {
 					$(this).parent().parent().remove();
 					Materialize.toast(response.message, 2000, 'rounded');
 					console.log(response);
-					if ($(".product-config .edit").length == 0) {
+					if ($(".product-config .edit-product").length == 0) {
 						$("#no-result-product").fadeIn(500);
 					}
 					// window.location = window.location.origin + "#produtos";
