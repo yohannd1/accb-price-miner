@@ -27,12 +27,6 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 import webbrowser
 from threading import Event
-
-try:
-    from win10toast import ToastNotifier
-except ImportError:
-    pass
-
 from flask_socketio import SocketIO, send, emit
 
 
@@ -331,21 +325,18 @@ class Scrap:
 
         chrome_options = Options()
         # # DISABLES DEVTOOLS LISTENING ON
-        # chrome_options.add_argument("--headless")
-        # chrome_options.add_argument("--no-sandbox")
-        # chrome_options.add_argument("--disable-dev-shm-usage")
-        # chrome_options.add_argument("--disable-gpu")
-        # chrome_options.add_argument("--disable-features=NetworkService")
-        # chrome_options.add_argument("--window-size=1920x1080")
-        # chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-        print("aki")
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--disable-features=NetworkService")
+        chrome_options.add_argument("--window-size=1920x1080")
+        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
         driver = webdriver.Chrome(
             executable_path=ChromeDriverManager().install(),
             options=chrome_options,
         )
         # driver.set_window_position(-10000, 0)
-
-        return
 
         self.driver = driver
 

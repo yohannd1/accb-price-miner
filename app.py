@@ -33,7 +33,15 @@ socketio = SocketIO(app)
 
 # METODO PARA PARAR PESQUISA
 
-# QUANDO EPSQUISA MANUALMENTE, VC TEM QUE DE FATO RESOLVER O CAPTCHA
+# QUANDO PESSQUISA MANUALMENTE, VC TEM QUE DE FATO RESOLVER O CAPTCHA
+
+
+def is_port_in_use(port):
+
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("localhost", port)) == 0
 
 
 def process_exists(process_name):
@@ -99,7 +107,7 @@ def bd_to_xlsx(db, search_id, estab_data, city):
     today = date.today()
     # day = today.strftime("%d-%m-%Y")
     day = datetime.datetime.now()
-    day = "[{}-{}]  [{} {}]".format(day.day, day.month, day.hour, day.minute)
+    day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
     dic = "{} {}".format(city, day)
 
     folder_name = dic
@@ -110,16 +118,20 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 
     for city, name, adress, web_name in estab_data:
 
-        print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+        # print("Geran do Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
         new_file = name
-        path = "{}\{}.xlsx".format(folder_name, new_file)
+        if os.name == "nt":
+            path = "{}\{}.xlsx".format(folder_name, new_file)
+        else:
+            path = "{}/{}.xlsx".format(folder_name, new_file)
+
         products = db.db_run_query(
             "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
                 search_id, web_name, adress
             )
         )
 
-        print("QUERY RESULTS:")
+        # print("QUERY RESULTS:")
         df = pd.DataFrame(
             data=products,
             columns=[
@@ -132,12 +144,17 @@ def bd_to_xlsx(db, search_id, estab_data, city):
         )
 
         # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-
         writer = pd.ExcelWriter(path, engine="openpyxl")
 
         df = df.to_excel(
-            writer, sheet_name="Pesquisa", index=False, startrow=0, startcol=1
+            writer,
+            sheet_name="Pesquisa",
+            index=False,
+            startrow=0,
+            startcol=1,
+            engine="openpyxl",
         )
+
         border = Border(
             left=Side(border_style="thin", color="FF000000"),
             right=Side(border_style="thin", color="FF000000"),
@@ -638,15 +655,20 @@ def bd_to_xlsx_route():
 
         for city, name, adress, web_name in estab_data:
 
-            print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+            # print("Geran do Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
             new_file = name
-            path = "{}\{}.xlsx".format(folder_name, new_file)
+            if os.name == "nt":
+                path = "{}\{}.xlsx".format(folder_name, new_file)
+            else:
+                path = "{}/{}.xlsx".format(folder_name, new_file)
+
             products = db.db_run_query(
                 "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
                     search_id, web_name, adress
                 )
             )
 
+            # print("QUERY RESULTS:")
             df = pd.DataFrame(
                 data=products,
                 columns=[
@@ -659,12 +681,17 @@ def bd_to_xlsx_route():
             )
 
             # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-
             writer = pd.ExcelWriter(path, engine="openpyxl")
 
             df = df.to_excel(
-                writer, sheet_name="Pesquisa", index=False, startrow=0, startcol=1
+                writer,
+                sheet_name="Pesquisa",
+                index=False,
+                startrow=0,
+                startcol=1,
+                engine="openpyxl",
             )
+
             border = Border(
                 left=Side(border_style="thin", color="FF000000"),
                 right=Side(border_style="thin", color="FF000000"),
@@ -717,6 +744,7 @@ def bd_to_xlsx_route():
                 worksheet.column_dimensions[column].width = adjusted_width
 
             writer.save()
+
         return {"status": "success", "dic": dic}
 
     except:
@@ -795,18 +823,18 @@ def handle_search(search_info):
     try:
 
         scrap.run()
-        # emit(
-        #     "captcha",
-        #     {"type": "notification", "message": "Pesquisa concluida."},
-        #     broadcast=True,
-        # )
-        # emit(
-        #     "captcha",
-        #     {"type": "progress", "done": 1},
-        #     broadcast=True,
-        # )
+        emit(
+            "captcha",
+            {"type": "notification", "message": "Pesquisa concluida."},
+            broadcast=True,
+        )
+        emit(
+            "captcha",
+            {"type": "progress", "done": 1},
+            broadcast=True,
+        )
         # search_id = xlsx_to_bd(db, search_info["city"])
-        # bd_to_xlsx(db, search_id, estab_data, city)
+        bd_to_xlsx(db, search_id, estab_data, city)
 
     except:
 
@@ -848,18 +876,33 @@ if __name__ == "__main__":
     if getattr(sys, "frozen", False):
         application_path = os.path.dirname(sys.executable)
         config_path = os.path.join(application_path, config_name)
-        if not process_exists("ACCB.exe"):
-            socketio.run(app, debug=False)
-            webbrowser.open(url)
+        if os.name == "nt":
+            if not process_exists("ACCB.exe"):
+                webbrowser.open(url)
+                socketio.run(app, debug=False)
+            else:
+                webbrowser.open(url)
         else:
-            webbrowser.open(url)
+            if not is_port_in_use(5000):
+                webbrowser.open(url)
+                socketio.run(app, debug=True)
+            else:
+                webbrowser.open(url)
+
     elif __file__:
         application_path = os.path.dirname(__file__)
         config_path = os.path.join(application_path, config_name)
-        if not process_exists("ACCB.exe"):
-            socketio.run(app, debug=True)
-            webbrowser.open(url)
+        if os.name == "nt":
+            if not process_exists("ACCB.exe"):
+                webbrowser.open(url)
+                socketio.run(app, debug=True)
+            else:
+                webbrowser.open(url)
         else:
-            webbrowser.open(url)
+            if not is_port_in_use(5000):
+                webbrowser.open(url)
+                socketio.run(app, debug=True)
+            else:
+                webbrowser.open(url)
 
     # app.run(debug=True)
