@@ -85,21 +85,7 @@ INSERT INTO product VALUES ("ACUCAR CRISTAL","ACUCAR CRISTAL,ACUCAR CRISTAL 1KG"
 ("TOMATE KG","TOMATE KG");
 
 
-INSERT INTO estab VALUES ("Itabuna","Atacadao Rondelli","AVENIDA JOSE SOARES PINHEIRO 2700","RONDELLI COMERCIO E TRANSPORTE LTDA"),
-("Itabuna","Bom de Preco","RUA BARAO DO RIO BRANCO 203","BOM DE PRECO"),
-("Itabuna","Bom Preco","AVENIDA AZIZ MARON S/N", "BOMPRECO"),
-("Itabuna","Compre Aqui - Canal","PRACA DOS CAPUCHINHOS 238","SUPERMERCADOS COMPRE AQUI"),
-("Itabuna","Compre Aqui","AVENIDA AMELIA AMADO 358","SUPERMERCADOS COMPRE AQUI"),
-("Itabuna","Mercado Mattos","RUA C 390","MERCADO MATOS"),
-("Itabuna","Mercado Dois Imaos","AVENIDA BIONOR REBOUÇAS BRANDÃO 368","MERCADO IRMÃOS"),
-("Itabuna","Maxx Atacado","RODOVIA ITABUNA - ILHEUS, KM 2, BR 415 S/N","MAXXI"),
-("Itabuna","Novo Barateiro","RUA GETULIO VARGAS 116","NOVO BARATEIRO"),
-("Itabuna","Supermercado Meira","AVENIDA JURACY MAGALHAES 426","SUPERMERCADOS DALNORDES"),
-("Itabuna","Supermercado Barateiro","RUA JOSE BONIFACIO 226","ITAO"),
-("Itabuna","Supermercado Itao - Centro","AVENIDA AMELIA AMADO 296","ITAO SUPERMERCADOS IMPORTACOES E EXPORTACOES S/A"),
-("Itabuna","Supermercado Itao - S.C","AVENIDA PRINCESA ISABEL 775","HIPER ITAO"),
-("Ilhéus","Alana Hipermercado","Rua Santos Dumont 40","Alana Hipermercado"),
-("Ilhéus","Atacadao","Rodovia jorge Amado S/n","Atacadao"),
+INSERT INTO estab VALUES ("Ilhéus","Atacadao","Rodovia jorge Amado S/n","Atacadao"),
 ("Ilhéus","Cestao da Economia","Avenida Lotus 24","NAO POSSUI"),
 ("Ilhéus","Itao Supermercado","Avenida Petrobrás S/n","Supermercados Itao"),
 ("Ilhéus","Jaciana Supermercado","Rua Coronel Pessoa 51","Mercado Jaciana"),
@@ -112,3 +98,5 @@ INSERT INTO estab VALUES ("Itabuna","Atacadao Rondelli","AVENIDA JOSE SOARES PIN
 ("Ilhéus","Supermercado Meira - Vilela","Avenida Governador Paulo Souto  865","Supermercado Meira"),
 ("Ilhéus","Supermercado Meira - N. Costa","Rua Jacaranda 250","Dalnorde Supermercados"),
 ("Ilhéus","Supermercado Mangostao","Avenida Lindolfo Collor 101","Supermercado Mangostao LTDA");
+
+

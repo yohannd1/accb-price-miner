@@ -9,6 +9,7 @@ import subprocess
 from datetime import date
 import os
 from os import path
+import json
 
 
 class Database:
@@ -49,6 +50,16 @@ class Database:
             conn.execute("PRAGMA foreign_keys = ON")
             conn.execute("PRAGMA case_sensitive_like = true")
             self.db_update_city({"city_name": "Ilhéus", "primary_key": "IlhÃ©us"})
+            # Salvar Itabuna.json no exe e usar MEIAS.PATH
+            # itabuna_path = self.resource_path("itabuna.json")
+            # with open(itabuna_path, "r", encoding="utf-8") as f:
+            with open("itabuna.json", "r", encoding="utf-8") as f:
+
+                estab_info = json.load(f)
+
+                for estab in estab_info:
+
+                    self.db_save_estab(estab)
 
         return conn
 

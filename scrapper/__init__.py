@@ -25,6 +25,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
 import webbrowser
 from threading import Event
 from flask_socketio import SocketIO, send, emit
@@ -318,10 +319,6 @@ class Scrap:
         URL = "https://precodahora.ba.gov.br/produtos"
         self.url = URL
         times = 4
-        start_prod = 0
-        start_key = 0
-        restart = True
-        csvfile = ""
 
         chrome_options = Options()
         # # DISABLES DEVTOOLS LISTENING ON
@@ -332,10 +329,12 @@ class Scrap:
         chrome_options.add_argument("--disable-features=NetworkService")
         chrome_options.add_argument("--window-size=1920x1080")
         chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-        driver = webdriver.Chrome(
-            executable_path=ChromeDriverManager().install(),
-            options=chrome_options,
-        )
+        os.environ["WDM_LOCAL"] = "1"
+
+        manager = ChromeDriverManager(log_level=0).install()
+        service = Service(manager)
+        driver = webdriver.Chrome(service=service, chrome_options=chrome_options)
+
         # driver.set_window_position(-10000, 0)
 
         self.driver = driver
@@ -359,20 +358,20 @@ class Scrap:
             # print("Pop Up Error")
             pass
 
-            # # * Processo de pesquisa de produto
+        # * Processo de pesquisa de produto
 
-            # time.sleep(times)
+        # time.sleep(times)
 
-            # * Processo para definir a região desejada para ser realizada a pesquisa
+        # * Processo para definir a região desejada para ser realizada a pesquisa
 
-            # emit(
-            #     "captcha",
-            #     {
-            #         "type": "notification",
-            #         "message": "Pesquisando Localização",
-            #     },
-            #     broadcast=True,
-            # )
+        # emit(
+        #     "captcha",
+        #     {
+        #         "type": "notification",
+        #         "message": "Pesquisando Localização",
+        #     },
+        #     broadcast=True,
+        # )
 
         # Botão que abre o modal referente a localização
         try:

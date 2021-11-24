@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, render_template, request, g
-from engineio.async_drivers import gevent
 from flask_material import Material
 from flask_socketio import SocketIO, send, emit
 import time
@@ -142,6 +141,10 @@ def bd_to_xlsx(db, search_id, estab_data, city):
                 "PREÇO",
             ],
         )
+
+        # Filtra por endereço
+        pattern = "|".join(adress.upper().split(" "))
+        df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
 
         # df = df[df.ENDEREÇO.str.contains(adress.upper())]
         writer = pd.ExcelWriter(path, engine="openpyxl")
@@ -794,7 +797,7 @@ def handle_search(search_info):
             query = "DELETE * FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
 
-        search_id = db.db_save_search(0, search_info["city"])
+        # search_id = db.db_save_search(0, search_info["city"])
         active = "0.0"
         city = search_info["city"]
         estab_names = json.loads(search_info["names"])
@@ -805,35 +808,42 @@ def handle_search(search_info):
             estab for estab in estabs if estab[0] == city and estab[1] in estab_names
         ]
 
-        scrap = scrapper.Scrap(
-            estab_data, city, estab_names, product, active, search_id, False
-        )
+        # scrap = scrapper.Scrap(
+        #     estab_data, city, estab_names, product, active, search_id, False
+        # )
 
-        db.db_save_backup(
-            {
-                "active": "0.0",
-                "city": city,
-                "done": 0,
-                "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
-                "product_info": json.dumps(product),
-                "search_id": search_id,
-            }
-        )
+        # db.db_save_backup(
+        #     {
+        #         "active": "0.0",
+        #         "city": city,
+        #         "done": 0,
+        #         "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
+        #         "product_info": json.dumps(product),
+        #         "search_id": search_id,
+        #     }
+        # )
 
     try:
 
-        scrap.run()
-        emit(
-            "captcha",
-            {"type": "notification", "message": "Pesquisa concluida."},
-            broadcast=True,
-        )
-        emit(
-            "captcha",
-            {"type": "progress", "done": 1},
-            broadcast=True,
-        )
-        # search_id = xlsx_to_bd(db, search_info["city"])
+        # scrap.run()
+        # emit(
+        #     "captcha",
+        #     {"type": "notification", "message": "Pesquisa concluida."},
+        #     broadcast=True,
+        # )
+        # emit(
+        #     "captcha",
+        #     {"type": "progress", "done": 1},
+        #     broadcast=True,
+        # )
+        search_id = xlsx_to_bd(db, search_info["city"])
+        with open("data.json", "w+", encoding="utf-8") as f:
+            json.dump(
+                {"search_id": search_id, "estab_data": estab_data, "city": city},
+                f,
+                ensure_ascii=False,
+                indent=4,
+            )
         bd_to_xlsx(db, search_id, estab_data, city)
 
     except:

@@ -561,7 +561,7 @@ $(document).ready(function () {
 		} else if (msg['type'] == 'log') {
 
 			var log_data = JSON.parse(msg['data'])
-			console.table(log_data);
+			// console.table(log_data);
 			$("#progress_log").css("height", "fit-content");
 			log_data.map((data) => {
 				$("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
@@ -597,6 +597,7 @@ $(document).ready(function () {
 			$(".tabs a").addClass('enable');
 			$(".log_item").remove();
 			$("#progress_log").css("height", "100%");
+			window.location.reload(true);
 
 		}
 
@@ -614,57 +615,22 @@ $(document).ready(function () {
 	custom_select_search();
 
 	M.AutoInit();
+	$("#sec-navigation").find("a.active").parent().css("width", "100%");
 
-	$('.carousel.carousel-slider').carousel({
-		fullWidth: true,
-		// indicators: true,
-	});
 
-	var carousel = jQuery('.carousel');
-	carousel.carousel({
-		fullWidth: true,
-		// indicators: true,
-		duration: 300,
-		onCycleTo: function ($current_item, dragged) {
-			// stopAutoplay();
-			// startAutoplay(carousel);
-		}
-	});
+	$("#sec-navigation").tabs({
+		onShow: () => {
 
-	// $(".carousel-item").on("mousedown", function (e) {
+			console.log("kaka");
+			$("#sec-navigation").find("a").each(function (e) {
 
-	// 	stopAutoplay();
+				$(this).parent().css("width", "10px");
 
-	// });
+			});
+			$("#sec-navigation").find("a.active").parent().css("width", "100%");
 
-	// $(".carousel-item").on("mouseup", function (e) {
-
-	// 	startAutoplay();
-
-	// });
-
-	$("#next").click(() => {
-		$(".carousel").carousel("next");
-	});
-
-	$("#prev").click(() => {
-		$(".carousel").carousel("prev");
-	});
-
-	// var autoplay_id;
-	// function startAutoplay($carousel, interval = 5000) {
-	// 	autoplay_id = setInterval(function () {
-	// 		$carousel.carousel('next');
-	// 	}, interval); // every 5 seconds
-	// 	// console.log("starting autoplay");
-	// }
-
-	// function stopAutoplay() {
-	// 	if (autoplay_id) {
-	// 		clearInterval(autoplay_id);
-	// 		// console.log("stoping autoplay");
-	// 	}
-	// }
+		},
+	})
 
 	$("#pause").click(function (e) {
 
@@ -1029,7 +995,7 @@ $(document).ready(function () {
 			});
 
 			var form_data = { names: JSON.stringify(names), city: local_city, backup: 0 };
-			console.table(form_data);
+			// console.table(form_data);
 
 
 			socket.emit('search', form_data);

@@ -213,32 +213,74 @@
 				</div>
 			</div>
 			<div id="about" class="col s12 tab" >
-				<div class="tab-content-config">
+				<div class="tab-content-config row">
 					<div class="config-title">
 						<h5>Sobre o Programa</h5>
 					</div>
-					<div>
-						<div class="carousel carousel-slider center" style="height: 100%;">
-							<a id="prev" class="white-text left" onclick="" style="z-index: 999; position: absolute; left: 4%; top: 50%; cursor:pointer;"><i class="fa fa-arrow-left fa-lg"></i></a>
-							<a id="next" class="white-text right" onclick="" style="z-index: 999; position: absolute; right: 4%; top: 50%; cursor:pointer;"><i class="fa fa-arrow-right fa-lg"></i></a>
-							<div class="carousel-item white-text" href="#one!">
-								<img class="responsive-img left" src="{{url_for('static', filename='img/browser.svg')}}">
-								<div class="right" style="display: flex; flex-direction: column; justify-content: center;  height: 70%;">
-									<p class="white-text">Este programa realiza um processo de Scrapping na plataforma do Preço da Hora - Bahia e armazena os dados coletados em um banco local para futuro acesso. Após tal pesquisa é possível gerar uma coleção de arquivos excel com filtros costumizáveis pelo usuário para análises futuras.</p>
-								</div>
-							</div>
-							<div class="carousel-item white-text" href="#one!">
-								<img class="responsive-img left" src="{{url_for('static', filename='img/organization.svg')}}">
-								<div class="right" style="display: flex; flex-direction: column; justify-content: center;  height: 70%;">
-									<p class="white-text">A plataforma foi desenvolvida em python com a ferramenta Flask, para servir como servidor básico para ferramenta Web. </p>
-								</div>
-							</div>
-							<div class="carousel-item white-text" href="#one!">
-								<img class="responsive-img left" src="{{url_for('static', filename='img/ph_background.svg')}}">
-								<div class="right" style="display: flex; flex-direction: column; justify-content: center;  height: 70%;">
-									<p class="white-text">Este programa realiza um processo de Scrapping na plataforma do Preço da Hora - Bahia e armazena os dados coletados em um banco local para futuro acesso. Após tal pesquisa é possível gerar uma coleção de arquivos excel com filtros costumizáveis pelo usuário para análises futuras.</p>
-								</div>
-							</div>
+
+					<ul id="sec-navigation" class="tabs" style="width: fit-content;">
+						<li class="tab col s3"><a href="#doc"> <i class="fa fa-map-marker"> </i> Município</a></li>
+						<li class="tab col s3"><a href="#doc2"> <i class="fa fa-map-marker"> </i> Município</a></li>
+						<li class="tab col s3"><a href="#doc3"> <i class="fa fa-map-marker"> </i> Município</a></li>
+					</ul>
+					<div id="doc" class="row tab" style="margin: 2em 0;">
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+					</div>
+					<div id="doc2" class="row tab" style="margin: 2em 0;">
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit 2</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+					</div>
+					<div id="doc3" class="row tab" style="margin: 2em 0;">
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit 3</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
+						</div>
+						<div class="col s4 m4 center">
+							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
+							<blockquote>
+								This is an example quotation that uses the blockquote tag.
+							</blockquote>
 						</div>
 					</div>
 			</div>
@@ -396,14 +438,14 @@
 				<div>
 					<h5 class="modal-title">Selecione pelo menos um estabelecimento para prosseguir</h5>
 				</div>
-				<div class="row"  style="margin-top: 1.8em;">
+				<div style="margin-top: 1.8em;">
 					<div class="input-field col s12">
 						<select style="color: black !important;">
 								<option value="1" >Padrão</option>
 						</select>
-						<label>Formatação</label>
+						<label style="left: 0;">Formatação</label>
 					</div>
-					<div id="file-list" style="display: inline-flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
+					<div id="file-list" style="max-height: 500px; height: 250px; overflow: auto; width: 100%;display: inline-flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
 						<!-- <div class="select_wrapper col s12">
 							<i class="fa fa-spinner fa-pulse" id="loader"></i>
 						</div> -->
@@ -433,18 +475,35 @@
 			var product_len = '{{product_len}}';
 			var socket = io().connect("http://127.0.0.1:5000/");
 
-			window.onbeforeunload = function() {
-				var msg = "Really leave?";
+			// window.onbeforeunload = function() {
+			// 	var msg = "Realmente deseja sair ? O programa será encerrado.";
+			// 	if (window.event) {
+			// 		window.event.returnValue = msg;
+			// 	}
+			// 	console.log("RELOAD");
+
+			// 	// new Notification("ACCB - Pesquisa Automática", {
+			// 	// 	body: "Fechando o programa, todos os dados foram salvos.",
+			// 	// });
+			// 	socket.emit('quit');
+			// 	return msg;
+			// };
+
+			window.addEventListener('beforeunload', function (e) {
+				// the absence of a returnValue property on the event will guarantee the browser unload happens
+				// delete e['returnValue'];
+				var msg = "Realmente deseja sair ? O programa será encerrado.";
 				if (window.event) {
 					window.event.returnValue = msg;
 				}
+				console.log("RELOAD");
 
 				// new Notification("ACCB - Pesquisa Automática", {
 				// 	body: "Fechando o programa, todos os dados foram salvos.",
 				// });
 				socket.emit('quit');
 				return msg;
-			};
+			});
 
 			const search_loaded = () => {
 

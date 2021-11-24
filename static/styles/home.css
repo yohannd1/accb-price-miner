@@ -477,6 +477,8 @@ main {
     -webkit-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
     -moz-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
     box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+	max-height: 35vh;
+	overflow: auto !important;
 }
 .options li {
     background-color:#216fa7;
@@ -606,6 +608,47 @@ td, th {
 
 .carousel-item{
 	padding: 0 6em;
+}
+
+/* About */
+
+#about ul.tabs{
+	width: fit-content;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    /* left: -7%; */
+	border-radius: 10px;
+    top: 35%;
+    background: transparent;
+}
+
+#about ul a{
+	background-color: white;
+}
+
+#about .tab{
+	padding-left: 14%;
+}
+
+#about ul li{
+
+	/* opacity: 30%; */
+	background-color: transparent;
+	margin: 0;
+	margin-top: 10px;
+	transition: width .4s ease-in-out;
+	z-index: 999;
+}
+
+
+#about ul li:hover{
+
+	width: 100%;
+
 }
 
 /* ScrollBar */
