@@ -4,18 +4,14 @@
 """ Script responsável por realizar o scrapping na plataforma do Preço da Hora Bahia. """
 import re
 import time
-import csv
 import os
-import threading
 from bs4 import BeautifulSoup
 import bs4
 import json
 import sys
 import urllib.request
 import database
-from numpy import append, product
 from tkinter import messagebox
-from datetime import date
 from tkinter import *
 import tkinter as tk
 from selenium import webdriver
@@ -27,8 +23,8 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 import webbrowser
-from threading import Event
 from flask_socketio import SocketIO, send, emit
+import time
 
 
 class Scrap:
@@ -69,6 +65,18 @@ class Scrap:
         self.ico = None
         self.stop = False
         self.exit = False
+        self.start_time = time.time()
+
+    def get_time(self, start):
+
+        end = time.time()
+        temp = end - start
+        print(temp)
+        hours = temp // 3600
+        temp = temp - 3600 * hours
+        minutes = temp // 60
+        seconds = temp - 60 * minutes
+        return {"minutes": minutes, "seconds": seconds, "hours": hours}
 
     def log_progress(self, progress):
 
@@ -567,8 +575,10 @@ class Scrap:
             return
 
         # CALL BD_TO_XLSX
-
-        self.db.db_update_search({"id": self.ID, "done": 1})
+        duration = self.get_time(self.start_time)
+        self.db.db_update_search(
+            {"id": self.ID, "done": 1, "duration": duration["minutes"]}
+        )
 
         self.db.db_update_backup(
             {

@@ -26,6 +26,8 @@
 				type="text/css"
 				href="{{ url_for('static',filename='styles/modal.css') }}"
 			/>
+			<link rel="stylesheet" type="text/css" media="screen" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/base/jquery-ui.css">
+
 			<link rel="icon" href="{{ url_for('static',filename='icon/cart.svg') }}">
 			<title>PH - Coleta Semi-Automática</title>
 		{% endblock %}
@@ -177,8 +179,9 @@
 								{% endfor %}
 							</select>
 						</div>
+						<a style="margin-left: 10px; margin-right: 10px;" id="month-picker" type="text" class="datepicker btn-floating btn-large primary_color"><i class="fa fa-calendar"></i></a>
 						<h5 style="width: 60%;">Listagem de Pesquisa</h5>
-						<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
+						<a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
 						<a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
 					</div>
 					<div class="input-field ">
@@ -189,7 +192,6 @@
 							<table class="centered striped">
 								<thead>
 								<tr style="position:sticky; top: -3%; color: #fff;" class="primary_color">
-									<th>Cidade</th>
 									<th>Estabelecimento</th>
 									<th>Endereço</th>
 									<th>Palavra Chave</th>
@@ -208,9 +210,10 @@
 									</tr>
 								</tbody>
 							</table>
-						<i class="fa fa-spinner fa-pulse" id="search-loader"></i>
+							<i class="fa fa-spinner fa-pulse" id="search-loader"></i>
+						</div>
 					</div>
-				</div>
+					<span class="left duration" >Tempo de duração da pesquisa : 0.0 </span>
 			</div>
 			<div id="about" class="col s12 tab" >
 				<div class="tab-content-config row">

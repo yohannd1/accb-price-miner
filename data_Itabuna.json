@@ -1,0 +1,134 @@
+{
+    "search_id": 6,
+    "estab_data": [
+        [
+            "Itabuna",
+            "Bom de preço",
+            "RUA BARAO DO RIO BRANCO 203",
+            "BOM DE PRECO"
+        ],
+        [
+            "Itabuna",
+            "Barateiro",
+            "RUA JOSE BONIFACIO 226 ",
+            "ITAO"
+        ],
+        [
+            "Itabuna",
+            "Bom preço",
+            "AVENIDA AZIZ MARON S/N",
+            "BOMPRECO"
+        ],
+        [
+            "Itabuna",
+            "Compre aqui - Canal",
+            "PRACA DOS CAPUCHINHOS 238",
+            "SUPERMERCADOS COMPRE AQUI"
+        ],
+        [
+            "Itabuna",
+            "Compre aqui",
+            "AVENIDA AMELIA AMADO 358 ",
+            "SUPERMERCADOS COMPRE AQUI"
+        ],
+        [
+            "Itabuna",
+            "Tropical",
+            "RUA SANTURINO JOSE SOARES 695- A",
+            "MERCADO TROPICAL"
+        ],
+        [
+            "Itabuna",
+            "Itão (CENTRO)",
+            "VENIDA AMELIA AMADO 296",
+            "ITAO SUPERMERCADOS IMPORTACOES E EXPORTACOES S/A"
+        ],
+        [
+            "Itabuna",
+            "Itão (S.C)",
+            "AVENIDA PRINCESA ISABEL 775",
+            "HIPER ITAO"
+        ],
+        [
+            "Itabuna",
+            "Maxxi",
+            "RODOVIA ITABUNA - ILHEUS, KM 2, BR 415 S/N",
+            "MAXXI"
+        ],
+        [
+            "Itabuna",
+            "Mattos",
+            "RUA C 390",
+            "MERCADO MATOS"
+        ],
+        [
+            "Itabuna",
+            "Meira",
+            "AVENIDA JURACY MAGALHAES 426 ",
+            "SUPERMERCADOS DALNORDES"
+        ],
+        [
+            "Itabuna",
+            "Novo Barateiro",
+            "RUA GETULIO VARGAS 116",
+            "NOVO BARATEIRO"
+        ],
+        [
+            "Itabuna",
+            "Rondelli",
+            "AVENIDA JOSE SOARES PINHEIRO 2700",
+            "RONDELLI COMERCIO E TRANSPORTE LTDA"
+        ]
+    ],
+    "city": "Itabuna",
+    "product": [
+        [
+            "ACUCAR CRISTAL",
+            "ACUCAR CRISTAL,ACUCAR CRISTAL 1KG"
+        ],
+        [
+            "ARROZ PARBOILIZADO",
+            "ARROZ PARBOILIZADO,ARROZ PARBOILIZADO 1KG"
+        ],
+        [
+            "BANANA PRATA",
+            "BANANA DA PRATA,BANANA PRATA,BANANA KG"
+        ],
+        [
+            "CAFE MOIDO",
+            "CAFE 250G,CAFE MOIDO"
+        ],
+        [
+            "CHA DENTRO",
+            "CHA DE DENTRO,COXAO MOLE,CARNE BOVINA CHA DE DENTRO"
+        ],
+        [
+            "FARINHA DE MANDIOCA",
+            "FARINHA DE MANDIOCA,FARINHA MAND,FARINHA MANDIOCA"
+        ],
+        [
+            "FEIJAO CARIOCA",
+            "FEIJAO CARIOCA"
+        ],
+        [
+            "LEITE LIQUIDO",
+            "LEITE LIQUIDO"
+        ],
+        [
+            "MANTEIGA 500G",
+            "MANTEIGA 500G,MANTEIGA"
+        ],
+        [
+            "OLEO SOJA",
+            "OLEO DE SOJA,OLEO 900ML"
+        ],
+        [
+            "PAO FRANCES",
+            "PAO FRANCES,PAO FRANCES KG"
+        ],
+        [
+            "TOMATE KG",
+            "TOMATE KG"
+        ]
+    ]
+}

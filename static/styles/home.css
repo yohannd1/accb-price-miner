@@ -47,6 +47,11 @@ a.primary_color:hover{
 	background-color: #4aaccf;
 }
 
+.ui-front {
+    z-index: 1500 !important;
+}
+
+
 html{
 	height: 100vh;
 	background: rgb(16,45,66);
@@ -55,6 +60,10 @@ html{
 	background: linear-gradient(0deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
 	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#102d42",endColorstr="#02426f",GradientType=1);
 	padding: 8em 5em;
+	/* height: fit-content; */
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 header{
@@ -201,6 +210,7 @@ main {
 	text-decoration: none;
 	transition: background .5s ease;
 	background-color:  #fff;
+	height: fit-content;
 }
 
 .select-item-active {
@@ -532,13 +542,13 @@ input:-webkit-autofill:active {
 }
 
 #list-search{
-	height: 75%;
+	height: 72%;
 	overflow: auto;
 	padding: 10px;
 }
 
 #list-search td{
-	font-size: 10px;
+	font-size: 12px;
 	font-weight: bolder;
 }
 
@@ -576,40 +586,22 @@ td, th {
 	box-shadow: none !important;
 }
 
-/* About - Carousel */
-.carousel {
-	max-height: 50% !important;
-	height: 30em !important;
+.datepicker-modal.open{
+	overflow: visible;
+    color: #fff !important;
+    display: none;
+    vertical-align: middle;
+    position: absolute !important;
+    z-index: 2;
+    max-width: 80%;
+    box-sizing: border-box;
+    width: 55%;
+    height: auto;
 }
 
-
-.carousel-item{
-	min-height: auto !important;
-	width: 100%;
-	align-items: center;
-    display: flex;
-    z-index: 0;
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(0px) translateX(0px) translateX(0px) translateZ(0px);
-    background: transparent;
+.datepicker-date-display{
+	background: #286b99;
 }
-
-.carousel-item .right{
-	width: 50%;
-	margin: 0 auto;
-}
-
-.carousel img {
-	height: 60% !important;
-	width: 40% !important;
-    margin: 0 auto;
-}
-
-.carousel-item{
-	padding: 0 6em;
-}
-
 /* About */
 
 #about ul.tabs{
@@ -647,7 +639,7 @@ td, th {
 
 #about ul li:hover{
 
-	width: 100%;
+	width: 100% !important;
 
 }
 
@@ -675,4 +667,12 @@ td, th {
 ::-webkit-scrollbar-thumb:hover {
   border-radius: 10px;
   background: #17527b;
+}
+
+.duration{
+	font-size: .9em;
+	font-weight: bolder;
+	font-style: italic;
+	margin-left: 10px;
+	margin-top: 5px;
 }

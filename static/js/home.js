@@ -244,19 +244,12 @@ const list_search = (search_id = undefined) => {
 
 	$("#search-loader").show();
 
-	if (search_id == undefined)
+	if (search_id == undefined) {
+
 		search_id = $("#search-select").val();
+
+	}
 	else if (search_id == null) {
-		// $(`
-		// 	<tr class="no-result">
-		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-		// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-		// 	</tr>
-		// `).appendTo("#search-tbody").hide().slideDown("slow");
 		$(".no-result").fadeIn(500);
 		$("#search-loader").fadeOut(500);
 		return;
@@ -265,6 +258,7 @@ const list_search = (search_id = undefined) => {
 		// $("#search-tbody tr").remove();
 	}
 
+	$(".tr-item").remove();
 	// console.log(search_id);
 
 	$.get("/select_search_data", { search_id: search_id }, (response) => {
@@ -274,33 +268,32 @@ const list_search = (search_id = undefined) => {
 		$("#search-loader").fadeOut(500);
 		if (response.length == 0) {
 
-			// $(`
-			// 	<tr class="no-result">
-			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-			// 		<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff;" class="red">Nenhum valor encontrado</td>
-			// 	</tr>
-			// `).appendTo("#search-tbody").hide().slideDown("slow");
 			$(".no-result").show();
 
-
 		} else {
+
+			var duration = $(".duration").html();
+			duration = duration.split(":")[0];
+			var time = 0;
+
+
 			// 4 = city , 5 = product , 6 = local, 7 = adress, 8 = price, 9 = keyword
+			console.table(response);
 			response.map((value, index) => {
+				time = value[4];
 				$(`
-					<tr class="tr-item">
-						<td>${value[2]}</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[6]}</td>
+					<tr class="tr-item flow-text">
 						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[7]}</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[9]}</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[5]}</td>
-						<td>${value[8]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[8]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[10]}</td>
+						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[6]}</td>
+						<td>${value[9]}</td>
 					</tr>
 				`).appendTo("#search-tbody");
 			});
+
+			$(".duration").fadeOut(500);
+			$(".duration").html(`${duration} : ${time} minutos`).fadeIn(500);
 		}
 
 	});
@@ -413,7 +406,7 @@ const get_modal_content_product = (product_name) => {
 	filtered_product = filtered_product[0];
 	keywords = filtered_product[1].split(',');
 
-	console.log({ filtered_product, keywords });
+	// console.log({ filtered_product, keywords });
 
 	let modal = `
 		<div class="modal-content">
@@ -513,6 +506,8 @@ const validate_form = (info, edit = false) => {
 
 }
 
+// DOCUMENT.READY
+
 $(document).ready(function () {
 
 	if (Notification.permission === "granted") {
@@ -549,6 +544,8 @@ $(document).ready(function () {
 				$(".tabs a").addClass('enable');
 				$(".log_item").remove();
 				$("#progress_log").css("height", "100%");
+				$(".estab").remove();
+				window.location.reload(true);
 			}
 
 		} else if (msg['type'] == 'captcha') {
@@ -614,20 +611,81 @@ $(document).ready(function () {
 	custom_select();
 	custom_select_search();
 
-	M.AutoInit();
-	$("#sec-navigation").find("a.active").parent().css("width", "100%");
+	$("#month-picker").click((e) => {
+
+		e.preventDefault();
+
+		$("#search-loader").fadeIn(500);
+		$(".tr-item").remove();
+
+		$("#search-select option").remove();
+
+		var month = "10";
+
+		$.get("/select_search_info", { month: month }, (response) => {
+
+			if (response.success) {
+
+				var data = JSON.parse(response.data);
+				data.map((value) => {
+
+					console.log(value);
+					$("#search-select").append(`<option city=${value[2]} value=${value[1]}>${value[2]} ${value[3]}</option>`);
+
+				});
+
+				$(".styledSelect").remove();
+				list_search();
+				custom_select_search();
+
+			} else {
+				Materialize.toast(response.message, 2000, 'rounded');
+			}
+
+		});
+
+
+	});
+
+	// $('.datepicker').datepicker({
+	// 	i18n: {
+	// 		months: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
+	// 		monthsShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+	// 		weekdays: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sabádo'],
+	// 		weekdaysShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'],
+	// 		weekdaysAbbrev: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
+	// 		today: 'Hoje',
+	// 		clear: 'Limpar',
+	// 		cancel: 'Sair',
+	// 		done: 'Confirmar',
+	// 		labelMonthNext: 'Próximo mês',
+	// 		labelMonthPrev: 'Mês anterior',
+	// 		labelMonthSelect: 'Selecione um mês',
+	// 		labelYearSelect: 'Selecione um ano',
+	// 		selectMonths: true,
+	// 		selectYears: 1,
+	// 	},
+	// 	format: 'dd mmmm, yyyy',
+	// 	maxDate: new Date(),
+	// 	container: 'body',
+	// });
+
+	// M.AutoInit();
+	// $("#sec-navigation").find("a.active").parent().css("width", "100%");
+	$("#sec-navigation").find("a.active").parent().css("width", "fit-content");
 
 
 	$("#sec-navigation").tabs({
 		onShow: () => {
 
-			console.log("kaka");
+			// console.log("kaka");
 			$("#sec-navigation").find("a").each(function (e) {
 
 				$(this).parent().css("width", "10px");
 
 			});
-			$("#sec-navigation").find("a.active").parent().css("width", "100%");
+			// $("#sec-navigation").find("a.active").parent().css("width", "100%");
+			$("#sec-navigation").find("a.active").parent().css("width", "fit-content");
 
 		},
 	})
@@ -649,7 +707,7 @@ $(document).ready(function () {
 		var pattern = new RegExp(',+(?=[/\s])', 'i');
 		var keywords = $('#keywords').val().toUpperCase();
 		var result = keywords.replace(pattern, "");
-		console.log({ keywords, result });
+		// console.log({ keywords, result });
 		$("#keywords").val(result);
 
 	});
@@ -1081,6 +1139,7 @@ $(document).ready(function () {
 		$("#config-product").addClass('enable');
 		$("#search").addClass('enable');
 		$("#config").addClass('enable');
+		$("#sobre").addClass('enable');
 		$("#search_check").addClass('enable');
 
 		$(".estab").remove();
@@ -1108,7 +1167,7 @@ $(document).ready(function () {
 
 				} else {
 					Materialize.toast(response.message, 2000, 'rounded');
-					console.log(response);
+					// console.log(response);
 				}
 
 
@@ -1131,7 +1190,7 @@ $(document).ready(function () {
 				if (response.success) {
 					$(this).parent().parent().remove();
 					Materialize.toast(response.message, 2000, 'rounded');
-					console.log(response);
+					// console.log(response);
 					if ($(".product-config .edit-product").length == 0) {
 						$("#no-result-product").fadeIn(500);
 					}
@@ -1140,7 +1199,7 @@ $(document).ready(function () {
 
 				} else {
 					Materialize.toast(response.message, 2000, 'rounded');
-					console.log(response);
+					// console.log(response);
 				}
 
 
@@ -1179,7 +1238,7 @@ $(document).ready(function () {
 
 		if (e.key === 'Enter' || e.keyCode === 13) {
 
-			console.log('enter', row_len, value);
+			// console.log('enter', row_len, value);
 			var hide_len = 0;
 
 			if (value == '') {
@@ -1204,7 +1263,7 @@ $(document).ready(function () {
 					var id = $(this).text().toUpperCase();
 
 					if (id.includes(value) || similarity(id, value) >= 0.6) {
-						console.log(`${index} ${id} == ${value}`);
+						// console.log(`${index} ${id} == ${value}`);
 						found = true;
 						return false;
 					}
@@ -1330,7 +1389,7 @@ $(document).ready(function () {
 		}
 
 		var city_name = $("#search-select option:selected").attr("city");
-		console.log();
+		// console.log();
 
 		$.get("/select_estab", { city: city_name }, (response) => {
 
@@ -1386,14 +1445,14 @@ $(document).ready(function () {
 			$.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id }, (response) => {
 
 				if (response["status"] == "success") {
-					console.log(response);
+					// console.log(response);
 					$('.estab').removeClass("select-item-active");
 					Materialize.toast(`Arquivos gerados com sucesso no diretório ${response.dic}.`, 15000, 'rounded');
 					// new Notification("ACCB - Pesquisa Automática", {
 					// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
 					// });
 				} else {
-					console.log(response);
+					// console.log(response);
 				}
 
 			});

@@ -1,0 +1,140 @@
+{
+    "search_id": 5,
+    "estab_data": [
+        [
+            "Ilhéus",
+            "Mangostão",
+            "Avenida Lindolfo Collor-101",
+            "Supermercado Mangostao LTDA"
+        ],
+        [
+            "Ilhéus",
+            "Meira-Malhado",
+            "Rua Uruguaiana- 1187",
+            "Supermercado Dalnorde"
+        ],
+        [
+            "Ilhéus",
+            "Gbarbosa",
+            "Avenida Lomando Junior-786",
+            "G Barbosa"
+        ],
+        [
+            "Ilhéus",
+            "Jaciana",
+            "Rua Coronel Pessoa- 51",
+            "Mercado Jaciana"
+        ],
+        [
+            "Ilhéus",
+            "Meira-centro",
+            "Avenida Coronem Misael Tavares-432",
+            "Dalnorde Supermercado"
+        ],
+        [
+            "Ilhéus",
+            "Alana",
+            "Rua Santos Dumont- 40",
+            "Alana Hipermercado"
+        ],
+        [
+            "Ilhéus",
+            "Meira - N. Senhora da Vitoria",
+            "Rua São Jorge- 64",
+            "Dalnorde Supermercado"
+        ],
+        [
+            "Ilhéus",
+            "Claudinete",
+            "Avenida Ilhéus/Salobrinho- 91",
+            "Frutaria e Mercadinho Cladudinete"
+        ],
+        [
+            "Ilhéus",
+            "Meira-Vilela",
+            "Avenida Governador Paulo Souto- 865",
+            "Supermercado Meira"
+        ],
+        [
+            "Ilhéus",
+            "Itão",
+            "Avenida Petrobrás S/n",
+            "Supermercados Itao"
+        ],
+        [
+            "Ilhéus",
+            "Nénem",
+            "Rua Dois de Julho- 480",
+            "Supermercado do nenem"
+        ],
+        [
+            "Ilhéus",
+            "Meira-N. Costa",
+            "Rua Jacaranda - 250",
+            "Dalnorde Supermercado"
+        ],
+        [
+            "Ilhéus",
+            "Cestão da economia",
+            "Avenida Lotus - 24",
+            "Não possui"
+        ],
+        [
+            "Ilhéus",
+            "Atacadão",
+            "Rodovia jorge Amado S/n",
+            "Atacadao"
+        ]
+    ],
+    "city": "Ilhéus",
+    "product": [
+        [
+            "ACUCAR CRISTAL",
+            "ACUCAR CRISTAL,ACUCAR CRISTAL 1KG"
+        ],
+        [
+            "ARROZ PARBOILIZADO",
+            "ARROZ PARBOILIZADO,ARROZ PARBOILIZADO 1KG"
+        ],
+        [
+            "BANANA PRATA",
+            "BANANA DA PRATA,BANANA PRATA,BANANA KG"
+        ],
+        [
+            "CAFE MOIDO",
+            "CAFE 250G,CAFE MOIDO"
+        ],
+        [
+            "CHA DENTRO",
+            "CHA DE DENTRO,COXAO MOLE,CARNE BOVINA CHA DE DENTRO"
+        ],
+        [
+            "FARINHA DE MANDIOCA",
+            "FARINHA DE MANDIOCA,FARINHA MAND,FARINHA MANDIOCA"
+        ],
+        [
+            "FEIJAO CARIOCA",
+            "FEIJAO CARIOCA"
+        ],
+        [
+            "LEITE LIQUIDO",
+            "LEITE LIQUIDO"
+        ],
+        [
+            "MANTEIGA 500G",
+            "MANTEIGA 500G,MANTEIGA"
+        ],
+        [
+            "OLEO SOJA",
+            "OLEO DE SOJA,OLEO 900ML"
+        ],
+        [
+            "PAO FRANCES",
+            "PAO FRANCES,PAO FRANCES KG"
+        ],
+        [
+            "TOMATE KG",
+            "TOMATE KG"
+        ]
+    ]
+}

@@ -50,10 +50,18 @@ class Database:
             conn.execute("PRAGMA foreign_keys = ON")
             conn.execute("PRAGMA case_sensitive_like = true")
             self.db_update_city({"city_name": "Ilhéus", "primary_key": "IlhÃ©us"})
-            # Salvar Itabuna.json no exe e usar MEIAS.PATH
-            # itabuna_path = self.resource_path("itabuna.json")
-            # with open(itabuna_path, "r", encoding="utf-8") as f:
-            with open("itabuna.json", "r", encoding="utf-8") as f:
+
+            # Salvar itabuna.json no exe e usar MEIAS.PATH
+            # Salvar ilheus.json no exe e usar MEIAS.PATH
+            with open(self.resource_path("itabuna.json"), "r", encoding="utf-8") as f:
+
+                estab_info = json.load(f)
+
+                for estab in estab_info:
+
+                    self.db_save_estab(estab)
+
+            with open(self.resource_path("ilheus.json"), "r", encoding="utf-8") as f:
 
                 estab_info = json.load(f)
 
@@ -85,19 +93,15 @@ class Database:
         self.conn.commit()
         self.db_end_conn()
 
-    def db_save_search(self, done, city_name):
+    def db_save_search(self, done, city_name, duration):
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
 
-        sql_query = """INSERT INTO search(done, city_name,search_date) VALUES(?,?,?)"""
+        sql_query = """INSERT INTO search(done, city_name,search_date,duration) VALUES(?,?,?,?)"""
         cursor = cursor.execute(
             sql_query,
-            (
-                done,
-                city_name,
-                str(date.today()),
-            ),
+            (done, city_name, str(date.today()), duration),
         )
         self.conn.commit()
         self.db_end_conn()
@@ -325,8 +329,10 @@ class Database:
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
-        sql_query = """UPDATE search SET done="{}" WHERE id = "{}" """.format(
-            search["done"], search["id"]
+        sql_query = (
+            """UPDATE search SET done="{}", duration = {} WHERE id = "{}" """.format(
+                search["done"], search["duration"], search["id"]
+            )
         )
         cursor = cursor.execute(sql_query)
         self.conn.commit()

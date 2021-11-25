@@ -14,7 +14,8 @@ CREATE TABLE search (
 	id INTEGER,
 	done text,
 	city_name text,
-	search_date text,
+	search_date date,
+	duration decimal,
 	PRIMARY KEY(id),
 	FOREIGN KEY (city_name) REFERENCES city (city_name) ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -83,20 +84,4 @@ INSERT INTO product VALUES ("ACUCAR CRISTAL","ACUCAR CRISTAL,ACUCAR CRISTAL 1KG"
 ("OLEO SOJA","OLEO DE SOJA,OLEO 900ML"),
 ("PAO FRANCES","PAO FRANCES,PAO FRANCES KG"),
 ("TOMATE KG","TOMATE KG");
-
-
-INSERT INTO estab VALUES ("Ilhéus","Atacadao","Rodovia jorge Amado S/n","Atacadao"),
-("Ilhéus","Cestao da Economia","Avenida Lotus 24","NAO POSSUI"),
-("Ilhéus","Itao Supermercado","Avenida Petrobrás S/n","Supermercados Itao"),
-("Ilhéus","Jaciana Supermercado","Rua Coronel Pessoa 51","Mercado Jaciana"),
-("Ilhéus","Gbarbosa","Avenida Lomando Junior 786","GBARBOSA"),
-("Ilhéus","Frutaria e Mercadinho Claudinete","Avenida Ilhéus/Salobrinho 91","Frutaria e Mercadinho Claudinete"),
-("Ilhéus","Nenem Supermercados","Rua Dois de Julho  480","Meu Mercado"),
-("Ilhéus","Supermercado Meira - Malhado","Rua Uruguaiana 1187","Supermercado Dalnorde"),
-("Ilhéus","Supermercado Meira - Centro","Avenida Coronel Misael Tavares 432","Dalnorde Supermercados"),
-("Ilhéus","Supermercado Meira - N. Senhora da Vitoria","Rua Sao Jorge 64","DALNORDE SUPERMERCADOS"),
-("Ilhéus","Supermercado Meira - Vilela","Avenida Governador Paulo Souto  865","Supermercado Meira"),
-("Ilhéus","Supermercado Meira - N. Costa","Rua Jacaranda 250","Dalnorde Supermercados"),
-("Ilhéus","Supermercado Mangostao","Avenida Lindolfo Collor 101","Supermercado Mangostao LTDA");
-
 
