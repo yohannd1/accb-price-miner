@@ -286,12 +286,17 @@ main {
 	width: 0%;
 	height: 3em;
 	/* background-color: #04aa6d; */
-	background-color: #17527b;
 	text-align: center;
 	line-height: 45px;
 	transition: width .8s ease;
 	border-radius: 10px;
 	color: white !important;
+	background-color: #17527b;
+	/* background: rgb(16,45,66); */
+	background: -moz-linear-gradient(50deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
+	background: -webkit-linear-gradient(50deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
+	background: linear-gradient(50deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#102d42",endColorstr="#02426f",GradientType=1);
 }
 
 
@@ -337,7 +342,6 @@ main {
     left: -.4%;
 	display: none;
     z-index: auto;
-	opacity: 0;
 }
 
 /* Config */

@@ -130,7 +130,7 @@ class Database:
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
 
-        sql_query = """INSERT INTO backup(active, city, done, estab_info,product_info, search_id ) VALUES(?,?,?,?,?,?)"""
+        sql_query = """INSERT INTO backup(active, city, done, estab_info, product_info, search_id, duration, progress_value ) VALUES(?,?,?,?,?,?,?,?)"""
         cursor = cursor.execute(
             sql_query,
             (
@@ -140,6 +140,8 @@ class Database:
                 backup["estab_info"],
                 backup["product_info"],
                 backup["search_id"],
+                backup["duration"],
+                backup["progress_value"],
             ),
         )
         self.conn.commit()
@@ -312,12 +314,13 @@ class Database:
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
-        sql_query = """UPDATE backup SET active ='{}', city = '{}', done = '{}', estab_info = '{}',product_info = '{}' WHERE search_id = "{}" """.format(
+        sql_query = """UPDATE backup SET active ='{}', city = '{}', done = '{}', estab_info = '{}',product_info = '{}',duration = {} WHERE search_id = "{}" """.format(
             str(backup["active"]),
             backup["city"],
             backup["done"],
             backup["estab_info"],
             backup["product_info"],
+            backup["duration"],
             backup["search_id"],
         )
         cursor = cursor.execute(sql_query)

@@ -42,7 +42,18 @@ class Scrap:
             INTERFACE (Interface.self): Instância da classe Interface.
     """
 
-    def __init__(self, LOCALS, CITY, LOCALS_NAME, PRODUCT_INFO, ACTIVE, ID, BACKUP):
+    def __init__(
+        self,
+        LOCALS,
+        CITY,
+        LOCALS_NAME,
+        PRODUCT_INFO,
+        ACTIVE,
+        ID,
+        BACKUP,
+        DURATION,
+        PROGRESS_VALUE,
+    ):
 
         self.win = tk.Tk()
         self.win.withdraw()
@@ -54,24 +65,26 @@ class Scrap:
         self.CITY = CITY
         self.LOCALS_NAME = LOCALS_NAME
         self.BACKUP = BACKUP
+        self.duration = DURATION
         self.PRODUCT_INFO = PRODUCT_INFO
         self.db = database.Database()
         self.index, self.index_k = [int(x) for x in ACTIVE.split(".")]
         # IN
-        self.progress_value = 100 / len(PRODUCT_INFO[self.index :])
+        self.progress_value = PROGRESS_VALUE
         self.csvfile = None
         self.all_file = None
         self.driver = None
         self.ico = None
         self.stop = False
         self.exit = False
+        self.cancel = False
         self.start_time = time.time()
 
     def get_time(self, start):
 
         end = time.time()
         temp = end - start
-        print(temp)
+        # print(temp)
         hours = temp // 3600
         temp = temp - 3600 * hours
         minutes = temp // 60
@@ -107,7 +120,7 @@ class Scrap:
 
     # CHECK
 
-    def exit_thread(self, error):
+    def exit_thread(self, error=False):
         """
         Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a manualmente.
 
@@ -216,42 +229,43 @@ class Scrap:
                 )
             )
             try:
-                # "city_name": self.CITY,
-                self.db.db_save_search_item(
-                    {
-                        "search_id": self.ID,
-                        "web_name": product_local,
-                        "adress": product_adress,
-                        "product_name": product_name,
-                        "price": product_price,
-                        "keyword": keyword,
-                    }
-                )
-                arr.append(
-                    [
-                        str(product_name),
-                        str(product_local),
-                        str(keyword),
-                        str(product_adress),
-                        str(product_price),
-                    ]
-                )
-                self.log_progress(item)
+                if not self.stop:
+                    # "city_name": self.CITY,
+                    self.db.db_save_search_item(
+                        {
+                            "search_id": self.ID,
+                            "web_name": product_local,
+                            "adress": product_adress,
+                            "product_name": product_name,
+                            "price": product_price,
+                            "keyword": keyword,
+                        }
+                    )
+                    arr.append(
+                        [
+                            str(product_name),
+                            str(product_local),
+                            str(keyword),
+                            str(product_adress),
+                            str(product_price),
+                        ]
+                    )
+                    # self.log_progress(item)
             except:
                 pass
             # writer.writerow([str(product_name), str(product_local), str(keyword),  str(product_adress), str(product_price)])
             print(
                 "------------------------------------------------------------------------------------"
             )
-
-        emit(
-            "captcha",
-            {
-                "type": "log",
-                "data": json.dumps(arr),
-            },
-            broadcast=True,
-        )
+        if not self.stop:
+            emit(
+                "captcha",
+                {
+                    "type": "log",
+                    "data": json.dumps(arr),
+                },
+                broadcast=True,
+            )
 
     def check_captcha(self, request=0):
         """Função que confere se o captcha foi resolvido com sucesso pelo usuário."""
@@ -303,7 +317,7 @@ class Scrap:
 
         result = messagebox.showinfo(
             "CAPTCHA",
-            "Captcha foi ativado, abra o site do preço da hora e resolva-o em seu navegador e pressione OK para continuar",
+            "Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay",
             icon="warning",
         )
 
@@ -459,12 +473,16 @@ class Scrap:
             #     },
             #     broadcast=True,
             # )
-
-            emit(
-                "captcha",
-                {"type": "progress", "product": product, "value": ""},
-                broadcast=True,
-            )
+            if not self.stop:
+                emit(
+                    "captcha",
+                    {
+                        "type": "progress",
+                        "product": product,
+                        "value": 0,
+                    },
+                    broadcast=True,
+                )
 
             for index_k, keyword in enumerate(keywords.split(",")[self.index_k :]):
 
@@ -477,6 +495,20 @@ class Scrap:
                 # self.backup_save(index + start_prod, day, 0,self.LOCALS_NAME, self.CITY,  self.LOCALS)
                 active = "{}.{}".format(index + self.index, index_k + self.index_k)
                 # print("active = {}".format(active))
+                duration = self.get_time(self.start_time)
+                duration = duration["minutes"] + self.duration
+
+                self.log_progress(
+                    [
+                        active,
+                        duration,
+                        self.progress_value,
+                        self.PRODUCT_INFO[self.index :],
+                        product,
+                        keywords,
+                    ]
+                )
+
                 self.db.db_update_backup(
                     {
                         "active": active,
@@ -487,6 +519,7 @@ class Scrap:
                         ),
                         "product_info": json.dumps(self.PRODUCT_INFO),
                         "search_id": self.ID,
+                        "duration": duration,
                     }
                 )
 
@@ -580,11 +613,17 @@ class Scrap:
 
                     self.get_data(product, keyword)
 
-            emit(
-                "captcha",
-                {"type": "progress", "product": product, "value": self.progress_value},
-                broadcast=True,
-            )
+            if not self.stop:
+                print("PROGRESS : {}".format(self.progress_value))
+                emit(
+                    "captcha",
+                    {
+                        "type": "progress",
+                        "product": product,
+                        "value": self.progress_value,
+                    },
+                    broadcast=True,
+                )
 
         if self.stop:
 
@@ -595,7 +634,7 @@ class Scrap:
         # CALL BD_TO_XLSX
         duration = self.get_time(self.start_time)
         self.db.db_update_search(
-            {"id": self.ID, "done": 1, "duration": duration["minutes"]}
+            {"id": self.ID, "done": 1, "duration": duration["minutes"] + self.duration}
         )
 
         self.db.db_update_backup(
@@ -608,6 +647,7 @@ class Scrap:
                 ),
                 "product_info": json.dumps(self.PRODUCT_INFO),
                 "search_id": self.ID,
+                "duration": duration["minutes"] + self.duration,
             }
         )
 

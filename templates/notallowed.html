@@ -1,0 +1,56 @@
+{% extends "material/base.html" %}
+	<head>
+		{% block head %}
+			<meta charset="UTF-8" />
+			<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+			<link rel="preconnect" href="https://fonts.googleapis.com">
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+			<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700&family=Spectral:ital,wght@1,400;1,600;1,800&display=swap" rel="stylesheet">
+			<link
+				rel="stylesheet"
+				type="text/css"
+				href="{{ url_for('static',filename='styles/materialize.css') }}"
+			/>
+			<link
+				rel="stylesheet"
+				href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"
+			/>
+			<link
+				rel="stylesheet"
+				type="text/css"
+				href="{{ url_for('static',filename='styles/home.css') }}"
+			/>
+			<link
+				rel="stylesheet"
+				type="text/css"
+				href="{{ url_for('static',filename='styles/modal.css') }}"
+			/>
+			<link rel="stylesheet" type="text/css" media="screen" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/base/jquery-ui.css">
+
+			<link rel="icon" href="{{ url_for('static',filename='icon/cart.svg') }}">
+			<title>PH - Coleta Semi-Automática</title>
+		{% endblock %}
+	</head>
+	{% block content %}
+		<header>
+			<div class="top-logo">
+				<img
+					src="{{ url_for('static',filename='img/uesc_brasão.png') }}"
+					alt="Uesc Logo"
+				/>
+				<img
+					src="{{ url_for('static',filename='img/accb.png') }}"
+					alt="ACCB Logo"
+				/>
+				<img
+					src="{{ url_for('static',filename='img/proex.png') }}"
+					alt="ACCB Logo"
+				/>
+			</div>
+		</header>
+		<main class="main-content row" style="display: flex; align-items: center; justify-content: center; font-family: 'Nunito'; background-color: transparent;">
+		<h5 class="z-depth-5 red white-text" style="border-radius: 10px; padding: 15px;">O programa está aberto em outra aba, se dirija até ela para continuar com a navegação.</h5>
+		</main>
+	{% endblock %}
+

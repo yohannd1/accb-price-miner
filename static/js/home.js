@@ -2,22 +2,26 @@ let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
 let CANCEL_CAPTCHA = false;
 let EDIT_FORM_DATA = undefined;
+let WIDTH = 0;
 
 var i = 0;
-var width = 0;
 function move(val) {
-	i = 1;
+
+	if (val == undefined)
+		val = 0.0
+	val.toFixed(2);
 	var elem = document.getElementById("progress_bar");
-	width += val;
+	WIDTH = parseFloat($("#progress_bar").html().replace("%", ""));
+	WIDTH += val;
 	try {
-		width = width.toFixed(2);
+		WIDTH = WIDTH.toFixed(2);
 	}
 	catch (e) {
 		// Error
 	}
-	var floor = Math.floor(width);
-	elem.style.width = width.toString() + "%";
-	elem.innerHTML = width.toString() + "%";
+	var floor = Math.floor(WIDTH);
+	elem.style.width = floor.toString() + "%";
+	elem.innerHTML = floor.toString() + "%";
 }
 
 function similarity(s1, s2) {
@@ -297,8 +301,11 @@ const list_search = (search_id = undefined) => {
 				`).appendTo("#search-tbody");
 			});
 
-			$(".duration").fadeOut(500);
-			$(".duration").html(`${duration} : ${time} minutos`).fadeIn(500);
+			$(".duration").fadeOut(200);
+			if (time == 1)
+				$(".duration").html(`${duration} : ${time} minuto`).fadeIn(100);
+			else
+				$(".duration").html(`${duration} : ${time} minutos`).fadeIn(100);
 		}
 
 	});
@@ -542,16 +549,18 @@ $(document).ready(function () {
 			if (msg['value'] != '')
 				move(msg['value']);
 			if (msg['done'] == 1) {
+				console.log("DONE");
 				$("#progress_bar").css("width", "0%");
 				$("#progress_bar").html("0%");
 				$('ul.tabs').tabs('select', 'pesquisar');
 				$("#progress h5").html(`Iniciando Pesquisa`);
-				$(".tabs a").addClass('enable');
 				$(".log_item").remove();
 				$("#progress_log").css("height", "100%");
 				$(".estab").remove();
-				$(".log_item").remove();
-				window.location.reload(true);
+				$('#main-navigation li a').removeClass("disabled");
+
+				// $(".log_item").remove();
+				// window.location.reload(true);
 			}
 
 		} else if (msg['type'] == 'captcha') {
@@ -564,7 +573,7 @@ $(document).ready(function () {
 		} else if (msg['type'] == 'log') {
 
 			var log_data = JSON.parse(msg['data'])
-			// console.table(log_data);
+			console.table(log_data);
 			$("#progress_log").css("height", "fit-content");
 			log_data.map((data) => {
 				$("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
@@ -572,6 +581,34 @@ $(document).ready(function () {
 
 			$("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
 
+		} else if (msg['type'] == 'cancel') {
+			$("#progress_bar").css("width", "0%");
+			$("#progress_bar").html("0%");
+			$('ul.tabs').tabs('select', 'pesquisar');
+			$("#progress h5").html(`Iniciando Pesquisa`);
+			$(".tabs a").addClass('enable');
+			$(".log_item").remove();
+			$("#progress_log").css("height", "100%");
+			socket.emit('cancel');
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
+			$(".pause-overlay").fadeOut(500);
+			$("#pause-loader").fadeOut(500);
+
+		} else if (msg['type'] == 'pause') {
+			$("#progress_bar").css("width", "0%");
+			$("#progress_bar").html("0%");
+			$('ul.tabs').tabs('select', 'pesquisar');
+			$("#progress h5").html(`Iniciando Pesquisa`);
+			$(".tabs a").addClass('enable');
+			$(".log_item").remove();
+			$("#progress_log").css("height", "100%");
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
+			$("#pause-loader").fadeOut(500);
+			$(".pause-overlay").fadeOut(500);
 		}
 	});
 
@@ -597,10 +634,11 @@ $(document).ready(function () {
 			$("#progress_bar").html("0%");
 			$('ul.tabs').tabs('select', 'pesquisar');
 			$("#progress h5").html(`Iniciando Pesquisa`);
-			$(".tabs a").addClass('enable');
 			$(".log_item").remove();
 			$("#progress_log").css("height", "100%");
+			$('#main-navigation li a').removeClass("disabled");
 			window.location.reload(true);
+
 
 		} else if (msg['type'] == 'cancel') {
 			$("#progress_bar").css("width", "0%");
@@ -614,6 +652,8 @@ $(document).ready(function () {
 			new Notification("ACCB - Pesquisa Automática", {
 				body: msg['message'],
 			});
+			$(".pause-overlay").fadeOut(500);
+			$("#pause-loader").fadeOut(500);
 
 		} else if (msg['type'] == 'pause') {
 			$("#progress_bar").css("width", "0%");
@@ -626,6 +666,38 @@ $(document).ready(function () {
 			new Notification("ACCB - Pesquisa Automática", {
 				body: msg['message'],
 			});
+			$("#pause-loader").fadeOut(500);
+			$(".pause-overlay").fadeOut(500);
+
+		} else if (msg['type'] == 'log') {
+
+			var log_data = JSON.parse(msg['data'])
+			// console.table(log_data);
+			$("#progress_log").css("height", "fit-content");
+			log_data.map((data) => {
+				$("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
+			});
+
+			$("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
+
+		} else if (msg['type'] == 'progress') {
+
+			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
+			if (msg['value'] != '')
+				move(msg['value']);
+			if (msg['done'] == 1) {
+				$("#progress_bar").css("width", "0%");
+				$("#progress_bar").html("0%");
+				$('ul.tabs').tabs('select', 'pesquisar');
+				$("#progress h5").html(`Iniciando Pesquisa`);
+				$(".tabs a").addClass('enable');
+				$(".log_item").remove();
+				$("#progress_log").css("height", "100%");
+				$(".estab").remove();
+				$(".log_item").remove();
+				window.location.reload(true);
+			}
+
 		}
 
 	});
@@ -736,7 +808,8 @@ $(document).ready(function () {
 			socket.emit('pause');
 			$("#progress h5").html(`Pausando Pesquisa`);
 			$(".pause-overlay").fadeIn(500);
-			$("#progress-loader").fadeIn(500);
+			$("#pause-loader").fadeIn(500);
+
 		}
 
 
@@ -751,7 +824,7 @@ $(document).ready(function () {
 			socket.emit('pause', { data: true });
 			$("#progress h5").html(`Cancelando Pesquisa`);
 			$(".pause-overlay").fadeIn(500);
-			$("#progress-loader").fadeIn(500);
+			$("#pause-loader").fadeIn(500);
 		}
 
 	});

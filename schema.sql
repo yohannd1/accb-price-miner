@@ -39,6 +39,8 @@ CREATE TABLE backup (
 	estab_info text,
 	product_info text,
 	search_id text,
+	duration decimal,
+	progress_value decimal,
 	FOREIGN KEY (search_id) REFERENCES search (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 

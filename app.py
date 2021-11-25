@@ -20,18 +20,15 @@ from xlsxwriter.workbook import Workbook
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
-import threading
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "secret!"
 Material(app)
 socketio = SocketIO(app)
+connected = 0
 
 # ERRO DE PRODUTO, CASO NÃO EXISTA PRODUTO, NÃO DEIXA PASSAR DA PRIMEIRA ETAPA DE PESQUISA, ATÉ O FILTRO DA PAGINA DE PESQUISAS
 
 # POP UP QUANDO INICIAR A PESQUISA, NOTIFICAR QUE SE FECHAR A PESQUISA SERÁ PARADA.
-
-# METODO PARA PARAR PESQUISA
 
 # QUANDO PESQUISA MANUALMENTE, VC TEM QUE DE FATO RESOLVER O CAPTCHA
 
@@ -245,6 +242,7 @@ def home():
             str(date.today())
         )
     )
+    product_len = db.db_run_query("SELECT product_name FROM product")
     search = False
     active = "0.0"
     try:
@@ -252,24 +250,26 @@ def home():
 
         backup_info = db.db_get_backup(search_id)
         if len(backup_info) != 0:
-            active, city, done, estab_info, product_info, search_id = backup_info[0]
-            estab_info = json.loads(estab_info)
-            estab_names = estab_info["names"]
-            estab_data = estab_info["info"]
-            product = json.loads(product_info)
 
+            (
+                active,
+                city,
+                done,
+                estab_info,
+                product_info,
+                search_id,
+                duration,
+                progress_value,
+            ) = backup_info[0]
             if done == 0:
 
                 search = True
 
     except:
-
-        city = db.db_get_city()
-        estab_names = db.db_get_estab()
-        product = db.db_get_product()
+        progress_value = 100 / len(product_len)
+        pass
 
     day = datetime.datetime.now()
-    product_len = db.db_run_query("SELECT product_name FROM product")
     search_info = db.db_run_query(
         "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
             day.month
@@ -277,14 +277,19 @@ def home():
     )
 
     # sys.exit()
-    city_arr = []
-    if not isinstance(city, list):
 
-        city_arr.append((city,))
-        city = city_arr
+    city = db.db_get_city()
+    estab_names = db.db_get_estab()
+    product = db.db_get_product()
+
+    print("CONNECTED {}".format(connected))
+    # Se tiver mais que uma pagina aberta, renderiza o notallowed.html,
+    # por algum motivo o flask com socketio chama a função de conexão 2x então
+    # acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2
+    template = "home.html" if 0 >= connected <= 2 else "notallowed.html"
 
     return render_template(
-        "home.html",
+        template,
         data=city,
         search=search,
         product="Iniciando Pesquisa",
@@ -294,6 +299,7 @@ def home():
         active=active,
         product_len=len(product_len),
         search_info=search_info,
+        progress_value=progress_value,
     )
 
 
@@ -823,9 +829,11 @@ def handle_pause(cancel=False):
 
     if cancel != False:
         # Cancela
+        session["cancel"] = True
         session["scrap"].pause(True)
     else:
         session["scrap"].pause()
+        session["pause"] = True
 
 
 @socketio.on("cancel")
@@ -836,20 +844,48 @@ def handle_cancel():
     db.db_run_query(query)
 
 
+@socketio.on("connect")
+def connect():
+    global connected
+    connected += 1
+    print("connnected {}".format(connected))
+
+
+@socketio.on("disconnect")
+def disconnect():
+    global connected
+    print("disconnnected {}".format(connected))
+    connected -= 1
+
+
 # Inicia pesquisa
 @socketio.on("search")
 def handle_search(search_info):
 
     db = database.Database()
 
-    search = db.db_get_search("search_date", str(date.today()))
+    search = db.db_run_query(
+        "SELECT id FROM search WHERE done = 0 AND search_date = '{}' ORDER BY city_name ASC".format(
+            str(date.today())
+        )
+    )
+
     search_id = search[0][0] if len(search) != 0 else None
 
     backup_info = db.db_get_backup(search_id)
 
     if len(backup_info) != 0 and search_info["backup"] == 1:
 
-        active, city, done, estab_info, product_info, search_id = backup_info[0]
+        (
+            active,
+            city,
+            done,
+            estab_info,
+            product_info,
+            search_id,
+            duration,
+            progress_value,
+        ) = backup_info[0]
         estab_info = json.loads(estab_info)
         estab_names = estab_info["names"]
         estab_data = estab_info["info"]
@@ -862,10 +898,24 @@ def handle_search(search_info):
                 broadcast=True,
             )
             scrap = scrapper.Scrap(
-                estab_data, city, estab_names, product, active, search_id, False
+                estab_data,
+                city,
+                estab_names,
+                product,
+                active,
+                search_id,
+                False,
+                duration,
+                progress_value,
             )
 
     else:
+
+        emit(
+            "captcha",
+            {"type": "notification", "message": "Iniciando pesquisa ..."},
+            broadcast=True,
+        )
 
         if search_info["backup"] == 1 and len(backup_info) != 0:
             query = "DELETE * FROM search WHERE id = {}".format(search_id)
@@ -881,9 +931,18 @@ def handle_search(search_info):
         estab_data = [
             estab for estab in estabs if estab[0] == city and estab[1] in estab_names
         ]
+        progress_value = 100 / len(product)
 
         scrap = scrapper.Scrap(
-            estab_data, city, estab_names, product, active, search_id, False
+            estab_data,
+            city,
+            estab_names,
+            product,
+            active,
+            search_id,
+            False,
+            0,
+            progress_value,
         )
 
         db.db_save_backup(
@@ -894,48 +953,48 @@ def handle_search(search_info):
                 "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
                 "product_info": json.dumps(product),
                 "search_id": search_id,
+                "duration": 0,
+                "progress_value": progress_value,
             }
         )
 
-        session["scrap"] = scrap
-        session["search_id"] = search_id
+    session["scrap"] = scrap
+    session["search_id"] = search_id
+    session["cancel"] = False
+    session["pause"] = False
 
     try:
 
-        emit(
-            "captcha",
-            {"type": "notification", "message": "Iniciando pesquisa ..."},
-            broadcast=True,
-        )
-
         scrap.run()
 
-        emit(
-            "captcha",
-            {"type": "notification", "message": "Pesquisa concluida."},
-            broadcast=True,
-        )
-        emit(
-            "captcha",
-            {"type": "progress", "done": 1},
-            broadcast=True,
-        )
-        # search_id = xlsx_to_bd(db, search_info["city"])
-        # with open(
-        #     "data_{}.json".format(search_info["city"]), "w+", encoding="utf-8"
-        # ) as f:
-        #     json.dump(
-        #         {
-        #             "search_id": search_id,
-        #             "estab_data": estab_data,
-        #             "city": city,
-        #             "" "product": product,
-        #         },
-        #         f,
-        #         ensure_ascii=False,
-        #         indent=4,
-        #     )
-        bd_to_xlsx(db, search_id, estab_data, city)
+        if not session["cancel"] and not session["pause"]:
+
+            emit(
+                "captcha",
+                {"type": "notification", "message": "Pesquisa concluida."},
+                broadcast=True,
+            )
+            emit(
+                "captcha",
+                {"type": "progress", "done": 1},
+                broadcast=True,
+            )
+            # search_id = xlsx_to_bd(db, search_info["city"])
+            # with open(
+            #     "data_{}.json".format(search_info["city"]), "w+", encoding="utf-8"
+            # ) as f:
+            #     json.dump(
+            #         {
+            #             "search_id": search_id,
+            #             "estab_data": estab_data,
+            #             "city": city,
+            #             "" "product": product,
+            #         },
+            #         f,
+            #         ensure_ascii=False,
+            #         indent=4,
+            #     )
+            bd_to_xlsx(db, search_id, estab_data, city)
 
     except:
 
@@ -946,13 +1005,6 @@ def handle_search(search_info):
         )
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-
-# @socketio.on("quit")
-# def handle_quit():
-
-#     print("quitting")
-#     os._exit(0)
 
 
 @app.context_processor
@@ -977,7 +1029,7 @@ def utility_processor():
     )
 
 
-if __name__ == "__main__":
+def run_app():
 
     config_name = "ACCB.cfg"
     url = "http://127.0.0.1:5000"
@@ -989,7 +1041,7 @@ if __name__ == "__main__":
         if os.name == "nt":
             if not process_exists("ACCB.exe"):
                 webbrowser.open(url)
-                socketio.run(app, debug=False)
+                socketio.run(app, debug=True)
             else:
                 webbrowser.open(url)
         else:
@@ -1016,4 +1068,8 @@ if __name__ == "__main__":
             else:
                 webbrowser.open(url)
 
+
+if __name__ == "__main__":
+
+    run_app()
     # app.run(debug=True)

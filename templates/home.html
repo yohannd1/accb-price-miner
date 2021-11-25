@@ -34,7 +34,9 @@
 	</head>
 	{% block content %}
 		<city value={{city}} />
+		<search value="false" />
 		<header>
+			<a style="position: absolute; right: 10px; top: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="left" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
 			<div class="top-logo">
 				<img
 					src="{{ url_for('static',filename='img/uesc_brasão.png') }}"
@@ -439,6 +441,25 @@
 			</div>
 		</div>
 
+		<!-- MODAL DE WARNINGS -->
+		<div id="warning" class="modal">
+			<div class="modal-content" style="height: 100%">
+				<div>
+					<h5 class="modal-title"  style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Evitar fazer durante a utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
+				</div>
+				<ul style="list-style:lower-roman; height: 75%; overflow: auto; list-style: lower-roman; justify-content: center;align-items: center;display: flex;flex-direction: column;" class="browser-default">
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+				</ul>
+			</div>
+		</div>
+
 		<!-- MODAL DE OPÇÃO DE ARQUIVOS - PESQUISA -->
 		<div id="search-file" class="modal">
 			<div class="modal-content">
@@ -479,38 +500,8 @@
 
 			var search = '{{search}}';
 			var active = '{{active}}';
-			var product_len = '{{product_len}}';
+			var progress_value = '{{progress_value}}';
 			var socket = io().connect("http://127.0.0.1:5000/");
-
-			// window.onbeforeunload = function() {
-			// 	var msg = "Realmente deseja sair ? O programa será encerrado.";
-			// 	if (window.event) {
-			// 		window.event.returnValue = msg;
-			// 	}
-			// 	console.log("RELOAD");
-
-			// 	// new Notification("ACCB - Pesquisa Automática", {
-			// 	// 	body: "Fechando o programa, todos os dados foram salvos.",
-			// 	// });
-			// 	socket.emit('quit');
-			// 	return msg;
-			// };
-
-			window.addEventListener('beforeunload', function (e) {
-				// the absence of a returnValue property on the event will guarantee the browser unload happens
-				// delete e['returnValue'];
-				var msg = "Realmente deseja sair ? O programa será encerrado.";
-				if (window.event) {
-					window.event.returnValue = msg;
-				}
-				console.log("RELOAD");
-
-				// new Notification("ACCB - Pesquisa Automática", {
-				// 	body: "Fechando o programa, todos os dados foram salvos.",
-				// });
-				socket.emit('quit');
-				return msg;
-			});
 
 			const search_loaded = () => {
 
@@ -523,12 +514,16 @@
 
 						var width = active.split('.')[0];
 						var elem = document.getElementById("progress_bar");
-						width = width * (100/product_len).toFixed(2)
+						width = width * progress_value;
+						width = width.toFixed(2);
 						elem.style.width = width.toString() + "%";
 						elem.innerHTML = width.toString() + "%";
 
 						$('ul.tabs').tabs('select', 'progress');
-
+						$('#main-navigation li a').addClass("disabled");
+						$(window).on('unload', function( event ) {
+							console.log('Handler for `unload` called.');
+						});
 
 					}
 
@@ -536,7 +531,20 @@
 
 			}
 
-			window.onload = search_loaded
+			$("#warning").modal({
+				fadeDuration: 200,
+			});
+
+			$('body').one('click', '#warning .close-modal', function (e) {
+
+					var modal = $("#warning").modal();
+					modal.closeModal();
+					search_loaded();
+					$(".jquery-modal").css("display", "none");
+
+			});
+
+			// window.onload = search_loaded
 
 		</script>
 	{% endblock %}
