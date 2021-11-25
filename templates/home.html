@@ -115,7 +115,11 @@
 						<div id="progress_log">
 						</div>
 					</div>
-					<button id="pause" class=" btn-large">Pausar Pesquisa</button>
+					<button id="pause" class=" btn-large">Parar Pesquisa</button>
+					<button id="cancel" class=" btn-large">Cancelar Pesquisa</button>
+				</div>
+				<div class="row center pause-overlay">
+					<i class="fa fa-spinner fa-pulse" id="pause-loader"></i>
 				</div>
 			</div>
 			<div id="configurar" class="col s12 tab" >
@@ -213,7 +217,7 @@
 							<i class="fa fa-spinner fa-pulse" id="search-loader"></i>
 						</div>
 					</div>
-					<span class="left duration" >Tempo de duração da pesquisa : 0.0 </span>
+					<span class="left duration" >Tempo de duração da pesquisa : NaN  </span>
 			</div>
 			<div id="about" class="col s12 tab" >
 				<div class="tab-content-config row">

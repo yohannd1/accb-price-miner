@@ -97,9 +97,17 @@ class Scrap:
         except:
             return False
 
+    def pause(self, cancel=False):
+
+        if cancel:
+            self.cancel = True
+        else:
+            self.exit = True
+            self.stop = True
+
     # CHECK
 
-    def exit_thread(self):
+    def exit_thread(self, error):
         """
         Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a manualmente.
 
@@ -111,15 +119,28 @@ class Scrap:
                 show_message (Interface.show_message): Função que mostra uma mensagem x em pop up.
 
         """
-        self.stop = True
-
-        if self.exit:
+        if error:
 
             emit(
                 "search",
                 {
-                    "type": "pause",
-                    "message": "A pesquisa foi pausada, todos os dados foram salvos no banco de dados local.",
+                    "type": "error",
+                    "message": "Ocorreu um erro de rede durante a pesquisa e não foi possível reinicia-la automaticamente, inicie a pesquisa manualmente !",
+                },
+                broadcast=True,
+            )
+
+            self.driver.close()
+            self.driver.quit()
+            return
+
+        elif self.cancel:
+
+            emit(
+                "search",
+                {
+                    "type": "cancel",
+                    "message": "A pesquisa foi cancelada, todos os dados foram excluídos.",
                 },
                 broadcast=True,
             )
@@ -127,13 +148,13 @@ class Scrap:
             self.driver.quit()
             return
 
-        else:
+        elif self.exit:
 
             emit(
                 "search",
                 {
-                    "type": "error",
-                    "message": "Ocorreu um erro de rede durante a pesquisa e não foi possível reinicia-la automaticamente, inicie a pesquisa manualmente !",
+                    "type": "pause",
+                    "message": "A pesquisa foi parada, todos os dados foram salvos no banco de dados local.",
                 },
                 broadcast=True,
             )
@@ -309,7 +330,7 @@ class Scrap:
                     return
         else:
 
-            self.exit_thread(None, None, None, None, None)
+            self.exit_thread(True)
 
     def run(self):
         """
@@ -447,20 +468,11 @@ class Scrap:
 
             for index_k, keyword in enumerate(keywords.split(",")[self.index_k :]):
 
-                # if not self.connect():
-
-                # 	self.exit_thread(None, None, None, None, None)
-                # 	return
-
                 if self.stop:
 
                     self.exit = True
+                    self.exit_thread()
                     return
-
-                # if not self.connect():
-
-                # 	self.exit_thread(None, None, None, None, None)
-                # 	return
 
                 # self.backup_save(index + start_prod, day, 0,self.LOCALS_NAME, self.CITY,  self.LOCALS)
                 active = "{}.{}".format(index + self.index, index_k + self.index_k)
@@ -509,6 +521,8 @@ class Scrap:
                 if self.stop:
 
                     self.exit = True
+                    self.exit_thread()
+
                     return
                 # Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados
                 try:
@@ -530,6 +544,8 @@ class Scrap:
                         if self.stop:
 
                             self.exit = True
+                            self.exit_thread()
+
                             return
 
                         try:
@@ -559,6 +575,7 @@ class Scrap:
                     if self.stop:
 
                         self.exit = True
+                        self.exit_thread()
                         return
 
                     self.get_data(product, keyword)
@@ -572,6 +589,7 @@ class Scrap:
         if self.stop:
 
             self.exit = True
+            self.exit_thread()
             return
 
         # CALL BD_TO_XLSX

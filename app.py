@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, request, g
+from flask import Flask, render_template, request, g, session
 from flask_material import Material
 from flask_socketio import SocketIO, send, emit
 import time
@@ -20,6 +20,7 @@ from xlsxwriter.workbook import Workbook
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
+import threading
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
@@ -39,7 +40,7 @@ def get_time(start):
 
     end = time.time()
     temp = end - start
-    print(temp)
+    # print(temp)
     hours = temp // 3600
     temp = temp - 3600 * hours
     minutes = temp // 60
@@ -78,7 +79,7 @@ def get_keywords(db):
     keywords = [keyword[0].split(",") for keyword in keywords]
     # Flatten the list
     keywords = [keyword for sublist in keywords for keyword in sublist]
-    print(keywords)
+    # print(keywords)
 
 
 def xlsx_to_bd(db, city_name):
@@ -247,11 +248,10 @@ def home():
     search = False
     active = "0.0"
     try:
-        search_id = search_id[0]
+        search_id = search_id[0][0]
 
         backup_info = db.db_get_backup(search_id)
         if len(backup_info) != 0:
-
             active, city, done, estab_info, product_info, search_id = backup_info[0]
             estab_info = json.loads(estab_info)
             estab_names = estab_info["names"]
@@ -261,6 +261,7 @@ def home():
             if done == 0:
 
                 search = True
+
     except:
 
         city = db.db_get_city()
@@ -276,6 +277,11 @@ def home():
     )
 
     # sys.exit()
+    city_arr = []
+    if not isinstance(city, list):
+
+        city_arr.append((city,))
+        city = city_arr
 
     return render_template(
         "home.html",
@@ -613,9 +619,9 @@ def update_city():
 
     except sqlite3.Error as er:
 
-        print("SQLite error: %s" % (" ".join(er.args)))
-        print("Exception class is: ", er.__class__)
-        print("SQLite traceback: ")
+        # print("SQLite error: %s" % (" ".join(er.args)))
+        # print("Exception class is: ", er.__class__)
+        # print("SQLite traceback: ")
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
@@ -812,6 +818,23 @@ def bd_to_xlsx_route():
 
 
 # SocketIO
+@socketio.on("pause")
+def handle_pause(cancel=False):
+
+    if cancel != False:
+        # Cancela
+        session["scrap"].pause(True)
+    else:
+        session["scrap"].pause()
+
+
+@socketio.on("cancel")
+def handle_cancel():
+
+    db = database.Database()
+    query = "DELETE * FROM search WHERE id = {}".format(session["search_id"])
+    db.db_run_query(query)
+
 
 # Inicia pesquisa
 @socketio.on("search")
@@ -874,6 +897,9 @@ def handle_search(search_info):
             }
         )
 
+        session["scrap"] = scrap
+        session["search_id"] = search_id
+
     try:
 
         emit(
@@ -883,6 +909,7 @@ def handle_search(search_info):
         )
 
         scrap.run()
+
         emit(
             "captcha",
             {"type": "notification", "message": "Pesquisa concluida."},

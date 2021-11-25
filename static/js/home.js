@@ -9,7 +9,12 @@ function move(val) {
 	i = 1;
 	var elem = document.getElementById("progress_bar");
 	width += val;
-	// width = width.toFixed(2);
+	try {
+		width = width.toFixed(2);
+	}
+	catch (e) {
+		// Error
+	}
 	var floor = Math.floor(width);
 	elem.style.width = width.toString() + "%";
 	elem.innerHTML = width.toString() + "%";
@@ -278,7 +283,7 @@ const list_search = (search_id = undefined) => {
 
 
 			// 4 = city , 5 = product , 6 = local, 7 = adress, 8 = price, 9 = keyword
-			console.table(response);
+			// console.table(response);
 			response.map((value, index) => {
 				time = value[4];
 				$(`
@@ -545,6 +550,7 @@ $(document).ready(function () {
 				$(".log_item").remove();
 				$("#progress_log").css("height", "100%");
 				$(".estab").remove();
+				$(".log_item").remove();
 				window.location.reload(true);
 			}
 
@@ -596,6 +602,30 @@ $(document).ready(function () {
 			$("#progress_log").css("height", "100%");
 			window.location.reload(true);
 
+		} else if (msg['type'] == 'cancel') {
+			$("#progress_bar").css("width", "0%");
+			$("#progress_bar").html("0%");
+			$('ul.tabs').tabs('select', 'pesquisar');
+			$("#progress h5").html(`Iniciando Pesquisa`);
+			$(".tabs a").addClass('enable');
+			$(".log_item").remove();
+			$("#progress_log").css("height", "100%");
+			socket.emit('cancel');
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
+
+		} else if (msg['type'] == 'pause') {
+			$("#progress_bar").css("width", "0%");
+			$("#progress_bar").html("0%");
+			$('ul.tabs').tabs('select', 'pesquisar');
+			$("#progress h5").html(`Iniciando Pesquisa`);
+			$(".tabs a").addClass('enable');
+			$(".log_item").remove();
+			$("#progress_log").css("height", "100%");
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
 		}
 
 	});
@@ -612,6 +642,13 @@ $(document).ready(function () {
 	custom_select_search();
 
 	$("#month-picker").click((e) => {
+
+		var search_id = $("#search-select").val();
+
+		if (search_id == "null") {
+			alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
+			return;
+		}
 
 		e.preventDefault();
 
@@ -693,9 +730,29 @@ $(document).ready(function () {
 	$("#pause").click(function (e) {
 
 		e.preventDefault();
-		move(100 / 13);
-		$(this).html("PAUSANDO PESQUISA");
-		$(this).addClass('disable');
+		// $(this).html("PAUSANDO PESQUISA");
+		// $(this).addClass('disable');
+		if (window.confirm(`Realmente deseja PAUSAR a pesquisa ? Todos o progresso será salvo.`)) {
+			socket.emit('pause');
+			$("#progress h5").html(`Pausando Pesquisa`);
+			$(".pause-overlay").fadeIn(500);
+			$("#progress-loader").fadeIn(500);
+		}
+
+
+	});
+
+	$("#cancel").click(function (e) {
+
+		e.preventDefault();
+		// $(this).html("PAUSANDO PESQUISA");
+		// $(this).addClass('disable');
+		if (window.confirm(`Realmente deseja CANCELAR a pesquisa ? Todos os dados serão EXCLUIDOS.`)) {
+			socket.emit('pause', { data: true });
+			$("#progress h5").html(`Cancelando Pesquisa`);
+			$(".pause-overlay").fadeIn(500);
+			$("#progress-loader").fadeIn(500);
+		}
 
 	});
 
