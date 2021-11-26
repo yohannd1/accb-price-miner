@@ -266,7 +266,10 @@ def home():
                 search = True
 
     except:
-        progress_value = 100 / len(product_len)
+        if not len(product_len) == 0:
+            progress_value = 100 / len(product_len)
+        else:
+            progress_value = 0
         pass
 
     day = datetime.datetime.now()
@@ -288,6 +291,21 @@ def home():
     # acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2
     template = "home.html" if 0 >= connected <= 2 else "notallowed.html"
 
+    month = [
+        "Janeiro",
+        "Fevereiro",
+        "Março",
+        "Abril",
+        "Maio",
+        "Junho",
+        "Julho",
+        "Agosto",
+        "Setembro",
+        "Outubro",
+        "Novembro",
+        "Dezembro",
+    ]
+
     return render_template(
         template,
         data=city,
@@ -300,6 +318,8 @@ def home():
         product_len=len(product_len),
         search_info=search_info,
         progress_value=progress_value,
+        month=month,
+        active_month=day.month,
     )
 
 

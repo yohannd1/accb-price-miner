@@ -38,6 +38,54 @@ function similarity(s1, s2) {
 	return (longerLength - distance(longer, shorter)) / parseFloat(longerLength);
 }
 
+function filter_search(month) {
+	var search_id = $("#search-select").val();
+
+	if (search_id == "null") {
+		alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
+		return;
+	}
+
+
+	$.get("/select_search_info", { month: month }, (response) => {
+
+		if (response.success) {
+
+			var data = JSON.parse(response.data);
+			console.log(month);
+			if (data.length != 0) {
+
+				$("#search-loader").fadeIn(500);
+				$(".tr-item").remove();
+
+				$("#search-select option").remove();
+				data.map((value) => {
+
+					console.log(value);
+					$("#search-select").append(`<option city=${value[2]} value=${value[1]}>${value[2]} ${value[3]}</option>`);
+
+				});
+
+				;
+				$("#search-select").parent().find(".styledSelect").remove();
+				$("#search-select").parent().find("ul.options").remove();
+				list_search();
+				custom_select_search();
+				return true;
+
+			} else {
+				Materialize.toast("Nenhuma pesquisa cadastrada para esse mês.", 2000, 'rounded');
+				return false;
+			}
+
+		} else {
+			return false;
+			Materialize.toast(response.message, 2000, 'rounded');
+		}
+
+	});
+}
+
 function distance(s1, s2) {
 	s1 = s1.toLowerCase();
 	s2 = s2.toLowerCase();
@@ -107,7 +155,7 @@ const custom_select = () => {
 		// Show the unordered list when the styled div is clicked (also hides it if the div is clicked again)
 		$styledSelect.click(function (e) {
 			e.stopPropagation();
-			$('div.styledSelect.active').each(function () {
+			$("#search-select").parent().parent().find("div.styledSelect.active").each(function () {
 				$(this).removeClass('active').next('ul.options').hide();
 			});
 			$(this).toggleClass('active').next('ul.options').toggle();
@@ -139,7 +187,82 @@ const custom_select = () => {
 	});
 
 }
+const custom_select_date = () => {
 
+	$('#month-picker').each(function () {
+
+		// Cache the number of options
+		var $this = $(this),
+			numberOfOptions = $(this).children('option').length;
+
+		// Hides the select element
+		$this.addClass('s-hidden');
+
+		// Wrap the select element in a div
+		$this.wrap('<div class="select" style="margin: 0 10px;"></div>');
+
+		// Insert a styled div to sit over the top of the hidden select element
+		$this.after('<div class="styledSelect z-depth-2"></div>');
+
+		// Cache the styled div
+		var $styledSelect = $this.next('div.styledSelect');
+
+		// Show the first select option in the styled div
+		$styledSelect.text($this.children('option:selected').text());
+
+		// Insert an unordered list after the styled div and also cache the list
+		var $list = $('<ul />', {
+			'class': 'options'
+		}).insertAfter($styledSelect);
+
+		// Insert a list item into the unordered list for each select option
+		for (var i = 0; i < numberOfOptions; i++) {
+			$('<li />', {
+				text: $this.children('option').eq(i).text(),
+				rel: $this.children('option').eq(i).val()
+			}).appendTo($list);
+		}
+
+		// Cache the list items
+		var $listItems = $list.children('li');
+
+		// Show the unordered list when the styled div is clicked (also hides it if the div is clicked again)
+		$styledSelect.click(function (e) {
+			e.stopPropagation();
+			$("#month-picker").parent().parent().find("div.styledSelect.active").each(function () {
+				$(this).removeClass('active').next('ul.options').hide();
+			});
+			$(this).toggleClass('active').next('ul.options').toggle();
+		});
+
+		// Hides the unordered list when a list item is clicked and updates the styled div to show the selected list item
+		// Updates the select element to have the value of the equivalent option
+		$listItems.click(function (e) {
+			e.stopPropagation();
+			if ($(this).attr('rel') != $this.val()) {
+				var filter = filter_search(parseInt($(this).attr('rel')) + 1);
+				if (filter) {
+					$styledSelect.text($(this).text()).removeClass('active');
+					$this.val($(this).attr('rel'));
+					$list.hide();
+				} else {
+					$list.hide();
+				}
+			} else {
+				$list.hide();
+			}
+			// Materialize.toast($this.val());
+		});
+
+		// Hides the unordered list when clicking outside of it
+		$(document).click(function () {
+			$styledSelect.removeClass('active');
+			$list.hide();
+		});
+
+	});
+
+}
 const custom_select_search = () => {
 
 	$('#pesquisa select').each(function () {
@@ -182,7 +305,7 @@ const custom_select_search = () => {
 		// Show the unordered list when the styled div is clicked (also hides it if the div is clicked again)
 		$styledSelect.click(function (e) {
 			e.stopPropagation();
-			$('div.styledSelect.active').each(function () {
+			$("#city-select").parent().parent().find("div.styledSelect.active").each(function () {
 				$(this).removeClass('active').next('ul.options').hide();
 			});
 			$(this).toggleClass('active').next('ul.options').toggle();
@@ -711,50 +834,8 @@ $(document).ready(function () {
 	list_product();
 	list_search();
 	custom_select();
+	custom_select_date();
 	custom_select_search();
-
-	$("#month-picker").click((e) => {
-
-		var search_id = $("#search-select").val();
-
-		if (search_id == "null") {
-			alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
-			return;
-		}
-
-		e.preventDefault();
-
-		$("#search-loader").fadeIn(500);
-		$(".tr-item").remove();
-
-		$("#search-select option").remove();
-
-		var month = "10";
-
-		$.get("/select_search_info", { month: month }, (response) => {
-
-			if (response.success) {
-
-				var data = JSON.parse(response.data);
-				data.map((value) => {
-
-					console.log(value);
-					$("#search-select").append(`<option city=${value[2]} value=${value[1]}>${value[2]} ${value[3]}</option>`);
-
-				});
-
-				$(".styledSelect").remove();
-				list_search();
-				custom_select_search();
-
-			} else {
-				Materialize.toast(response.message, 2000, 'rounded');
-			}
-
-		});
-
-
-	});
 
 	// $('.datepicker').datepicker({
 	// 	i18n: {
@@ -781,20 +862,19 @@ $(document).ready(function () {
 
 	// M.AutoInit();
 	// $("#sec-navigation").find("a.active").parent().css("width", "100%");
-	$("#sec-navigation").find("a.active").parent().css("width", "fit-content");
 
 
 	$("#sec-navigation").tabs({
 		onShow: () => {
 
 			// console.log("kaka");
-			$("#sec-navigation").find("a").each(function (e) {
+			// $("#sec-navigation").find("a").each(function (e) {
 
-				$(this).parent().css("width", "10px");
+			// 	$(this).parent().css("width", "10px");
 
-			});
+			// });
 			// $("#sec-navigation").find("a.active").parent().css("width", "100%");
-			$("#sec-navigation").find("a.active").parent().css("width", "fit-content");
+			// $("#sec-navigation").find("a.active").parent().css("width", "100%");
 
 		},
 	})
@@ -1188,6 +1268,7 @@ $(document).ready(function () {
 
 			socket.emit('search', form_data);
 			$('ul.tabs').tabs('select', 'progress');
+			$("#main-navigation a").addClass("disable");
 
 		}
 

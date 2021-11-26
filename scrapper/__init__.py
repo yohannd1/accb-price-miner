@@ -89,7 +89,7 @@ class Scrap:
         temp = temp - 3600 * hours
         minutes = temp // 60
         seconds = temp - 60 * minutes
-        return {"minutes": minutes, "seconds": seconds, "hours": hours}
+        return {"minutes": minutes + (60 * hours), "seconds": seconds, "hours": hours}
 
     def log_progress(self, progress):
 
