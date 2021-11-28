@@ -672,7 +672,7 @@ $(document).ready(function () {
 			if (msg['value'] != '')
 				move(msg['value']);
 			if (msg['done'] == 1) {
-				console.log("DONE");
+				// console.log("DONE");
 				$("#progress_bar").css("width", "0%");
 				$("#progress_bar").html("0%");
 				$('ul.tabs').tabs('select', 'pesquisar');
@@ -681,9 +681,10 @@ $(document).ready(function () {
 				$("#progress_log").css("height", "100%");
 				$(".estab").remove();
 				$('#main-navigation li a').removeClass("disabled");
+				$(window).off();
 
-				// $(".log_item").remove();
-				// window.location.reload(true);
+				$(".log_item").remove();
+				window.location.reload(true);
 			}
 
 		} else if (msg['type'] == 'captcha') {
@@ -751,6 +752,20 @@ $(document).ready(function () {
 				body: msg['message'],
 			});
 
+		} else if (msg['type'] == 'chrome') {
+
+			$("#progress_bar").css("width", "0%");
+			$("#progress_bar").html("0%");
+			$('ul.tabs').tabs('select', 'pesquisar');
+			$("#progress h5").html(`Iniciando Pesquisa`);
+			$(".log_item").remove();
+			$("#progress_log").css("height", "100%");
+			$('#main-navigation li a').removeClass("disabled");
+			$(window).off();
+			alert("Instale uma versão do Google Chrome para prosseguir com a pesquisa.");
+			window.location.reload(true);
+
+
 		} else if (msg['type'] == 'done') {
 
 			$("#progress_bar").css("width", "0%");
@@ -760,6 +775,7 @@ $(document).ready(function () {
 			$(".log_item").remove();
 			$("#progress_log").css("height", "100%");
 			$('#main-navigation li a').removeClass("disabled");
+			$(window).off();
 			window.location.reload(true);
 
 
@@ -777,6 +793,9 @@ $(document).ready(function () {
 			});
 			$(".pause-overlay").fadeOut(500);
 			$("#pause-loader").fadeOut(500);
+			socket.emit('reload');
+			window.location.reload(true);
+
 
 		} else if (msg['type'] == 'pause') {
 			$("#progress_bar").css("width", "0%");
@@ -791,6 +810,9 @@ $(document).ready(function () {
 			});
 			$("#pause-loader").fadeOut(500);
 			$(".pause-overlay").fadeOut(500);
+			socket.emit('reload');
+			window.location.reload(true);
+
 
 		} else if (msg['type'] == 'log') {
 
@@ -889,6 +911,7 @@ $(document).ready(function () {
 			$("#progress h5").html(`Pausando Pesquisa`);
 			$(".pause-overlay").fadeIn(500);
 			$("#pause-loader").fadeIn(500);
+			$(window).off();
 
 		}
 
@@ -905,6 +928,7 @@ $(document).ready(function () {
 			$("#progress h5").html(`Cancelando Pesquisa`);
 			$(".pause-overlay").fadeIn(500);
 			$("#pause-loader").fadeIn(500);
+			$(window).off();
 		}
 
 	});
@@ -1269,6 +1293,9 @@ $(document).ready(function () {
 			socket.emit('search', form_data);
 			$('ul.tabs').tabs('select', 'progress');
 			$("#main-navigation a").addClass("disable");
+			$(window).on('unload', function (event) {
+				return "Realmente deseja sair ? Existe uma pesquisa em andamento.";
+			});
 
 		}
 

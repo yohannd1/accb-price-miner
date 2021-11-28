@@ -1,7 +1,7 @@
 [
     {
         "estab_name": "Mangostão",
-        "web_name": "Supermercado Mangostao LTDA",
+        "web_name": "Supermercado Mangostão LTDA",
         "adress": "Avenida Lindolfo Collor-101",
         "city_name": "Ilhéus"
     },
@@ -36,7 +36,7 @@
         "city_name": "Ilhéus"
     },
     {
-        "estab_name": "Meira - N. Senhora da Vitoria",
+        "estab_name": "Meira- N. Senhora da Vitoria",
         "web_name": "Dalnorde Supermercado",
         "adress": "Rua São Jorge- 64",
         "city_name": "Ilhéus"
@@ -55,7 +55,7 @@
     },
     {
         "estab_name": "Itão",
-        "web_name": "Supermercados Itao",
+        "web_name": "Supermercados Itão",
         "adress": "Avenida Petrobrás S/n",
         "city_name": "Ilhéus"
     },
@@ -68,18 +68,18 @@
     {
         "estab_name": "Meira-N. Costa",
         "web_name": "Dalnorde Supermercado",
-        "adress": "Rua Jacaranda - 250",
+        "adress": "Rua Jacaranda- 250",
         "city_name": "Ilhéus"
     },
     {
         "estab_name": "Cestão da economia",
         "web_name": "Não possui",
-        "adress": "Avenida Lotus - 24",
+        "adress": "Avenida Lotus-24",
         "city_name": "Ilhéus"
     },
     {
         "estab_name": "Atacadão",
-        "web_name": "Atacadao",
+        "web_name": "Atacadão",
         "adress": "Rodovia jorge Amado S/n",
         "city_name": "Ilhéus"
     }

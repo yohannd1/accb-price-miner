@@ -1,86 +1,93 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/smvasconcelos/ACCB_IT/tree/Executavel">
+  <a href="https://github.com/Syphoon/ACCB_IT/tree/GUI">
     <!-- <img src="./img/logo_2.png" alt="Logo" width="100"> -->
-	<h3 align="center">Projeto ACCB - Guia de Funcionalidades</h3>
+	<h3 align="center">Projeto ACCB - GUI</h3>
   </a>
+  <p align="center">
+    Projeto desenvolvido para o projeto de iniciação tecnológica
+    <br />
+    <!-- <a href="https://syphoon.github.io/ACCB_IT/tree/GUI"><strong>Documentação do código do projeto</strong></a> -->
+  </p>
 </p>
 
 
-<!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary>Opções</summary>
-  <ol>
-    <li>
-        <a href="#definição">Definição</a><br>
-    </li>
-	<li>
-        <a href="#tratar-pesquisas">Tratar Pesquisas</a><br>
-	</li>
-	<li>
-        <a href="#tratar-pesquisas-todos">Tratar Pesquisas Todos</a><br>
-	</li>
-  </ol>
-</details>
+## Progresso de Desenvolvimento
 
-## Definição
+- [x] Interface
+- [x] Banco de Dados
+- [x] Log de Erros
+- [x] CRUD de Componentes
+- [x] Backup de Pesquisa
+- [x] Configuração de Estabelecimentos
+- [x] Configuração de Produtos
+- [x] Log de Produtos
+- [x] Melhoria de reconhecimento de produto
+- [x] Listagem de Pesquisas
+- [x] Pesquisa de Pesquisas
+- [x] Filtragem de Pesquisas
+- [ ] Transformar csv_to_xlsx em db_to_xlsx
+- [ ] Limitar à somente uma aba de navegação
 
-Dado uma estrutura :
+
+## Informações de Desenvolvimento
+
+Para rodar o projeto preferencialmente inicie um ambiente virtual com :
 
 ```
--- ACCB.exe
--- Itabuna [25-06-2021]
--- Itabuna [25-06-2021]
--- Itabuna [25-06-2021]
--- Ilhéus [25-06-2021]
--- Ilhéus [25-06-2021]
--- Ilhéus [25-06-2021]
--- Ilhéus [25-06-2021]
-```
-
-o programa itera por cada pasta de pesquisa e retorna 2 pastas com 3 subdiretórios cada em cada pasta de sua respectiva cidade.
+	pip install virtualenv
+	python -m venv <nome>
 
 ```
--- ACCB.exe
-...
--- Coleta Datada
-   --Itabuna
-		-- Coleta Padrão
-		-- Coleta Arquivo TODOS
-		-- Coleta Extra
-   --Ilhéus
-		-- Coleta Padrão
-		-- Coleta Arquivo TODOS
-		-- Coleta Extra
--- Coleta Concatenada
-   --Itabuna
-		-- Coleta Padrão
-		-- Coleta Arquivo TODOS
-		-- Coleta Extra
-   --Ilhéus
-		-- Coleta Padrão
-		-- Coleta Arquivo TODOS
-		-- Coleta Extra
+
+Em seguida abra a pasta do ambiente e clone o repositório em questão com :
+
 ```
-<p>
--- Coleta Datada -> Retorna todas as coletas de cada pasta concatenadas em um unico arquivo do seu respectivo estabelecimento em que cada 'sheet' (planilha) é a data da coleta.
-</p>
-<p>
--- Coleta Concatenada -> Concatena todas as coletas do resultado anterior (Coleta Datada) em um arquivo do seu respectivo estabelecimento, com uma unica 'sheet' (panilha) e todas as duplicações de valores existentes em cada data.
-</p>
+	cd <nome>
+	git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
+```
 
-## Tratar Pesquisas
-<p>
-	O comando Tratar Pesquisas faz todo esse processo com os arquivos da pesquisa padrão e os coloca na pasta Coleta Padrão, ou seja, todos os arquivos que não tem Todos no nome.
-</p>
+E por último inicie o ambiente virtual e instale as dependências do python para iniciar o projeto :
 
-## Tratar Pesquisas Todos
+```
+	cd Scripts
+	activate.bat
+	cd ..
+	pip install -r requirements.txt
 
-<p>
-	O comando Tratar Pesquisas Todos, faz a mesma coisa que a de cima, porém ele faz a pesquisa no arquivo Todos daquela data, colocando os resultados da pesquisa Padrão em Aquivo na pasta Coleta Arquivo TODOS e também pesquisa cada estabelecimento único que aparece no arquivo TODOS daquela data, ou seja, qualquer estabelecimento que não pertence a pesquisa oficial é colocado na Coleta Extra, com o nome do seu estabelecimento no mesmo padrão que as demais.
-</p>
+```
 
-## Contribuidores
+Agora é só rodar o projeto com python -m flask run ou python app.py.
 
-- [Samuel Mendonça](https://github.com/smvasconcelos)
+## Observações
+
+Para que seja possível gerar um exe sem uma janela de console do windows é necessário alterar um arquivo fonte do selenium, este que se encontra em :
+
+```
+	\Lib\site-packages\selenium\webdriver\common\service.py
+	Altere então :
+	self.process = subprocess.Popen(cmd, env=self.env, close_fds=platform.system() != 'Windows', stdout=self.log_file, stderr=self.log_file, stdin=PIPE)
+	para :
+	self.process = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE ,stderr=PIPE, shell=False, creationflags=0x08000000)
+```
+
+E em seguida é só executar o comando pyinstaller app.spec.
+
+## Criando um .spec Novo
+
+```
+pyi-makespec --noconsole --onefile app.py
+```
+
+.spec Completo :
+
+```
+pyi-makespec --noconsole --onefile --add-data="templates;templates" --add-data="static;static" --add-data="schema.sql;." --add-data="itabuna.json;." --add-data="ilheus.json;." --name="ACCB"--icon=logo.ico --paths="D:\Uesc\Scrapper\web\ACCB\Lib\flask_material\templates\material" --hidden-import=engineio.async_drivers.eventlet --hidden-import=flask_material --uac-admin --additional-hooks-dir=. app.py
+```
+
+## Gerando nova documentação com pdoc
+
+```
+	pdoc app.py database scrapper -o doc
+```

@@ -17,10 +17,11 @@ class Database:
     conn = None
 
     def __init__(self):
-
+        """Inicia a conexão com o banco de dados."""
         self.conn = self.db_connection()
 
     def resource_path(self, path):
+        """Recupera o caminho de um recurso da aplicação."""
 
         try:
             base_path = sys._MEIPASS
@@ -31,6 +32,7 @@ class Database:
 
     def db_start(self):
 
+        """Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe."""
         schema = self.resource_path("schema.sql")
         cursor = sqlite3.connect("accb.sqlite").cursor()
         sql_file = open(schema)
@@ -39,7 +41,7 @@ class Database:
         # subprocess.check_call(["attrib", "+H", "accb.sqlite"])
 
     def db_connection(self):
-
+        """Realiza a conexão com o banco de dados ou o povoa caso não exista."""
         conn = None
         if exists("accb.sqlite"):
             conn = sqlite3.connect("accb.sqlite")
@@ -72,7 +74,7 @@ class Database:
         return conn
 
     def db_save_city(self, name):
-
+        """Salva as cidades no banco de dados."""
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
 
@@ -82,6 +84,7 @@ class Database:
         self.db_end_conn()
 
     def db_save_product(self, product):
+        """Salva os produtos no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -94,6 +97,7 @@ class Database:
         self.db_end_conn()
 
     def db_save_search(self, done, city_name, duration):
+        """Salva as pesquisas no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -109,6 +113,7 @@ class Database:
         return cursor.lastrowid
 
     def db_save_estab(self, estab):
+        """Salva os estabelecimentos no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -126,6 +131,7 @@ class Database:
         self.db_end_conn()
 
     def db_save_backup(self, backup):
+        """Salva o estado do backup no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -148,6 +154,7 @@ class Database:
         self.db_end_conn()
 
     def db_save_search_item(self, search_item):
+        """Salva os itens da pesquisa no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -168,6 +175,7 @@ class Database:
         self.db_end_conn()
 
     def db_save_city(self, city):
+        """Salva as cidades no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -178,6 +186,7 @@ class Database:
 
     # query
     def db_delete(self, table, where, value):
+        """Deleta um elemento do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -187,6 +196,7 @@ class Database:
         self.db_end_conn()
 
     def db_get_city(self):
+        """Seleciona uma cidade do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -198,6 +208,7 @@ class Database:
 
     # query
     def db_get_search(self, where=None, value=None):
+        """Seleciona uma pesquisa do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -217,6 +228,7 @@ class Database:
 
     # query
     def db_get_search_item(self, search_id=None):
+        """Seleciona itens de uma pesquisa do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -238,12 +250,13 @@ class Database:
 
     # query
     def db_get_backup(self, id=None):
+        """Seleciona um backup do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
         if id != None:
             cursor = self.conn.execute(
-                "SELECT * FROM backup WHERE search_id = '{}'".format(id)
+                "SELECT * FROM backup WHERE search_id = {}".format(id)
             )
             backup = cursor.fetchall()
         else:
@@ -254,6 +267,7 @@ class Database:
         return backup
 
     def db_get_product(self):
+        """Seleciona produtos do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -264,6 +278,7 @@ class Database:
         return products
 
     def db_get_estab(self):
+        """Seleciona estabelecimentos do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -274,6 +289,7 @@ class Database:
         return estabs
 
     def db_update_estab(self, estab):
+        """Atualiza estabelecimentos do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -289,6 +305,7 @@ class Database:
         self.db_end_conn()
 
     def db_update_product(self, product):
+        """Atualiza produtos do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -300,6 +317,7 @@ class Database:
         self.db_end_conn()
 
     def db_update_city(self, city):
+        """Atualiza cidades do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -311,6 +329,7 @@ class Database:
         self.db_end_conn()
 
     def db_update_backup(self, backup):
+        """Atualiza um backup de pesquisa do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -329,6 +348,7 @@ class Database:
 
     # query
     def db_update_search(self, search):
+        """Atualiza uma pesquisa de pesquisa do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -342,29 +362,20 @@ class Database:
         self.db_end_conn()
 
     def db_run_query(self, query):
+        """Roda uma query espeicifica no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
         self.conn.commit()
         cursor = cursor.execute(query)
         values = cursor.fetchall()
+        self.conn.commit()
         self.db_end_conn()
 
         return values
 
-    # KEYWORD
-
-    # CREATE TABLE keyword (
-    # id INTEGER,
-    # product_name text,
-    # keyword varchar,
-    # rate decimal,
-    # similarity decimal,
-    # PRIMARY KEY(id),
-    # FOREIGN KEY (product_name) REFERENCES product (product_name) ON UPDATE CASCADE
-    # );
-
     def db_update_keyword(self, keyword):
+        """Atualiza uma palavra chave do banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -376,6 +387,7 @@ class Database:
         self.db_end_conn()
 
     def db_save_keyword(self, keyword):
+        """Salva uma palavra chave no banco de dados."""
 
         self.conn = self.db_connection()
         cursor = self.conn.cursor()
@@ -388,6 +400,7 @@ class Database:
         self.db_end_conn()
 
     def db_end_conn(self):
+        """Termina a conexão com o banco de dados."""
 
         if self.conn:
             self.conn.close()

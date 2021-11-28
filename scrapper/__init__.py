@@ -30,16 +30,6 @@ import time
 class Scrap:
     """
     Classe responsável por realizar o scrapping na página do Preço da Hora Bahia.
-
-    Attributes:
-            LOCALS (string): Array de estabelecimentos que será relaizado a pesquisa.
-            LOCALS_NAME (string): Array de nomes dos estabelecimentos que será relaizado a pesquisa.
-            BUTTON (tk.Button): Instância do botão da janela inicial da aplicação.
-            PAUSE_BUTTON (tk.Button): Instância do botão da janela de pesquisa da aplicação.
-            TK (tk.Window): Instância da janela principal da aplicação.
-            TXT (tk.ProgressBar): Instância da barra de progresso.
-            BACKUP (boolean): Indica se a pesquisa iniciada é um backup ou não.
-            INTERFACE (Interface.self): Instância da classe Interface.
     """
 
     def __init__(
@@ -60,27 +50,41 @@ class Scrap:
 
         # OUT
         self.ID = ID
+        """ ID da pesquisa atual."""
         self.ACTIVE = ACTIVE
+        """Valor decimal de indexes ativos 1.1, onde 1. é o index do produto e .1 é o index da palavra chave."""
         self.LOCALS = LOCALS
+        """Array de estabelecimentos que será relaizado a pesquisa."""
         self.CITY = CITY
+        """Nome da cidade para realizar a pesquisa."""
         self.LOCALS_NAME = LOCALS_NAME
+        """Array de nomes estabelecimentos que será relaizado a pesquisa."""
         self.BACKUP = BACKUP
+        """Variavel booleana que indica se é um backup ou não."""
         self.duration = DURATION
+        """Armazena a duração de tempo atual de execução da pesquisa (necessário para reinicialização através de backup)."""
         self.PRODUCT_INFO = PRODUCT_INFO
+        """Array de produtos e para realizar a pesquisa."""
         self.db = database.Database()
+        """Instância da classe Database, responsável pelas operações do banco de dados."""
         self.index, self.index_k = [int(x) for x in ACTIVE.split(".")]
+        """Index dos produtos e palavras chaves (em caso de reinicialização através de backup);"""
         # IN
         self.progress_value = PROGRESS_VALUE
-        self.csvfile = None
-        self.all_file = None
+        """Valor de soma da barra de pesquisa, caso seja adicionado um novo produto é necessário manter os dados da pesquisa anterior."""
         self.driver = None
-        self.ico = None
+        """Instância do navegador do selenium."""
         self.stop = False
+        """Variável de controle para parar a execução da pesquisa."""
         self.exit = False
+        """Variável de controle para sair a execução da pesquisa."""
         self.cancel = False
+        """Variável de controle para cancelar a execução da pesquisa."""
         self.start_time = time.time()
+        """Valor do tempo no inicio da pesquisa."""
 
     def get_time(self, start):
+        """Calcula o tempo de execução dado um tempo inicial e retorna o tempo em minutos horas e segundos."""
 
         end = time.time()
         temp = end - start
@@ -93,6 +97,7 @@ class Scrap:
 
     def log_progress(self, progress):
 
+        """Função para debugar o processo de coleta, imprime no arquivo progress.log o progresso desejado da pesquisa."""
         with open("progress.log", "w+") as outfile:
 
             outfile.write("Date : {} \n".format(time.asctime()))
@@ -112,24 +117,16 @@ class Scrap:
 
     def pause(self, cancel=False):
 
-        if cancel:
-            self.cancel = True
-        else:
-            self.exit = True
-            self.stop = True
+        """Seta as varáveis de controle do programa (parada, cancelar e saída)."""
+        self.cancel = cancel
+        self.exit = True
+        self.stop = True
 
     # CHECK
 
     def exit_thread(self, error=False):
         """
-        Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a manualmente.
-
-        Attributes:
-                thread (Tread): Instância da classe Tread.
-                change_frame (Interface.change_frame): Função responsável por mudar o frame renderizado atualmente.
-                frame (tk.Frame): Instância da janela principal da aplicação.
-                frame_bar (tk.Frame): Instância da janela de pesquisa da aplicação.
-                show_message (Interface.show_message): Função que mostra uma mensagem x em pop up.
+        Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a ou cancele manualmente.
 
         """
         if error:
@@ -175,28 +172,9 @@ class Scrap:
             self.driver.quit()
             return
 
-    def set_viewport_size(self, width, height):
-        """Muda o tamanho da janela do navegador."""
-        window_size = self.driver.execute_script(
-            """
-			return [window.outerWidth - window.innerWidth + arguments[0],
-			window.outerHeight - window.innerHeight + arguments[1]];
-			""",
-            width,
-            height,
-        )
-        self.driver.set_window_size(*window_size)
-
-    # CHECK FOR BUGS UTF8
-    def get_data(self, product, keyword):
+    def get_data(self, product: str, keyword: str):
         """
-        Filtra os dados da janela atual aberta do navegador e os salva no arquivo CSV.
-
-        Attributes:
-                writer (file): Instância de um 'escritor' de arquivo.
-                product (string): Produto atual da pesquisa.
-                keyword (string): Palavra chave atual sendo pesquisa.
-
+        Filtra os dados da janela atual aberta do navegador e os salva no banco de dados.
         """
 
         elements = self.driver.page_source
@@ -230,7 +208,6 @@ class Scrap:
             )
             try:
                 if not self.stop:
-                    # "city_name": self.CITY,
                     self.db.db_save_search_item(
                         {
                             "search_id": self.ID,
@@ -253,7 +230,6 @@ class Scrap:
                     # self.log_progress(item)
             except:
                 pass
-            # writer.writerow([str(product_name), str(product_local), str(keyword),  str(product_adress), str(product_price)])
             print(
                 "------------------------------------------------------------------------------------"
             )
@@ -296,9 +272,6 @@ class Scrap:
     def pop_up(self):
         """Mostra uma mensagem em pop up para o usuário."""
 
-        # result = messagebox.showinfo(
-        #     "CAPTCHA", "Captcha foi ativado, abra o site do preço da hora e resolva-o em seu navegador e pressione OK para continuar", icon='warning')
-
         emit(
             "captcha",
             {
@@ -307,13 +280,6 @@ class Scrap:
             },
             broadcast=True,
         )
-
-        # print('emit - popup')
-        # time.sleep(30)
-
-        # query = "SELECT captcha FROM search WHERE id = '{}' ORDER BY id ASC".format(
-        #     self.ID)
-        # result = self.db.db_run_query(query)[0]
 
         result = messagebox.showinfo(
             "CAPTCHA",
@@ -327,6 +293,7 @@ class Scrap:
 
     def captcha(self):
         """Trata por erro de rede e inicia um loop para conferir se o usuário resolveu o captcha."""
+
         # Se eu tenho conexão o captcha foi ativado, se não, é erro de rede.
 
         if self.connect():
@@ -350,43 +317,40 @@ class Scrap:
         """
         Realiza a pesquisa na plataforma do Preço da Hora Bahia.
 
-        Attributes:
-                csvfile (string): Caminho para o arquivo CSV.
-                all_file (string): Caminho para o arquivo CSV Todos.
-                driver (selenium.Driver): Instância do objeto responsável por realizar a automação do browser.
-                start_prod (int): Indíce de inicio do produto caso seja uma pesquisa por backup.
-                start_key (int): Indíce de inicio de palavra chave caso seja uma pesquisa por backup.
-
         """
 
         URL = "https://precodahora.ba.gov.br/produtos"
         self.url = URL
         times = 4
+        try:
+            chrome_options = Options()
+            # # DISABLES DEVTOOLS LISTENING ON
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--disable-features=NetworkService")
+            chrome_options.add_argument("--window-size=1920x1080")
+            chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+            os.environ["WDM_LOCAL"] = "1"
 
-        chrome_options = Options()
-        # # DISABLES DEVTOOLS LISTENING ON
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-features=NetworkService")
-        chrome_options.add_argument("--window-size=1920x1080")
-        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-        os.environ["WDM_LOCAL"] = "1"
+            manager = ChromeDriverManager(log_level=0).install()
+            service = Service(manager)
+            driver = webdriver.Chrome(service=service, chrome_options=chrome_options)
 
-        manager = ChromeDriverManager(log_level=0).install()
-        service = Service(manager)
-        driver = webdriver.Chrome(service=service, chrome_options=chrome_options)
+            self.driver = driver
 
-        # driver.set_window_position(-10000, 0)
+            os.system("cls" if os.name == "nt" else "clear")
 
-        self.driver = driver
+            driver.get(URL)
+        except:
+            return False
 
-        # self.set_viewport_size(800, 600)
-
-        os.system("cls" if os.name == "nt" else "clear")
-
-        driver.get(URL)
+        emit(
+            "captcha",
+            {"type": "notification", "message": "Iniciando pesquisa ..."},
+            broadcast=True,
+        )
 
         try:
 
@@ -465,14 +429,6 @@ class Scrap:
 
         for index, (product, keywords) in enumerate(self.PRODUCT_INFO[self.index :]):
 
-            # emit(
-            #     "captcha",
-            #     {
-            #         "type": "notification",
-            #         "message": "Pesquisando produto {}".format(product),
-            #     },
-            #     broadcast=True,
-            # )
             if not self.stop:
                 emit(
                     "captcha",
@@ -492,36 +448,36 @@ class Scrap:
                     self.exit_thread()
                     return
 
-                # self.backup_save(index + start_prod, day, 0,self.LOCALS_NAME, self.CITY,  self.LOCALS)
-                active = "{}.{}".format(index + self.index, index_k + self.index_k)
-                # print("active = {}".format(active))
-                duration = self.get_time(self.start_time)
-                duration = duration["minutes"] + self.duration
+                else:
 
-                self.log_progress(
-                    [
-                        active,
-                        duration,
-                        self.progress_value,
-                        self.PRODUCT_INFO[self.index :],
-                        product,
-                        keywords,
-                    ]
-                )
+                    active = "{}.{}".format(index + self.index, index_k + self.index_k)
+                    duration = self.get_time(self.start_time)
+                    duration = duration["minutes"] + self.duration
 
-                self.db.db_update_backup(
-                    {
-                        "active": active,
-                        "city": self.CITY,
-                        "done": 0,
-                        "estab_info": json.dumps(
-                            {"names": self.LOCALS_NAME, "info": self.LOCALS}
-                        ),
-                        "product_info": json.dumps(self.PRODUCT_INFO),
-                        "search_id": self.ID,
-                        "duration": duration,
-                    }
-                )
+                    # self.log_progress(
+                    #     [
+                    #         active,
+                    #         duration,
+                    #         self.progress_value,
+                    #         self.PRODUCT_INFO[self.index :],
+                    #         product,
+                    #         keywords,
+                    #     ]
+                    # )
+
+                    self.db.db_update_backup(
+                        {
+                            "active": active,
+                            "city": self.CITY,
+                            "done": 0,
+                            "estab_info": json.dumps(
+                                {"names": self.LOCALS_NAME, "info": self.LOCALS}
+                            ),
+                            "product_info": json.dumps(self.PRODUCT_INFO),
+                            "search_id": self.ID,
+                            "duration": duration,
+                        }
+                    )
 
                 time.sleep(1.5 * times)
 
@@ -631,7 +587,6 @@ class Scrap:
             self.exit_thread()
             return
 
-        # CALL BD_TO_XLSX
         duration = self.get_time(self.start_time)
         self.db.db_update_search(
             {"id": self.ID, "done": 1, "duration": duration["minutes"] + self.duration}
@@ -653,3 +608,4 @@ class Scrap:
 
         driver.close()
         driver.quit()
+        return True

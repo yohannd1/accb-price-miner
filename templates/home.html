@@ -74,14 +74,18 @@
 		<main class="main-content row z-depth-5">
 			<div id="pesquisar" class="tab">
 					<div class="tab-content">
-						{% if product_len == 0 %}
+						{% if chrome_installed == 'False' %}
+							<h5>Instale uma versão qualquer do Google Chrome para realizar uma pesquisa.</h5>
+						{% elif product_len == 0 %}
 							<h5>Cadastre pelo menos um produto para realizar uma pesquisa</h5>
 						{% else %}
 							<h5>Selecione um município para prosseguir com a pesquisa</h5>
 						{% endif %}
 						<div class="select-wrapper-main" style="flex-direction: colunm;">
-							{% if len(city) == 0 %}
-								<a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
+							{% if chrome_installed == 'False' %}
+								<a class="select-item city z-depth-2" >Indisponível</a>
+							{% elif len(city) == 0 %}
+									<a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
 							{% else %}
 								{% if product_len == 0 %}
 									{% for city in data %}
@@ -94,7 +98,9 @@
 								{% endif %}
 							{% endif %}
 						</div>
-						{% if len(city) == 0 %}
+						{% if chrome_installed == 'False' %}
+							<button id="select" class="disable  btn-large" style="background-color: gray !important;">Indisponível</button>
+						{% elif len(city) == 0 %}
 							<button id="select" class="disable  btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
 						{% elif product_len == 0 %}
 							<button id="select" class="disable  btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
@@ -542,12 +548,17 @@
 		<script type="module" src="{{url_for('static', filename='js/cookie.min.mjs')}}"></script>
 		<script type="module">
 			import Cookies from "{{url_for('static', filename='js/cookie.min.mjs')}}"
-
+			var chrome_installed = '{{chrome_installed}}';
+			console.log(chrome_installed);
+			console.log(Cookies.get("warning"));
 			window.onload = () => {
 				if(!(Cookies.get("warning") !== undefined))
 					$("#warning").modal({});
 				else
 					search_loaded();
+
+				if(chrome_installed == "False")
+					alert("Instale uma versão do Google Chrome para poder realizar uma pesquisa.");
 			}
 
 			$('body').one('click', '#warning .close-modal', function (e) {
@@ -567,10 +578,11 @@
 			var active = '{{active}}';
 			var progress_value = '{{progress_value}}';
 			var socket = io().connect("http://127.0.0.1:5000/");
+			var chrome_installed = '{{chrome_installed}}';
 
 			const search_loaded = () => {
 
-				if (search == 'True'){
+				if (search == 'True' && chrome_installed == 'True'){
 
 					if(confirm("Uma pesquisa foi encontrada em progresso, deseja retoma-la?")){
 
@@ -587,7 +599,7 @@
 						$('#main-navigation').tabs('select', 'progress');
 						$('#main-navigation  a').addClass("disabled");
 						$(window).on('unload', function( event ) {
-							console.log('Handler for `unload` called.');
+							return "Realmente deseja sair ? Existe uma pesquisa em andamento.";
 						});
 
 					}

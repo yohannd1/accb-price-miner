@@ -1,7 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+""" Server da aplicação. """
+import eventlet
 
-from flask import Flask, render_template, request, g, session
+eventlet.patcher.monkey_patch(select=True, socket=True)
+"""Necessário para evitar bugs com aplicações que rodam tarefas no background."""
+from flask import Flask, render_template, request, g
 from flask_material import Material
 from flask_socketio import SocketIO, send, emit
 import time
@@ -20,39 +24,77 @@ from xlsxwriter.workbook import Workbook
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
+from webdriver_manager.chrome import ChromeDriverManager
+
 
 app = Flask(__name__)
 Material(app)
-socketio = SocketIO(app)
+socketio = SocketIO(app, manage_session=False, async_mode="eventlet", debug=False)
 connected = 0
+"""Conta os clientes conectados"""
+session_data = {}
+"""Armazenamento de sessão"""
+session_data["software_reload"] = False
+"""Responsável pelo controle de reload do programa."""
 
-# ERRO DE PRODUTO, CASO NÃO EXISTA PRODUTO, NÃO DEIXA PASSAR DA PRIMEIRA ETAPA DE PESQUISA, ATÉ O FILTRO DA PAGINA DE PESQUISAS
 
-# POP UP QUANDO INICIAR A PESQUISA, NOTIFICAR QUE SE FECHAR A PESQUISA SERÁ PARADA.
+def is_chrome_installed():
 
-# QUANDO PESQUISA MANUALMENTE, VC TEM QUE DE FATO RESOLVER O CAPTCHA
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.options import Options
+
+        os.environ["WDM_LOCAL"] = "1"
+        manager = ChromeDriverManager(log_level=0).install()
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--disable-features=NetworkService")
+        chrome_options.add_argument("--window-size=1920x1080")
+        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+        service = Service(manager)
+        driver = webdriver.Chrome(service=service, chrome_options=chrome_options)
+        driver.close()
+        driver.exit()
+
+        if driver:
+            return True
+        else:
+            return False
+
+    except:
+
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return False
 
 
 def get_time(start):
 
+    """Calcula o tempo de execução dado um tempo inicial e retorna o tempo em minutos horas e segundos."""
     end = time.time()
     temp = end - start
-    # print(temp)
     hours = temp // 3600
     temp = temp - 3600 * hours
     minutes = temp // 60
     seconds = temp - 60 * minutes
-    # print("%d:%d:%d" % (hours, minutes, seconds))
     return {"minutes": minutes, "seconds": seconds, "hours": hours}
 
 
 def print_tab(df):
 
+    """Printa um set de dados iteráveis de forma organizada e tabulada no console."""
     print(tabulate(df, headers="keys", tablefmt="psql"))
 
 
 def is_port_in_use(port):
 
+    """Confere se uma dada porta port está em uso pelo sistema."""
     import socket
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -60,6 +102,7 @@ def is_port_in_use(port):
 
 
 def process_exists(process_name):
+    """Confere se um processo existe no sistema (windows)."""
     call = "TASKLIST", "/FI", "imagename eq %s" % process_name
     # use buildin check_output right away
     output = subprocess.check_output(call).decode("latin-1")
@@ -69,18 +112,9 @@ def process_exists(process_name):
     return last_line.lower().startswith(process_name.lower())
 
 
-def get_keywords(db):
-
-    keywords = db.db_run_query("SELECT keywords FROM product")
-    # Gera uma lista de lista de keywords
-    keywords = [keyword[0].split(",") for keyword in keywords]
-    # Flatten the list
-    keywords = [keyword for sublist in keywords for keyword in sublist]
-    # print(keywords)
-
-
 def xlsx_to_bd(db, city_name):
 
+    """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
     df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
     duration = get_time(time.time())
     search_id = db.db_save_search(1, city_name, duration["minutes"])
@@ -108,6 +142,7 @@ def xlsx_to_bd(db, city_name):
 
 
 def log_error(err):
+    """Loga um erro que aconteceu durante a execução do programa no arquivo error.log"""
 
     with open("error.log", "w+") as outfile:
 
@@ -119,6 +154,8 @@ def log_error(err):
 
 
 def bd_to_xlsx(db, search_id, estab_data, city):
+
+    """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]"""
 
     today = date.today()
     # day = today.strftime("%d-%m-%Y")
@@ -232,9 +269,9 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 @app.route("/")
 def home():
 
+    """Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação"""
     db = database.Database()
 
-    # get_keywords(db)
     # sys.exit()
 
     search_id = db.db_run_query(
@@ -242,6 +279,7 @@ def home():
             str(date.today())
         )
     )
+
     product_len = db.db_run_query("SELECT product_name FROM product")
     search = False
     active = "0.0"
@@ -249,6 +287,7 @@ def home():
         search_id = search_id[0][0]
 
         backup_info = db.db_get_backup(search_id)
+        log_error(backup_info[0])
         if len(backup_info) != 0:
 
             (
@@ -305,7 +344,6 @@ def home():
         "Novembro",
         "Dezembro",
     ]
-
     return render_template(
         template,
         data=city,
@@ -320,12 +358,13 @@ def home():
         progress_value=progress_value,
         month=month,
         active_month=day.month,
+        chrome_installed=str(is_chrome_installed()),
     )
 
 
 @app.route("/insert_product")
 def insert_product():
-
+    """Rota de inserção de produtos no banco de dados."""
     db = database.Database()
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
@@ -354,6 +393,7 @@ def insert_product():
 
 @app.route("/remove_product")
 def remove_product():
+    """Rota de remoção de produtos no banco de dados."""
 
     db = database.Database()
     product_name = request.args.get("product_name")
@@ -380,6 +420,7 @@ def remove_product():
 
 @app.route("/select_product")
 def select_product():
+    """Rota de seleção de produtos."""
 
     db = database.Database()
     products = db.db_get_product()
@@ -389,6 +430,7 @@ def select_product():
 
 @app.route("/select_search_data")
 def select_search_data():
+    """Rota de seleção de pesquisas no banco de dados."""
 
     search_id = request.args.get("search_id")
     city_name = request.args.get("city_name")
@@ -409,6 +451,7 @@ def select_search_data():
 @app.route("/select_search_info")
 def select_search_info():
 
+    """Rota de seleção de informação das pesquisas no banco de dados."""
     db = database.Database()
     month = request.args.get("month")
 
@@ -435,6 +478,8 @@ def select_search_info():
 @app.route("/update_product")
 def update_product():
 
+    """Rota de atualização de produtos no banco de dados."""
+    global session_data
     db = database.Database()
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
@@ -449,6 +494,7 @@ def update_product():
                 "primary_key": primary_key,
             }
         )
+        session_data["software_reload"] = True
         return {
             "success": True,
             "message": "O produto {} foi atualizado com sucesso".format(primary_key),
@@ -470,6 +516,7 @@ def update_product():
 
 @app.route("/select_estab")
 def select_estab():
+    """Rota de seleção de estabelecimentos no banco de dados."""
 
     db = database.Database()
     city = request.args.get("city")
@@ -481,6 +528,7 @@ def select_estab():
 @app.route("/remove_estab")
 def remove_estab():
 
+    """Rota de remoção de estabelecimentos no banco de dados."""
     db = database.Database()
     estab_name = request.args.get("estab_name")
     try:
@@ -509,6 +557,7 @@ def remove_estab():
 @app.route("/update_estab")
 def update_estab():
 
+    """Rota de atualização de estabelecimentos no banco de dados."""
     db = database.Database()
     city_name = request.args.get("city_name")
     estab_name = request.args.get("estab_name")
@@ -552,6 +601,7 @@ def update_estab():
 
 @app.route("/insert_estab")
 def insert_estab():
+    """Rota de inserção de estabelecimentos no banco de dados."""
 
     db = database.Database()
     city_name = request.args.get("city_name")
@@ -594,6 +644,7 @@ def insert_estab():
 
 @app.route("/select_city")
 def select_city():
+    """Rota de seleção de cidades no banco de dados."""
 
     db = database.Database()
     g.cities = db.db_get_city()
@@ -602,13 +653,15 @@ def select_city():
 
 @app.route("/insert_city")
 def insert_city():
-
+    """Rota de inserção de cidades no banco de dados."""
+    global session_data
     db = database.Database()
     city_name = request.args.get("city_name")
 
     try:
 
         db.db_save_city(city_name)
+        session_data["software_reload"] = True
         return {
             "success": True,
             "message": "A cidade {} foi adicionado com sucesso".format(city_name),
@@ -630,7 +683,9 @@ def insert_city():
 
 @app.route("/update_city")
 def update_city():
+    """Rota de atualização de cidades no banco de dados."""
 
+    global session_data
     db = database.Database()
     city_name = request.args.get("city_name")
     primary_key = request.args.get("primary_key")
@@ -638,6 +693,7 @@ def update_city():
     try:
 
         db.db_update_city({"city_name": city_name, "primary_key": primary_key})
+        session_data["software_reload"] = True
         return {
             "success": True,
             "message": "A cidade {} foi editada com sucesso".format(city_name),
@@ -659,13 +715,16 @@ def update_city():
 
 @app.route("/delete_city")
 def delete_city():
+    """Rota de deleção de cidades no banco de dados."""
 
+    global session_data
     db = database.Database()
     city_name = request.args.get("city_name")
 
     try:
 
         db.db_delete("city", "city_name", city_name)
+        session_data["software_reload"] = True
         return {
             "success": True,
             "message": "A cidade {} foi deletada com sucesso".format(city_name),
@@ -690,18 +749,15 @@ def delete_city():
 
 @app.route("/delete_search")
 def delete_search():
-
+    """Rota de deleção de pesquisa no banco de dados."""
+    global session_data
     try:
 
         db = database.Database()
         search_id = request.args.get("search_id")
 
         db.db_delete("search", "id", search_id)
-        # products = db.db_run_query(
-        #     "SELECT* WHERE search_id = {} ORDER BY price ASC".format(search_id)
-        # )
-
-        # print(products)
+        session_data["software_reload"] = True
         return {"status": "success", "message": "Pesquisa deletada com sucesso."}
 
     except:
@@ -716,6 +772,7 @@ def delete_search():
 @app.route("/generate_file")
 def bd_to_xlsx_route():
 
+    """Rota geradora de coleção de dados das pesquisas em excel."""
     db = database.Database()
 
     try:
@@ -844,28 +901,42 @@ def bd_to_xlsx_route():
 
 
 # SocketIO
+@socketio.on("reload")
+def handle_reload():
+    """Rota responsável por controlar a variavel de reload."""
+    global session_data
+    session_data["software_reload"] = True
+
+
 @socketio.on("pause")
 def handle_pause(cancel=False):
+    """Rota responsável por pausar a pesquisa"""
+    global session_data
 
     if cancel != False:
         # Cancela
-        session["cancel"] = True
-        session["scrap"].pause(True)
+        session_data["cancel"] = True
+        session_data["scrap"].pause(True)
     else:
-        session["scrap"].pause()
-        session["pause"] = True
+        session_data["scrap"].pause()
+        session_data["pause"] = True
 
 
 @socketio.on("cancel")
 def handle_cancel():
+    """Rota cancelar por pausar a pesquisa"""
+
+    global session_data
+    log_error([session_data])
 
     db = database.Database()
-    query = "DELETE * FROM search WHERE id = {}".format(session["search_id"])
+    query = "DELETE FROM search WHERE id = {}".format(session_data["search_id"])
     db.db_run_query(query)
 
 
 @socketio.on("connect")
 def connect():
+    """Rota contas os clientes conectados."""
     global connected
     connected += 1
     print("connnected {}".format(connected))
@@ -873,14 +944,29 @@ def connect():
 
 @socketio.on("disconnect")
 def disconnect():
+    """Rota contas os clientes desconectados."""
     global connected
-    print("disconnnected {}".format(connected))
+    global session_data
     connected -= 1
+    # print("disconnnected {}".format(connected))
+    # if connected == 0 and not session_data["software_reload"]:
+    #     os._exit(0)
+    # else:
+    #     try:
+
+    #         if session_data["software_reload"] and connected == 0:
+
+    #             session_data["software_reload"] = False
+    #     except:
+
+    #         log_error([connected, session_data])
+    #         pass
 
 
 # Inicia pesquisa
 @socketio.on("search")
 def handle_search(search_info):
+    """Rota responsável por iniciar a pesquisa."""
 
     db = database.Database()
 
@@ -931,14 +1017,8 @@ def handle_search(search_info):
 
     else:
 
-        emit(
-            "captcha",
-            {"type": "notification", "message": "Iniciando pesquisa ..."},
-            broadcast=True,
-        )
-
         if search_info["backup"] == 1 and len(backup_info) != 0:
-            query = "DELETE * FROM search WHERE id = {}".format(search_id)
+            query = "DELETE FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
 
         search_id = db.db_save_search(0, search_info["city"], 0)
@@ -978,16 +1058,28 @@ def handle_search(search_info):
             }
         )
 
-    session["scrap"] = scrap
-    session["search_id"] = search_id
-    session["cancel"] = False
-    session["pause"] = False
+    global session_data
+    session_data["scrap"] = scrap
+    session_data["search_id"] = search_id
+    session_data["cancel"] = False
+    session_data["pause"] = False
+    session_data["modified"] = True
 
     try:
 
-        scrap.run()
+        is_chrome_installed = scrap.run()
 
-        if not session["cancel"] and not session["pause"]:
+        if not is_chrome_installed:
+
+            emit(
+                "captcha",
+                {"type": "chrome", "installed": False},
+                broadcast=True,
+            )
+            session_data["cancel"] = True
+            session_data["pause"] = True
+
+        if not session_data["cancel"] and not session_data["pause"]:
 
             emit(
                 "captcha",
@@ -999,21 +1091,10 @@ def handle_search(search_info):
                 {"type": "progress", "done": 1},
                 broadcast=True,
             )
+            session_data["software_reload"] = True
             # search_id = xlsx_to_bd(db, search_info["city"])
-            # with open(
-            #     "data_{}.json".format(search_info["city"]), "w+", encoding="utf-8"
-            # ) as f:
-            #     json.dump(
-            #         {
-            #             "search_id": search_id,
-            #             "estab_data": estab_data,
-            #             "city": city,
-            #             "" "product": product,
-            #         },
-            #         f,
-            #         ensure_ascii=False,
-            #         indent=4,
-            #     )
+            """Comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa."""
+
             bd_to_xlsx(db, search_id, estab_data, city)
 
     except:
@@ -1050,46 +1131,57 @@ def utility_processor():
 
 
 def run_app():
-
+    """Inicia o programa com as configurações da plataforma atual, windows ou linux."""
     config_name = "ACCB.cfg"
     url = "http://127.0.0.1:5000"
 
-    # determine if application is a script file or frozen exe
+    # Determina se a aplicação está rodando por um bundle feito pelo pyinstaller (exe) ou command line
     if getattr(sys, "frozen", False):
         application_path = os.path.dirname(sys.executable)
         config_path = os.path.join(application_path, config_name)
+        # windows
         if os.name == "nt":
             if not process_exists("ACCB.exe"):
                 webbrowser.open(url)
-                socketio.run(app, debug=True)
+                eventlet.wsgi.server(
+                    eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                )
             else:
                 webbrowser.open(url)
         else:
+            # por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto
             if not is_port_in_use(5000):
                 webbrowser.open(url)
-                socketio.run(app, debug=True)
+                eventlet.wsgi.server(
+                    eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                )
             else:
                 webbrowser.open(url)
 
     elif __file__:
         application_path = os.path.dirname(__file__)
         config_path = os.path.join(application_path, config_name)
+        # windows
         if os.name == "nt":
             if not process_exists("ACCB.exe"):
-                # webbrowser.open(url)
-                socketio.run(app, debug=True)
+                webbrowser.open(url)
+                eventlet.wsgi.server(
+                    eventlet.listen(("127.0.0.1", 5000)), app, debug=True
+                )
             else:
-                pass
-                # webbrowser.open(url)
+                webbrowser.open(url)
         else:
+            # por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto
             if not is_port_in_use(5000):
                 webbrowser.open(url)
-                socketio.run(app, debug=True)
+                eventlet.wsgi.server(
+                    eventlet.listen(("127.0.0.1", 5000)), app, debug=True
+                )
             else:
                 webbrowser.open(url)
 
 
 if __name__ == "__main__":
 
+    # run_app()
     run_app()
-    # app.run(debug=True)

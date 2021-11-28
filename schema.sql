@@ -21,7 +21,7 @@ CREATE TABLE search (
 );
 
 CREATE TABLE search_item (
-	search_id text NOT NULL,
+	search_id INTEGER NOT NULL,
 	product_name text NOT NULL,
 	web_name text NOT NULL,
 	adress text NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE backup (
 	done int,
 	estab_info text,
 	product_info text,
-	search_id text,
+	search_id INTEGER,
 	duration decimal,
 	progress_value decimal,
 	FOREIGN KEY (search_id) REFERENCES search (id) ON DELETE CASCADE ON UPDATE CASCADE
