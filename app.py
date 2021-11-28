@@ -57,9 +57,9 @@ def is_chrome_installed():
         chrome_options.add_argument("--window-size=1920x1080")
         chrome_options.add_argument("--disable-features=VizDisplayCompositor")
         service = Service(manager)
-        driver = webdriver.Chrome(service=service, chrome_options=chrome_options)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.close()
-        driver.exit()
+        driver.quit()
 
         if driver:
             return True

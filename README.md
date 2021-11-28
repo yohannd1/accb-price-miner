@@ -27,18 +27,23 @@
 - [x] Listagem de Pesquisas
 - [x] Pesquisa de Pesquisas
 - [x] Filtragem de Pesquisas
-- [ ] Transformar csv_to_xlsx em db_to_xlsx
-- [ ] Limitar à somente uma aba de navegação
+- [x] Transformar csv_to_xlsx em db_to_xlsx
+- [x] Limitar à somente uma aba de navegação
+- [x] Fechar o programa caso atualizada a página e não seja o prório programa.
+- [x] Checar se o chrome está instalado
+- [x] Popup de backup de pesquisa anterior
+- [ ] Botão para iniciar a partir de um backup caso a pessoa ja tenha fechado o popup anterior.
 
 
 ## Informações de Desenvolvimento
+
+### Python
 
 Para rodar o projeto preferencialmente inicie um ambiente virtual com :
 
 ```
 	pip install virtualenv
 	python -m venv <nome>
-
 ```
 
 Em seguida abra a pasta do ambiente e clone o repositório em questão com :
@@ -55,7 +60,27 @@ E por último inicie o ambiente virtual e instale as dependências do python par
 	activate.bat
 	cd ..
 	pip install -r requirements.txt
+```
 
+### Conda
+
+Para rodar o projeto preferencialmente inicie um ambiente virtual com :
+
+```
+	conda create --name ACCB
+```
+
+Em seguida clone o repositório em questão com :
+
+```
+	git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
+```
+
+E por último inicie o ambiente virtual e instale as dependências do python para iniciar o projeto :
+
+```
+	conda activate ACCB
+	pip install -r requirements.txt
 ```
 
 Agora é só rodar o projeto com python -m flask run ou python app.py.
@@ -80,7 +105,7 @@ E em seguida é só executar o comando pyinstaller app.spec.
 pyi-makespec --noconsole --onefile app.py
 ```
 
-.spec Completo :
+\.spec Completo :
 
 ```
 pyi-makespec --noconsole --onefile --add-data="templates;templates" --add-data="static;static" --add-data="schema.sql;." --add-data="itabuna.json;." --add-data="ilheus.json;." --name="ACCB"--icon=logo.ico --paths="D:\Uesc\Scrapper\web\ACCB\Lib\flask_material\templates\material" --hidden-import=engineio.async_drivers.eventlet --hidden-import=flask_material --uac-admin --additional-hooks-dir=. app.py
