@@ -37,6 +37,11 @@
 		<search value="false" />
 		<header>
 			<a style="position: absolute; right: 10px; top: 10px; background: #fea621 !important;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+			{% if search %}
+				<a style="position: absolute; right: 80px; top: 10px; background: #fea621 !important;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
+			{% else %}
+				<a style="position: absolute; right: 80px; top: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
+			{% endif %}
 			<div class="top-logo">
 				<img
 					src="{{ url_for('static',filename='img/uesc_brasão.png') }}"
@@ -157,7 +162,12 @@
 					<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Remover Cidade" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i>
 					</a>
 					<a id="export" class="primary_color left  btn-large">Exportar</a>
-					<a id="import" class="primary_color left  btn-large">Importar</a>
+					<a id="import" class="primary_color left  btn-large">
+						Importar
+					</a>
+					<div style="width: 0; height: 0; overflow: hidden;">
+						<input id="import_file" type="file"/>
+					</div>
 				</div>
 				<div class="tab-content-config">
 					<div class="config-title">
@@ -494,17 +504,17 @@
 		<div id="warning" class="modal">
 			<div class="modal-content" style="height: 100%">
 				<div>
-					<h5 class="modal-title"  style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Evitar fazer durante a utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
+					<h5 class="modal-title"  style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Dicas para utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
 				</div>
 				<ul class="browser-default">
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
-					<li>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas cumque pariatur voluptatum eius, soluta eaque quod fugiat nostrum voluptates dolorem labore quasi itaque voluptatibus nobis nisi alias rem quo mollitia!</li>
+					<li>Atualizar a página do programa manualmente irá fechar o programa.</li>
+					<li>Todo o progresso de uma pesquisa é salvo durante a mesma, ou seja, em caso de erro ou perda de internet, é possível retomar uma pesquisa através de um popup que aparece quando o programa é aberto.</li>
+					<li>A quantidade de estabelecimentos cadastrados não influênciam no tempo da pesquisa em si, os arquivos são gerados separadamentes para diminuir o custo de tempo consumido. Em contrapartida cada palavra chave aumenta em media 2-4 minutos no tempo total da pesquisa.</li>
+					<li>É possível pesquisar por qualquer campo da tabela de pesquisas disponível na janela de pesquisas.</li>
+					<li>Evite o máximo atualizar a página manualmente ou fecha-la durante uma pesquisa para minimizar a probabilidade de erro causado durante uma pesquisa.</li>
+					<li>Só é possível abrir uma aba do programa por vez, caso seja aberto uma outra janela você encontrará um aviso o notificando para voltar para a janela principal.</li>
+					<li>Todos os endereços dos estabelecimentos devem ser cadastrados da forma mais identica possível aos valores encontrados no  Preço da Hora - Bahia para máximizar as chances de uma filtragem correta.</li>
+					<li>Antes de cadastrar uma cidade, confira no site do preço da hora como o nome do município aparece, isso pode ser feito nos filtros de pesquisa em : Alterar Localização > (popup) Usar centro do município > Insira o nome do município desejado. </li>
 				</ul>
 			</div>
 		</div>
@@ -546,32 +556,6 @@
 		<script type='text/javascript' src="{{url_for('static', filename='js/modal.js')}}"></script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
 		<script type="module" src="{{url_for('static', filename='js/cookie.min.mjs')}}"></script>
-		<script type="module">
-			import Cookies from "{{url_for('static', filename='js/cookie.min.mjs')}}"
-			var chrome_installed = '{{chrome_installed}}';
-			console.log(chrome_installed);
-			console.log(Cookies.get("warning"));
-			window.onload = () => {
-				if(!(Cookies.get("warning") !== undefined))
-					$("#warning").modal({});
-				else
-					search_loaded();
-
-				if(chrome_installed == "False")
-					alert("Instale uma versão do Google Chrome para poder realizar uma pesquisa.");
-			}
-
-			$('body').one('click', '#warning .close-modal', function (e) {
-
-					if(!(Cookies.get("warning") !== undefined))
-						search_loaded();
-					else{
-						Cookies.set("warning", "seen", {expires: 1});
-					}
-
-			});
-
-		</script>
 		<script type="text/javascript" charset="utf-8">
 
 			var search = '{{search}}';
@@ -608,6 +592,31 @@
 
 			}
 
+
+		</script>
+		<script type="module">
+			import Cookies from "{{url_for('static', filename='js/cookie.min.mjs')}}"
+			var search = '{{search}}';
+			var chrome_installed = '{{chrome_installed}}';
+			window.onload = () => {
+				// console.log(Cookies.get("warning"));
+				if(Cookies.get("warning") === undefined){
+					$("#warning").modal({});
+					Cookies.set("warning", "seen", {expires: 1});
+				}else{
+					search_loaded()
+				}
+
+				if(chrome_installed == "False")
+					alert("Instale uma versão do Google Chrome para poder realizar uma pesquisa.");
+			}
+
+			if(search == 'True')
+				$('body').on('click', '#backup-button', function (e) {
+
+					search_loaded();
+
+				});
 
 		</script>
 	{% endblock %}

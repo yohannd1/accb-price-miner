@@ -1729,5 +1729,63 @@ $(document).ready(function () {
 
 	});
 
+	$("#export").on("click", (e) => {
+		e.preventDefault();
+
+		if (window.confirm(`Realmente deseja exportar todos os dados atuais ?`)) {
+
+			$.get("/export_database", (response) => {
+
+				if (response["status"] == "success") {
+
+					Materialize.toast(response["message"], 8000, 'rounded');
+
+				} else {
+					Materialize.toast(response["message"], 8000, 'rounded');
+				}
+
+			});
+		}
+
+	});
+
+	$("#import").on("click", (e) => {
+
+		$("#import_file").click();
+
+	});
+
+	$("#import_file").on("change", function (e) {
+
+		e.preventDefault();
+		e.stopPropagation();
+
+		var form_data = new FormData();
+		var files = $('#import_file')[0].files;
+
+		// Check file selected or not  fd.append('file',files[0]);
+		form_data.append('file', files[0]);
+		$.ajax({
+			url: '/import_database',
+			type: 'post',
+			data: form_data,
+			contentType: false,
+			processData: false,
+			cache: false,
+			success: function (response) {
+				if (response.status == "success") {
+					alert(response["message"]);
+					window.location = window.location.origin + "#configurar";
+					window.location.reload(true);
+				} else {
+					Materialize.toast(response["message"], 8000, 'rounded');
+				}
+			},
+		});
+
+		// console.log({ file, file_name });
+
+	});
+
 });
 

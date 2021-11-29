@@ -123,13 +123,13 @@ def process_exists(process_name):
     last_line = output.strip().split("\r\n")[-1]
 
     # because Fail message could be translated
+    is_app_name = last_line.lower().startswith(process_name.lower())
+    instances = int(last_line.strip().split()[3])
+
     try:
-        return not (
-            last_line.lower().startswith(process_name.lower())
-            and int(last_line.strip().split()[3]) <= 3
-        )
-        """ last_line = Nome do programa em questão. """
-        """ last_line.strip().split()[3] = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado."""
+        return not (is_app_name and instances <= 3)
+        """ app_name = Nome do programa em questão. """
+        """ instances = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado."""
     except:
         return False
 
@@ -291,6 +291,7 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 @app.route("/")
 def home():
     """Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação"""
+
     db = database.Database()
 
     search_id = db.db_run_query(
@@ -306,7 +307,7 @@ def home():
         search_id = search_id[0][0]
 
         backup_info = db.db_get_backup(search_id)
-        log_error(backup_info[0])
+        # log_error(backup_info[0])
         if len(backup_info) != 0:
 
             (
@@ -343,7 +344,7 @@ def home():
     estab_names = db.db_get_estab()
     product = db.db_get_product()
 
-    print("CONNECTED {}".format(connected))
+    # print("CONNECTED {}".format(connected))
     # Se tiver mais que uma pagina aberta, renderiza o notallowed.html,
     # por algum motivo o flask com socketio chama a função de conexão 2x então
     # acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2
@@ -788,6 +789,55 @@ def delete_search():
         }
 
 
+@app.route("/export_database")
+def export_database():
+    """Rota responsável por exportar os dados do banco"""
+    try:
+        db = database.Database()
+        tables = ["city", "estab", "product"]
+        with open("importar.sql", "w+") as f:
+            for table in tables:
+                for line in db.dump_table(table):
+                    f.write("%s\n" % line)
+
+        return {
+            "status": "success",
+            "message": "Dados exportados com sucesso, agora é possível importa-lo em outro computador com o arquivo importar.sql.",
+        }
+
+    except:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+        return {
+            "status": "error",
+            "message": "Ocorreu um erro durante a exportação dos dados.",
+        }
+
+
+@app.route("/import_database", methods=["POST"])
+def import_database():
+    """Rota responsável por importar os dados do banco"""
+    global session_data
+    try:
+        db = database.Database()
+        file = request.files["file"]
+        db.import_database(file)
+
+        session_data["software_reload"] = True
+        return {
+            "status": "success",
+            "message": "Dados importados com sucesso.",
+        }
+
+    except:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+        return {
+            "status": "error",
+            "message": "Ocorreu um erro durante a importação dos dados.",
+        }
+
+
 @app.route("/generate_file")
 def bd_to_xlsx_route():
 
@@ -946,7 +996,7 @@ def handle_cancel():
     """Rota cancelar por pausar a pesquisa"""
 
     global session_data
-    log_error([session_data])
+    # log_error([session_data])
 
     db = database.Database()
     query = "DELETE FROM search WHERE id = {}".format(session_data["search_id"])
@@ -968,18 +1018,20 @@ def disconnect():
     global session_data
     connected -= 1
     # print("disconnnected {}".format(connected))
-    # if connected == 0 and not session_data["software_reload"]:
-    #     os._exit(0)
-    # else:
-    #     try:
+    if connected == 0 and not session_data["software_reload"]:
+        log_error([connected, session_data])
+        os._exit(0)
+    else:
+        try:
 
-    #         if session_data["software_reload"] and connected == 0:
+            if session_data["software_reload"] and connected == 0:
 
-    #             session_data["software_reload"] = False
-    #     except:
+                session_data["software_reload"] = False
+                log_error([connected, session_data])
 
-    #         log_error([connected, session_data])
-    #         pass
+        except:
+
+            pass
 
 
 # Inicia pesquisa
@@ -1200,14 +1252,14 @@ def run_app():
             # eventlet.wsgi.server(
             #     eventlet.listen(("127.0.0.1", 5000)), app, debug=True
             # )
-            socketio.run(app, debug=False)
+            socketio.run(app, debug=True)
         else:
             # os.environ["WDM_LOCAL"] = "1"
             webbrowser.open(url)
             # eventlet.wsgi.server(
             #     eventlet.listen(("127.0.0.1", 5000)), app, debug=True
             # )
-            socketio.run(app, debug=False)
+            socketio.run(app, debug=True)
 
 
 if __name__ == "__main__":

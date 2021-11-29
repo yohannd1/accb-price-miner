@@ -20,6 +20,79 @@ class Database:
         """Inicia a conexão com o banco de dados."""
         self.conn = self.db_connection()
 
+    def dump_table(self, table_name):
+        """Importa um arquivo sql para ser injetado no banco de dados."""
+
+        # Mimic the sqlite3 console shell's .dump command
+        # Author: Paul Kippes <kippesp@gmail.com>
+
+        """
+        Returns an iterator to the dump of the database in an SQL text format.
+
+        Used to produce an SQL dump of the database.  Useful to save an in-memory
+        database for later restoration.  This function should not be called
+        directly but instead called from the Connection method, iterdump().
+        """
+
+        schema = self.resource_path("schema.sql")
+        cursor = sqlite3.connect("accb.sqlite").cursor()
+        table_name = table_name
+
+        yield ("BEGIN TRANSACTION;")
+
+        # sqlite_master table contains the SQL CREATE statements for the database.
+        q = """
+            SELECT name, type, sql
+            FROM sqlite_master
+                WHERE sql NOT NULL AND
+                type == 'table' AND
+                name == :table_name
+            """
+        schema_res = cursor.execute(q, {"table_name": table_name})
+        for table_name, type, sql in schema_res.fetchall():
+            if table_name == "sqlite_sequence":
+                yield ("DELETE FROM sqlite_sequence;")
+            elif table_name == "sqlite_stat1":
+                yield ("ANALYZE sqlite_master;")
+            elif table_name.startswith("sqlite_"):
+                continue
+            else:
+                yield ("%s;" % sql)
+
+            # Build the insert statement for each row of the current table
+            res = cursor.execute("PRAGMA table_info('%s')" % table_name)
+            column_names = [str(table_info[1]) for table_info in res.fetchall()]
+            q = 'SELECT \'INSERT INTO "%(tbl_name)s" VALUES('
+            q += ",".join(["'||quote(" + col + ")||'" for col in column_names])
+            q += ")' FROM '%(tbl_name)s'"
+            query_res = cursor.execute(q % {"tbl_name": table_name})
+            for row in query_res:
+                yield ("%s;" % row[0])
+
+        yield ("COMMIT;")
+
+    def import_database(self, file_path=None):
+        """Importa um arquivo sql e injeta ele no banco de dados."""
+        if file_path == None:
+            """Metodo de importação para debug."""
+            schema = self.resource_path("importar.sql")
+            cursor = sqlite3.connect("accb.sqlite").cursor()
+            with open(schema, "r", encoding="latin-1") as fp:
+                text = fp.read().split(";")
+                for command in text:
+                    try:
+                        cursor.execute(command)
+                    except sqlite3.Error:
+                        pass
+        else:
+
+            cursor = sqlite3.connect("accb.sqlite").cursor()
+            for command in file_path.read().decode("latin-1").split(";"):
+                try:
+                    cursor.execute(command)
+                except sqlite3.Error:
+                    pass
+
     def log_error(self, err):
         """Loga um erro que aconteceu durante a execução do programa no arquivo error.log"""
 

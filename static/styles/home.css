@@ -456,6 +456,10 @@ main {
 }
 
 #export , #import {
+	margin-right: 10px;
+}
+
+#export{
 	margin-left: 10px;
 }
 
