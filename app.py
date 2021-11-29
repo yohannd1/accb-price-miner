@@ -123,10 +123,10 @@ def process_exists(process_name):
     last_line = output.strip().split("\r\n")[-1]
 
     # because Fail message could be translated
-    is_app_name = last_line.lower().startswith(process_name.lower())
-    instances = int(last_line.strip().split()[3])
 
     try:
+        is_app_name = last_line.lower().startswith(process_name.lower())
+        instances = int(last_line.strip().split()[3])
         return not (is_app_name and instances <= 3)
         """ app_name = Nome do programa em questão. """
         """ instances = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado."""
@@ -1217,7 +1217,7 @@ def run_app():
         config_path = os.path.join(application_path, config_name)
         # windows
         if os.name == "nt":
-            if not process_exists("ACCB.exe"):
+            if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)

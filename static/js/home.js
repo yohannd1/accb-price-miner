@@ -1296,6 +1296,7 @@ $(document).ready(function () {
 			$(window).on('unload', function (event) {
 				return "Realmente deseja sair ? Existe uma pesquisa em andamento.";
 			});
+			$("#backup-button").addClass("disable");
 
 		}
 
@@ -1775,7 +1776,7 @@ $(document).ready(function () {
 			success: function (response) {
 				if (response.status == "success") {
 					alert(response["message"]);
-					window.location = window.location.origin + "#configurar";
+					window.location = window.location.origin + "#co$figurar";
 					window.location.reload(true);
 				} else {
 					Materialize.toast(response["message"], 8000, 'rounded');
