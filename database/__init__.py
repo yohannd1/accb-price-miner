@@ -20,6 +20,19 @@ class Database:
         """Inicia a conexão com o banco de dados."""
         self.conn = self.db_connection()
 
+    def log_error(self, err):
+        """Loga um erro que aconteceu durante a execução do programa no arquivo error.log"""
+
+        import time
+
+        with open("error.log", "w+") as outfile:
+
+            outfile.write("Date : {} \n".format(time.asctime()))
+            for error in err:
+                outfile.write(str(error))
+
+        return
+
     def resource_path(self, path):
         """Recupera o caminho de um recurso da aplicação."""
 
@@ -35,9 +48,10 @@ class Database:
         """Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe."""
         schema = self.resource_path("schema.sql")
         cursor = sqlite3.connect("accb.sqlite").cursor()
-        sql_file = open(schema)
+        sql_file = open(schema, encoding="utf-8")
         sql_as_string = sql_file.read()
         cursor.executescript(sql_as_string)
+        sql_file.close()
         # subprocess.check_call(["attrib", "+H", "accb.sqlite"])
 
     def db_connection(self):

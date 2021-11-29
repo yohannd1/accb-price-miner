@@ -1,9 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """ Server da aplicação. """
-import eventlet
+# import eventlet
 
-eventlet.patcher.monkey_patch(select=True, socket=True)
+# eventlet.patcher.monkey_patch(select=True, socket=True)
+# from engineio.async_drivers import gevent
+from engineio.async_drivers import threading
+
 """Necessário para evitar bugs com aplicações que rodam tarefas no background."""
 from flask import Flask, render_template, request, g
 from flask_material import Material
@@ -13,6 +16,7 @@ import json
 import sqlite3
 import sys
 import os
+from werkzeug import debug
 import database
 import traceback
 import scrapper
@@ -24,30 +28,31 @@ from xlsxwriter.workbook import Workbook
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-
 
 app = Flask(__name__)
 Material(app)
-socketio = SocketIO(app, manage_session=False, async_mode="eventlet", debug=False)
+socketio = SocketIO(app, manage_session=False, async_mode="threading")
 connected = 0
+# os.environ["WDM_LOG_LEVEL"] = "0"
 """Conta os clientes conectados"""
 session_data = {}
 """Armazenamento de sessão"""
 session_data["software_reload"] = False
 """Responsável pelo controle de reload do programa."""
+chrome_installed = None
+""" Variavel indicativa da instalação do Google Chrome."""
 
 
 def is_chrome_installed():
 
     try:
-        from selenium import webdriver
-        from selenium.webdriver.chrome.service import Service
-        from selenium.webdriver.chrome.options import Options
-        from selenium.webdriver.chrome.options import Options
 
-        os.environ["WDM_LOCAL"] = "1"
-        manager = ChromeDriverManager(log_level=0).install()
+        manager = ChromeDriverManager().install()
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
@@ -103,13 +108,30 @@ def is_port_in_use(port):
 
 def process_exists(process_name):
     """Confere se um processo existe no sistema (windows)."""
+
+    try:
+        from subprocess import DEVNULL
+    except ImportError:
+        DEVNULL = os.open(os.devnull, os.O_RDWR)
+
     call = "TASKLIST", "/FI", "imagename eq %s" % process_name
     # use buildin check_output right away
-    output = subprocess.check_output(call).decode("latin-1")
+    output = subprocess.check_output(call, stdin=DEVNULL, stderr=DEVNULL).decode(
+        "latin-1"
+    )
     # check in last line for process name
     last_line = output.strip().split("\r\n")[-1]
+
     # because Fail message could be translated
-    return last_line.lower().startswith(process_name.lower())
+    try:
+        return not (
+            last_line.lower().startswith(process_name.lower())
+            and int(last_line.strip().split()[3]) <= 3
+        )
+        """ last_line = Nome do programa em questão. """
+        """ last_line.strip().split()[3] = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado."""
+    except:
+        return False
 
 
 def xlsx_to_bd(db, city_name):
@@ -144,7 +166,7 @@ def xlsx_to_bd(db, city_name):
 def log_error(err):
     """Loga um erro que aconteceu durante a execução do programa no arquivo error.log"""
 
-    with open("error.log", "w+") as outfile:
+    with open("error.log", "w+", encoding="latin-1") as outfile:
 
         outfile.write("Date : {} \n".format(time.asctime()))
         for error in err:
@@ -268,11 +290,8 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 
 @app.route("/")
 def home():
-
     """Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação"""
     db = database.Database()
-
-    # sys.exit()
 
     search_id = db.db_run_query(
         "SELECT id FROM search WHERE done = 0 AND search_date = '{}' ORDER BY city_name ASC".format(
@@ -358,7 +377,7 @@ def home():
         progress_value=progress_value,
         month=month,
         active_month=day.month,
-        chrome_installed=str(is_chrome_installed()),
+        chrome_installed=chrome_installed,
     )
 
 
@@ -1020,7 +1039,7 @@ def handle_search(search_info):
         if search_info["backup"] == 1 and len(backup_info) != 0:
             query = "DELETE FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
-
+        # comentar para injeção
         search_id = db.db_save_search(0, search_info["city"], 0)
         active = "0.0"
         city = search_info["city"]
@@ -1032,7 +1051,7 @@ def handle_search(search_info):
             estab for estab in estabs if estab[0] == city and estab[1] in estab_names
         ]
         progress_value = 100 / len(product)
-
+        # comentar para injeção
         scrap = scrapper.Scrap(
             estab_data,
             city,
@@ -1045,6 +1064,7 @@ def handle_search(search_info):
             progress_value,
         )
 
+        # comentar para injeção
         db.db_save_backup(
             {
                 "active": "0.0",
@@ -1059,6 +1079,7 @@ def handle_search(search_info):
         )
 
     global session_data
+    # comentar para injeção
     session_data["scrap"] = scrap
     session_data["search_id"] = search_id
     session_data["cancel"] = False
@@ -1067,8 +1088,10 @@ def handle_search(search_info):
 
     try:
 
+        # comentar para injeção
         is_chrome_installed = scrap.run()
 
+        # comentar para injeção
         if not is_chrome_installed:
 
             emit(
@@ -1134,6 +1157,7 @@ def run_app():
     """Inicia o programa com as configurações da plataforma atual, windows ou linux."""
     config_name = "ACCB.cfg"
     url = "http://127.0.0.1:5000"
+    global chrome_installed
 
     # Determina se a aplicação está rodando por um bundle feito pelo pyinstaller (exe) ou command line
     if getattr(sys, "frozen", False):
@@ -1142,43 +1166,48 @@ def run_app():
         # windows
         if os.name == "nt":
             if not process_exists("ACCB.exe"):
+                os.environ["WDM_LOCAL"] = "1"
+                chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
-                eventlet.wsgi.server(
-                    eventlet.listen(("127.0.0.1", 5000)), app, debug=False
-                )
+                # eventlet.wsgi.server(
+                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                # )
+                socketio.run(app, debug=False)
             else:
                 webbrowser.open(url)
         else:
             # por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto
             if not is_port_in_use(5000):
+                os.environ["WDM_LOCAL"] = "1"
+                chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
-                eventlet.wsgi.server(
-                    eventlet.listen(("127.0.0.1", 5000)), app, debug=False
-                )
+                # eventlet.wsgi.server(
+                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                # )
+                socketio.run(app, debug=False)
             else:
                 webbrowser.open(url)
 
     elif __file__:
+        # DEV
         application_path = os.path.dirname(__file__)
         config_path = os.path.join(application_path, config_name)
         # windows
         if os.name == "nt":
-            if not process_exists("ACCB.exe"):
-                webbrowser.open(url)
-                eventlet.wsgi.server(
-                    eventlet.listen(("127.0.0.1", 5000)), app, debug=True
-                )
-            else:
-                webbrowser.open(url)
+            os.environ["WDM_LOCAL"] = "1"
+            chrome_installed = str(is_chrome_installed())
+            webbrowser.open(url)
+            # eventlet.wsgi.server(
+            #     eventlet.listen(("127.0.0.1", 5000)), app, debug=True
+            # )
+            socketio.run(app, debug=False)
         else:
-            # por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto
-            if not is_port_in_use(5000):
-                webbrowser.open(url)
-                eventlet.wsgi.server(
-                    eventlet.listen(("127.0.0.1", 5000)), app, debug=True
-                )
-            else:
-                webbrowser.open(url)
+            # os.environ["WDM_LOCAL"] = "1"
+            webbrowser.open(url)
+            # eventlet.wsgi.server(
+            #     eventlet.listen(("127.0.0.1", 5000)), app, debug=True
+            # )
+            socketio.run(app, debug=False)
 
 
 if __name__ == "__main__":

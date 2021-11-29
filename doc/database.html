@@ -42,6 +42,9 @@
                                 <a class="variable" href="#Database.conn">conn</a>
                         </li>
                         <li>
+                                <a class="function" href="#Database.log_error">log_error</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Database.resource_path">resource_path</a>
                         </li>
                         <li>
@@ -160,6 +163,19 @@ database    </h1>
         <span class="sd">&quot;&quot;&quot;Inicia a conexão com o banco de dados.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_connection</span><span class="p">()</span>
 
+    <span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loga um erro que aconteceu durante a execução do programa no arquivo error.log&quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">time</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;error.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Date : </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">asctime</span><span class="p">()))</span>
+            <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">err</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+
+        <span class="k">return</span>
+
     <span class="k">def</span> <span class="nf">resource_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Recupera o caminho de um recurso da aplicação.&quot;&quot;&quot;</span>
 
@@ -175,9 +191,10 @@ database    </h1>
         <span class="sd">&quot;&quot;&quot;Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe.&quot;&quot;&quot;</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;schema.sql&quot;</span><span class="p">)</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
-        <span class="n">sql_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+        <span class="n">sql_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
         <span class="n">sql_as_string</span> <span class="o">=</span> <span class="n">sql_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">executescript</span><span class="p">(</span><span class="n">sql_as_string</span><span class="p">)</span>
+        <span class="n">sql_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="c1"># subprocess.check_call([&quot;attrib&quot;, &quot;+H&quot;, &quot;accb.sqlite&quot;])</span>
 
     <span class="k">def</span> <span class="nf">db_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -571,6 +588,19 @@ database    </h1>
         <span class="sd">&quot;&quot;&quot;Inicia a conexão com o banco de dados.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_connection</span><span class="p">()</span>
 
+    <span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loga um erro que aconteceu durante a execução do programa no arquivo error.log&quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">time</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;error.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Date : </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">asctime</span><span class="p">()))</span>
+            <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">err</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+
+        <span class="k">return</span>
+
     <span class="k">def</span> <span class="nf">resource_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Recupera o caminho de um recurso da aplicação.&quot;&quot;&quot;</span>
 
@@ -586,9 +616,10 @@ database    </h1>
         <span class="sd">&quot;&quot;&quot;Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe.&quot;&quot;&quot;</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;schema.sql&quot;</span><span class="p">)</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
-        <span class="n">sql_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+        <span class="n">sql_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
         <span class="n">sql_as_string</span> <span class="o">=</span> <span class="n">sql_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">executescript</span><span class="p">(</span><span class="n">sql_as_string</span><span class="p">)</span>
+        <span class="n">sql_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="c1"># subprocess.check_call([&quot;attrib&quot;, &quot;+H&quot;, &quot;accb.sqlite&quot;])</span>
 
     <span class="k">def</span> <span class="nf">db_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -991,6 +1022,37 @@ database    </h1>
     
 
                             </div>
+                            <div id="Database.log_error" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Database.log_error">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">log_error</span><span class="signature">(self, err)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loga um erro que aconteceu durante a execução do programa no arquivo error.log&quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">time</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;error.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Date : </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">asctime</span><span class="p">()))</span>
+            <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">err</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+
+        <span class="k">return</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Loga um erro que aconteceu durante a execução do programa no arquivo error.log</p>
+</div>
+
+
+                            </div>
                             <div id="Database.resource_path" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Database.resource_path">#&nbsp;&nbsp</a>
 
@@ -1034,9 +1096,10 @@ database    </h1>
         <span class="sd">&quot;&quot;&quot;Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe.&quot;&quot;&quot;</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;schema.sql&quot;</span><span class="p">)</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
-        <span class="n">sql_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+        <span class="n">sql_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
         <span class="n">sql_as_string</span> <span class="o">=</span> <span class="n">sql_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">executescript</span><span class="p">(</span><span class="n">sql_as_string</span><span class="p">)</span>
+        <span class="n">sql_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="c1"># subprocess.check_call([&quot;attrib&quot;, &quot;+H&quot;, &quot;accb.sqlite&quot;])</span>
 </pre></div>
 

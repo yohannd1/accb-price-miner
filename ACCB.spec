@@ -9,7 +9,9 @@ a = Analysis(
     pathex=['D:\\Uesc\\Scrapper\\web\\ACCB\\Lib\\flask_material\\templates\\material'],
     binaries=[],
     datas=[('templates', 'templates'), ('static', 'static'), ('schema.sql', '.'), ('itabuna.json', '.'), ('ilheus.json', '.')],
-    hiddenimports=['engineio.async_drivers.eventlet', 'flask_material'],
+    hiddenimports=[
+    'flask_material',
+    ],
     hookspath=["."],
     hooksconfig={},
     runtime_hooks=[],

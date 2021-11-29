@@ -15,6 +15,7 @@ from tkinter import messagebox
 from tkinter import *
 import tkinter as tk
 from selenium import webdriver
+
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -332,7 +333,7 @@ class Scrap:
             chrome_options.add_argument("--disable-features=NetworkService")
             chrome_options.add_argument("--window-size=1920x1080")
             chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-            os.environ["WDM_LOCAL"] = "1"
+            # os.environ["WDM_LOCAL"] = "1"
 
             manager = ChromeDriverManager(log_level=0).install()
             service = Service(manager)

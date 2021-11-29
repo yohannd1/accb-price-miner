@@ -116,3 +116,23 @@ pyi-makespec --noconsole --onefile --add-data="templates;templates" --add-data="
 ```
 	pdoc app.py database scrapper -o doc
 ```
+
+## Caso necessário instalar a ultima versão do pyinstaller
+
+```
+- Neste caso existem algumas ferramentas necessárias para realizar esta etapa : https://pyinstaller.readthedocs.io/en/stable/bootloader-building.html#build-using-cygwin-and-mingw
+
+- Eu recomendo essa utilizar o compilador para C mingw64 e não 32 bits que pode ser baixado no link : https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download, não esqueça de mudar a arquitetura para x86_64
+
+- git clone https://github.com/pyinstaller/pyinstaller
+
+- cd pyinstaller
+
+- cd bootloader
+
+- python ./waf distclean all - builda o bootloader para o sistema em questão.
+
+- cd ..
+
+- python setup.py install - instala o pyinstaller no ambiente ativo no momento
+```

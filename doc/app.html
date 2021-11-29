@@ -39,6 +39,9 @@
                     <a class="variable" href="#session_data">session_data</a>
             </li>
             <li>
+                    <a class="variable" href="#chrome_installed">chrome_installed</a>
+            </li>
+            <li>
                     <a class="function" href="#is_chrome_installed">is_chrome_installed</a>
             </li>
             <li>
@@ -161,9 +164,12 @@ app    </h1>
             <div class="codehilite"><pre><span></span><span class="ch">#!/usr/bin/python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sd">&quot;&quot;&quot; Server da aplicação. &quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">eventlet</span>
+<span class="c1"># import eventlet</span>
 
-<span class="n">eventlet</span><span class="o">.</span><span class="n">patcher</span><span class="o">.</span><span class="n">monkey_patch</span><span class="p">(</span><span class="n">select</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">socket</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># eventlet.patcher.monkey_patch(select=True, socket=True)</span>
+<span class="c1"># from engineio.async_drivers import gevent</span>
+<span class="kn">from</span> <span class="nn">engineio.async_drivers</span> <span class="kn">import</span> <span class="n">threading</span>
+
 <span class="sd">&quot;&quot;&quot;Necessário para evitar bugs com aplicações que rodam tarefas no background.&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">g</span>
 <span class="kn">from</span> <span class="nn">flask_material</span> <span class="kn">import</span> <span class="n">Material</span>
@@ -173,6 +179,7 @@ app    </h1>
 <span class="kn">import</span> <span class="nn">sqlite3</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">werkzeug</span> <span class="kn">import</span> <span class="n">debug</span>
 <span class="kn">import</span> <span class="nn">database</span>
 <span class="kn">import</span> <span class="nn">traceback</span>
 <span class="kn">import</span> <span class="nn">scrapper</span>
@@ -184,30 +191,31 @@ app    </h1>
 <span class="kn">import</span> <span class="nn">subprocess</span>
 <span class="kn">from</span> <span class="nn">openpyxl.styles</span> <span class="kn">import</span> <span class="n">Border</span><span class="p">,</span> <span class="n">Side</span><span class="p">,</span> <span class="n">Alignment</span>
 <span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+<span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.service</span> <span class="kn">import</span> <span class="n">Service</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
 <span class="kn">from</span> <span class="nn">webdriver_manager.chrome</span> <span class="kn">import</span> <span class="n">ChromeDriverManager</span>
-
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">Material</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
-<span class="n">socketio</span> <span class="o">=</span> <span class="n">SocketIO</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">manage_session</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">async_mode</span><span class="o">=</span><span class="s2">&quot;eventlet&quot;</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">socketio</span> <span class="o">=</span> <span class="n">SocketIO</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">manage_session</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">async_mode</span><span class="o">=</span><span class="s2">&quot;threading&quot;</span><span class="p">)</span>
 <span class="n">connected</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="c1"># os.environ[&quot;WDM_LOG_LEVEL&quot;] = &quot;0&quot;</span>
 <span class="sd">&quot;&quot;&quot;Conta os clientes conectados&quot;&quot;&quot;</span>
 <span class="n">session_data</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="sd">&quot;&quot;&quot;Armazenamento de sessão&quot;&quot;&quot;</span>
 <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="sd">&quot;&quot;&quot;Responsável pelo controle de reload do programa.&quot;&quot;&quot;</span>
+<span class="n">chrome_installed</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="sd">&quot;&quot;&quot; Variavel indicativa da instalação do Google Chrome.&quot;&quot;&quot;</span>
 
 
 <span class="k">def</span> <span class="nf">is_chrome_installed</span><span class="p">():</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
-        <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.service</span> <span class="kn">import</span> <span class="n">Service</span>
-        <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
-        <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
 
-        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
-        <span class="n">manager</span> <span class="o">=</span> <span class="n">ChromeDriverManager</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
+        <span class="n">manager</span> <span class="o">=</span> <span class="n">ChromeDriverManager</span><span class="p">()</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
         <span class="n">chrome_options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--headless&quot;</span><span class="p">)</span>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--no-sandbox&quot;</span><span class="p">)</span>
@@ -217,9 +225,9 @@ app    </h1>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--window-size=1920x1080&quot;</span><span class="p">)</span>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=VizDisplayCompositor&quot;</span><span class="p">)</span>
         <span class="n">service</span> <span class="o">=</span> <span class="n">Service</span><span class="p">(</span><span class="n">manager</span><span class="p">)</span>
-        <span class="n">driver</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Chrome</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">,</span> <span class="n">chrome_options</span><span class="o">=</span><span class="n">chrome_options</span><span class="p">)</span>
+        <span class="n">driver</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Chrome</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">chrome_options</span><span class="p">)</span>
         <span class="n">driver</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-        <span class="n">driver</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">driver</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
@@ -263,13 +271,30 @@ app    </h1>
 
 <span class="k">def</span> <span class="nf">process_exists</span><span class="p">(</span><span class="n">process_name</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Confere se um processo existe no sistema (windows).&quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">DEVNULL</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
+
     <span class="n">call</span> <span class="o">=</span> <span class="s2">&quot;TASKLIST&quot;</span><span class="p">,</span> <span class="s2">&quot;/FI&quot;</span><span class="p">,</span> <span class="s2">&quot;imagename eq </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">process_name</span>
     <span class="c1"># use buildin check_output right away</span>
-    <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">call</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">DEVNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">DEVNULL</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+        <span class="s2">&quot;latin-1&quot;</span>
+    <span class="p">)</span>
     <span class="c1"># check in last line for process name</span>
     <span class="n">last_line</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
     <span class="c1"># because Fail message could be translated</span>
-    <span class="k">return</span> <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">last_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">3</span>
+        <span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot; last_line = Nome do programa em questão. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; last_line.strip().split()[3] = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado.&quot;&quot;&quot;</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
 
 <span class="k">def</span> <span class="nf">xlsx_to_bd</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">city_name</span><span class="p">):</span>
@@ -304,7 +329,7 @@ app    </h1>
 <span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Loga um erro que aconteceu durante a execução do programa no arquivo error.log&quot;&quot;&quot;</span>
 
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;error.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;error.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
 
         <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Date : </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">asctime</span><span class="p">()))</span>
         <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">err</span><span class="p">:</span>
@@ -428,11 +453,8 @@ app    </h1>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">home</span><span class="p">():</span>
-
     <span class="sd">&quot;&quot;&quot;Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação&quot;&quot;&quot;</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
-
-    <span class="c1"># sys.exit()</span>
 
     <span class="n">search_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span>
         <span class="s2">&quot;SELECT id FROM search WHERE done = 0 AND search_date = &#39;</span><span class="si">{}</span><span class="s2">&#39; ORDER BY city_name ASC&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -518,7 +540,7 @@ app    </h1>
         <span class="n">progress_value</span><span class="o">=</span><span class="n">progress_value</span><span class="p">,</span>
         <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span>
         <span class="n">active_month</span><span class="o">=</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
-        <span class="n">chrome_installed</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">()),</span>
+        <span class="n">chrome_installed</span><span class="o">=</span><span class="n">chrome_installed</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -1180,7 +1202,7 @@ app    </h1>
         <span class="k">if</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;backup&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">backup_info</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;DELETE FROM search WHERE id = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">search_id</span><span class="p">)</span>
             <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-
+        <span class="c1"># comentar para injeção</span>
         <span class="n">search_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_save_search</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">active</span> <span class="o">=</span> <span class="s2">&quot;0.0&quot;</span>
         <span class="n">city</span> <span class="o">=</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">]</span>
@@ -1192,7 +1214,7 @@ app    </h1>
             <span class="n">estab</span> <span class="k">for</span> <span class="n">estab</span> <span class="ow">in</span> <span class="n">estabs</span> <span class="k">if</span> <span class="n">estab</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">city</span> <span class="ow">and</span> <span class="n">estab</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">estab_names</span>
         <span class="p">]</span>
         <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
-
+        <span class="c1"># comentar para injeção</span>
         <span class="n">scrap</span> <span class="o">=</span> <span class="n">scrapper</span><span class="o">.</span><span class="n">Scrap</span><span class="p">(</span>
             <span class="n">estab_data</span><span class="p">,</span>
             <span class="n">city</span><span class="p">,</span>
@@ -1205,6 +1227,7 @@ app    </h1>
             <span class="n">progress_value</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="c1"># comentar para injeção</span>
         <span class="n">db</span><span class="o">.</span><span class="n">db_save_backup</span><span class="p">(</span>
             <span class="p">{</span>
                 <span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="s2">&quot;0.0&quot;</span><span class="p">,</span>
@@ -1219,6 +1242,7 @@ app    </h1>
         <span class="p">)</span>
 
     <span class="k">global</span> <span class="n">session_data</span>
+    <span class="c1"># comentar para injeção</span>
     <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;scrap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scrap</span>
     <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;search_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">search_id</span>
     <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;cancel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1227,8 +1251,10 @@ app    </h1>
 
     <span class="k">try</span><span class="p">:</span>
 
+        <span class="c1"># comentar para injeção</span>
         <span class="n">is_chrome_installed</span> <span class="o">=</span> <span class="n">scrap</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
+        <span class="c1"># comentar para injeção</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_chrome_installed</span><span class="p">:</span>
 
             <span class="n">emit</span><span class="p">(</span>
@@ -1294,6 +1320,7 @@ app    </h1>
     <span class="sd">&quot;&quot;&quot;Inicia o programa com as configurações da plataforma atual, windows ou linux.&quot;&quot;&quot;</span>
     <span class="n">config_name</span> <span class="o">=</span> <span class="s2">&quot;ACCB.cfg&quot;</span>
     <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;http://127.0.0.1:5000&quot;</span>
+    <span class="k">global</span> <span class="n">chrome_installed</span>
 
     <span class="c1"># Determina se a aplicação está rodando por um bundle feito pelo pyinstaller (exe) ou command line</span>
     <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;frozen&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
@@ -1302,43 +1329,48 @@ app    </h1>
         <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">process_exists</span><span class="p">(</span><span class="s2">&quot;ACCB.exe&quot;</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span>
-                <span class="p">)</span>
+                <span class="c1"># eventlet.wsgi.server(</span>
+                <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=False</span>
+                <span class="c1"># )</span>
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span>
-                <span class="p">)</span>
+                <span class="c1"># eventlet.wsgi.server(</span>
+                <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=False</span>
+                <span class="c1"># )</span>
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 
     <span class="k">elif</span> <span class="vm">__file__</span><span class="p">:</span>
+        <span class="c1"># DEV</span>
         <span class="n">application_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
         <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">application_path</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
         <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">process_exists</span><span class="p">(</span><span class="s2">&quot;ACCB.exe&quot;</span><span class="p">):</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+            <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="c1"># eventlet.wsgi.server(</span>
+            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
+            <span class="c1"># )</span>
+            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="c1"># os.environ[&quot;WDM_LOCAL&quot;] = &quot;1&quot;</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="c1"># eventlet.wsgi.server(</span>
+            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
+            <span class="c1"># )</span>
+            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
@@ -1372,6 +1404,17 @@ app    </h1>
 
 
                 </section>
+                <section id="chrome_installed">
+                                <div class="attr variable"><a class="headerlink" href="#chrome_installed">#&nbsp;&nbsp</a>
+
+        <span class="name">chrome_installed</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Variavel indicativa da instalação do Google Chrome.</p>
+</div>
+
+
+                </section>
                 <section id="is_chrome_installed">
                             <div class="attr function"><a class="headerlink" href="#is_chrome_installed">#&nbsp;&nbsp</a>
 
@@ -1385,13 +1428,8 @@ app    </h1>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">is_chrome_installed</span><span class="p">():</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
-        <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.service</span> <span class="kn">import</span> <span class="n">Service</span>
-        <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
-        <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
 
-        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
-        <span class="n">manager</span> <span class="o">=</span> <span class="n">ChromeDriverManager</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
+        <span class="n">manager</span> <span class="o">=</span> <span class="n">ChromeDriverManager</span><span class="p">()</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
         <span class="n">chrome_options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--headless&quot;</span><span class="p">)</span>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--no-sandbox&quot;</span><span class="p">)</span>
@@ -1401,9 +1439,9 @@ app    </h1>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--window-size=1920x1080&quot;</span><span class="p">)</span>
         <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=VizDisplayCompositor&quot;</span><span class="p">)</span>
         <span class="n">service</span> <span class="o">=</span> <span class="n">Service</span><span class="p">(</span><span class="n">manager</span><span class="p">)</span>
-        <span class="n">driver</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Chrome</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">,</span> <span class="n">chrome_options</span><span class="o">=</span><span class="n">chrome_options</span><span class="p">)</span>
+        <span class="n">driver</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Chrome</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">chrome_options</span><span class="p">)</span>
         <span class="n">driver</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-        <span class="n">driver</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">driver</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
@@ -1513,13 +1551,30 @@ app    </h1>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">process_exists</span><span class="p">(</span><span class="n">process_name</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Confere se um processo existe no sistema (windows).&quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">DEVNULL</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
+
     <span class="n">call</span> <span class="o">=</span> <span class="s2">&quot;TASKLIST&quot;</span><span class="p">,</span> <span class="s2">&quot;/FI&quot;</span><span class="p">,</span> <span class="s2">&quot;imagename eq </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">process_name</span>
     <span class="c1"># use buildin check_output right away</span>
-    <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">call</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">DEVNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">DEVNULL</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+        <span class="s2">&quot;latin-1&quot;</span>
+    <span class="p">)</span>
     <span class="c1"># check in last line for process name</span>
     <span class="n">last_line</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
     <span class="c1"># because Fail message could be translated</span>
-    <span class="k">return</span> <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">last_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">3</span>
+        <span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot; last_line = Nome do programa em questão. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; last_line.strip().split()[3] = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado.&quot;&quot;&quot;</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
 </pre></div>
 
         </details>
@@ -1588,7 +1643,7 @@ app    </h1>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Loga um erro que aconteceu durante a execução do programa no arquivo error.log&quot;&quot;&quot;</span>
 
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;error.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;error.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
 
         <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Date : </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">asctime</span><span class="p">()))</span>
         <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">err</span><span class="p">:</span>
@@ -1747,11 +1802,8 @@ app    </h1>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">home</span><span class="p">():</span>
-
     <span class="sd">&quot;&quot;&quot;Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação&quot;&quot;&quot;</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
-
-    <span class="c1"># sys.exit()</span>
 
     <span class="n">search_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span>
         <span class="s2">&quot;SELECT id FROM search WHERE done = 0 AND search_date = &#39;</span><span class="si">{}</span><span class="s2">&#39; ORDER BY city_name ASC&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1837,7 +1889,7 @@ app    </h1>
         <span class="n">progress_value</span><span class="o">=</span><span class="n">progress_value</span><span class="p">,</span>
         <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span>
         <span class="n">active_month</span><span class="o">=</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
-        <span class="n">chrome_installed</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">()),</span>
+        <span class="n">chrome_installed</span><span class="o">=</span><span class="n">chrome_installed</span><span class="p">,</span>
     <span class="p">)</span>
 </pre></div>
 
@@ -2890,7 +2942,7 @@ app    </h1>
         <span class="k">if</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;backup&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">backup_info</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;DELETE FROM search WHERE id = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">search_id</span><span class="p">)</span>
             <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-
+        <span class="c1"># comentar para injeção</span>
         <span class="n">search_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_save_search</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">active</span> <span class="o">=</span> <span class="s2">&quot;0.0&quot;</span>
         <span class="n">city</span> <span class="o">=</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">]</span>
@@ -2902,7 +2954,7 @@ app    </h1>
             <span class="n">estab</span> <span class="k">for</span> <span class="n">estab</span> <span class="ow">in</span> <span class="n">estabs</span> <span class="k">if</span> <span class="n">estab</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">city</span> <span class="ow">and</span> <span class="n">estab</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">estab_names</span>
         <span class="p">]</span>
         <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
-
+        <span class="c1"># comentar para injeção</span>
         <span class="n">scrap</span> <span class="o">=</span> <span class="n">scrapper</span><span class="o">.</span><span class="n">Scrap</span><span class="p">(</span>
             <span class="n">estab_data</span><span class="p">,</span>
             <span class="n">city</span><span class="p">,</span>
@@ -2915,6 +2967,7 @@ app    </h1>
             <span class="n">progress_value</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="c1"># comentar para injeção</span>
         <span class="n">db</span><span class="o">.</span><span class="n">db_save_backup</span><span class="p">(</span>
             <span class="p">{</span>
                 <span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="s2">&quot;0.0&quot;</span><span class="p">,</span>
@@ -2929,6 +2982,7 @@ app    </h1>
         <span class="p">)</span>
 
     <span class="k">global</span> <span class="n">session_data</span>
+    <span class="c1"># comentar para injeção</span>
     <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;scrap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scrap</span>
     <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;search_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">search_id</span>
     <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;cancel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
@@ -2937,8 +2991,10 @@ app    </h1>
 
     <span class="k">try</span><span class="p">:</span>
 
+        <span class="c1"># comentar para injeção</span>
         <span class="n">is_chrome_installed</span> <span class="o">=</span> <span class="n">scrap</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
+        <span class="c1"># comentar para injeção</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_chrome_installed</span><span class="p">:</span>
 
             <span class="n">emit</span><span class="p">(</span>
@@ -3039,6 +3095,7 @@ app    </h1>
     <span class="sd">&quot;&quot;&quot;Inicia o programa com as configurações da plataforma atual, windows ou linux.&quot;&quot;&quot;</span>
     <span class="n">config_name</span> <span class="o">=</span> <span class="s2">&quot;ACCB.cfg&quot;</span>
     <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;http://127.0.0.1:5000&quot;</span>
+    <span class="k">global</span> <span class="n">chrome_installed</span>
 
     <span class="c1"># Determina se a aplicação está rodando por um bundle feito pelo pyinstaller (exe) ou command line</span>
     <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;frozen&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
@@ -3047,43 +3104,48 @@ app    </h1>
         <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">process_exists</span><span class="p">(</span><span class="s2">&quot;ACCB.exe&quot;</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span>
-                <span class="p">)</span>
+                <span class="c1"># eventlet.wsgi.server(</span>
+                <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=False</span>
+                <span class="c1"># )</span>
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span>
-                <span class="p">)</span>
+                <span class="c1"># eventlet.wsgi.server(</span>
+                <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=False</span>
+                <span class="c1"># )</span>
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 
     <span class="k">elif</span> <span class="vm">__file__</span><span class="p">:</span>
+        <span class="c1"># DEV</span>
         <span class="n">application_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
         <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">application_path</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
         <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">process_exists</span><span class="p">(</span><span class="s2">&quot;ACCB.exe&quot;</span><span class="p">):</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+            <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="c1"># eventlet.wsgi.server(</span>
+            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
+            <span class="c1"># )</span>
+            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="n">eventlet</span><span class="o">.</span><span class="n">wsgi</span><span class="o">.</span><span class="n">server</span><span class="p">(</span>
-                    <span class="n">eventlet</span><span class="o">.</span><span class="n">listen</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)),</span> <span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="c1"># os.environ[&quot;WDM_LOCAL&quot;] = &quot;1&quot;</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="c1"># eventlet.wsgi.server(</span>
+            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
+            <span class="c1"># )</span>
+            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 
         </details>

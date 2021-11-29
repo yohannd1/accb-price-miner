@@ -154,6 +154,7 @@ scrapper    </h1>
 <span class="kn">from</span> <span class="nn">tkinter</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">import</span> <span class="nn">tkinter</span> <span class="k">as</span> <span class="nn">tk</span>
 <span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
+
 <span class="kn">from</span> <span class="nn">selenium.webdriver.common.keys</span> <span class="kn">import</span> <span class="n">Keys</span>
 <span class="kn">from</span> <span class="nn">selenium.webdriver.common.by</span> <span class="kn">import</span> <span class="n">By</span>
 <span class="kn">from</span> <span class="nn">selenium.webdriver.support.ui</span> <span class="kn">import</span> <span class="n">WebDriverWait</span>
@@ -471,7 +472,7 @@ scrapper    </h1>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=NetworkService&quot;</span><span class="p">)</span>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--window-size=1920x1080&quot;</span><span class="p">)</span>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=VizDisplayCompositor&quot;</span><span class="p">)</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+            <span class="c1"># os.environ[&quot;WDM_LOCAL&quot;] = &quot;1&quot;</span>
 
             <span class="n">manager</span> <span class="o">=</span> <span class="n">ChromeDriverManager</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
             <span class="n">service</span> <span class="o">=</span> <span class="n">Service</span><span class="p">(</span><span class="n">manager</span><span class="p">)</span>
@@ -1069,7 +1070,7 @@ scrapper    </h1>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=NetworkService&quot;</span><span class="p">)</span>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--window-size=1920x1080&quot;</span><span class="p">)</span>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=VizDisplayCompositor&quot;</span><span class="p">)</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+            <span class="c1"># os.environ[&quot;WDM_LOCAL&quot;] = &quot;1&quot;</span>
 
             <span class="n">manager</span> <span class="o">=</span> <span class="n">ChromeDriverManager</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
             <span class="n">service</span> <span class="o">=</span> <span class="n">Service</span><span class="p">(</span><span class="n">manager</span><span class="p">)</span>
@@ -2013,7 +2014,7 @@ scrapper    </h1>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=NetworkService&quot;</span><span class="p">)</span>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--window-size=1920x1080&quot;</span><span class="p">)</span>
             <span class="n">chrome_options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--disable-features=VizDisplayCompositor&quot;</span><span class="p">)</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+            <span class="c1"># os.environ[&quot;WDM_LOCAL&quot;] = &quot;1&quot;</span>
 
             <span class="n">manager</span> <span class="o">=</span> <span class="n">ChromeDriverManager</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
             <span class="n">service</span> <span class="o">=</span> <span class="n">Service</span><span class="p">(</span><span class="n">manager</span><span class="p">)</span>
