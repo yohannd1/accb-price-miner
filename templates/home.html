@@ -36,25 +36,29 @@
 		<city value={{city}} />
 		<search value="false" />
 		<header>
-			<a style="position: absolute; right: 10px; top: 10px; background: #fea621 !important;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
-			{% if search %}
-				<a style="position: absolute; right: 80px; top: 10px; background: #fea621 !important;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
-			{% else %}
-				<a style="position: absolute; right: 80px; top: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
-			{% endif %}
-			<div class="top-logo">
-				<img
-					src="{{ url_for('static',filename='img/uesc_brasão.png') }}"
-					alt="Uesc Logo"
-				/>
-				<img
-					src="{{ url_for('static',filename='img/accb.png') }}"
-					alt="ACCB Logo"
-				/>
-				<img
-					src="{{ url_for('static',filename='img/proex.png') }}"
-					alt="ACCB Logo"
-				/>
+			<div id="top-menu">
+				<div class="top-logo">
+					<img
+						src="{{ url_for('static',filename='img/uesc_brasão.png') }}"
+						alt="Uesc Logo"
+					/>
+					<img
+						src="{{ url_for('static',filename='img/accb.png') }}"
+						alt="ACCB Logo"
+					/>
+					<img
+						src="{{ url_for('static',filename='img/proex.png') }}"
+						alt="ACCB Logo"
+					/>
+				</div>
+				<div style="margin-top: 2em;">
+					<a style="background: #fea621 !important; margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+					{% if search %}
+						<a style="background: #fea621 !important; margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
+					{% else %}
+						<a  style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
+					{% endif %}
+				</div>
 			</div>
 			<div>
 				<p class="title"><i class="fa fa-shopping-cart"> </i> Preço da Hora Bahia - Coleta Semi-Automática </p>
@@ -78,7 +82,7 @@
 		</header>
 		<main class="main-content row z-depth-5">
 			<div id="pesquisar" class="tab">
-					<div class="tab-content">
+					<div class="tab-content" style="display: flex; flex-direction:column; justify-content: center; align-items: center;">
 						{% if chrome_installed == 'False' %}
 							<h5>Instale uma versão qualquer do Google Chrome para realizar uma pesquisa.</h5>
 						{% elif product_len == 0 %}
@@ -117,16 +121,14 @@
 			<div id="listagem" class="col s12 tab">
 				<h5>Selecione pelo menos um estabelecimento para prosseguir</h5>
 				<div class="tab-content-listagem">
-					<div>
-						<div class="select_wrapper col s12">
-							<i class="fa fa-spinner fa-pulse" id="loader"></i>
-						</div>
+					<div class="select_wrapper col s12">
+						<i class="fa fa-spinner fa-pulse" id="loader"></i>
 					</div>
-				</div>
-				<div class="button-menu">
-					<button id="back" class=" btn-large">Voltar</button>
-					<button id="select-all" class=" btn-large">Selecionar Todos</button>
-					<button id="start" class=" btn-large">Iniciar Pesquisa</button>
+					<div class="button-menu">
+						<button id="back" class=" btn-large">Voltar</button>
+						<button id="select-all" class=" btn-large">Selecionar Todos</button>
+						<button id="start" class=" btn-large">Iniciar Pesquisa</button>
+					</div>
 				</div>
 			</div>
 			<div id="progress" class="col s12 tab">
@@ -135,12 +137,14 @@
 					<div id="progress_container">
 						<div id="progress_bar">0%</div>
 					</div>
-					<div id="progress_scroll" style="overflow: auto; height: 100%; margin: 2.5em 0; padding: 1em; border-radius: 10px; display: block;">
+					<div id="progress_scroll" style="">
 						<div id="progress_log">
 						</div>
 					</div>
-					<button id="pause" class=" btn-large">Parar Pesquisa</button>
-					<button id="cancel" class=" btn-large">Cancelar Pesquisa</button>
+					<div class="button-menu">
+						<button id="pause" class=" btn-large">Parar Pesquisa</button>
+						<button id="cancel" class=" btn-large">Cancelar Pesquisa</button>
+					</div>
 				</div>
 				<div class="row center pause-overlay">
 					<i class="fa fa-spinner fa-pulse" id="pause-loader"></i>

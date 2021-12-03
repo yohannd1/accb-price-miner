@@ -302,6 +302,7 @@ def home():
 
     product_len = db.db_run_query("SELECT product_name FROM product")
     search = False
+    progress_value = 0
     active = "0.0"
     try:
         search_id = search_id[0][0]
@@ -327,9 +328,6 @@ def home():
     except:
         if not len(product_len) == 0:
             progress_value = 100 / len(product_len)
-        else:
-            progress_value = 0
-        pass
 
     day = datetime.datetime.now()
     search_info = db.db_run_query(
@@ -1018,20 +1016,20 @@ def disconnect():
     global session_data
     connected -= 1
     # print("disconnnected {}".format(connected))
-    if connected == 0 and not session_data["software_reload"]:
-        log_error([connected, session_data])
-        os._exit(0)
-    else:
-        try:
+    # if connected == 0 and not session_data["software_reload"]:
+    #     log_error([connected, session_data])
+    #     os._exit(0)
+    # else:
+    #     try:
 
-            if session_data["software_reload"] and connected == 0:
+    #         if session_data["software_reload"] and connected == 0:
 
-                session_data["software_reload"] = False
-                log_error([connected, session_data])
+    #             session_data["software_reload"] = False
+    #             log_error([connected, session_data])
 
-        except:
+    #     except:
 
-            pass
+    #         pass
 
 
 # Inicia pesquisa
@@ -1092,7 +1090,7 @@ def handle_search(search_info):
             query = "DELETE FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
         # comentar para injeção
-        search_id = db.db_save_search(0, search_info["city"], 0)
+        # search_id = db.db_save_search(0, search_info["city"], 0)
         active = "0.0"
         city = search_info["city"]
         estab_names = json.loads(search_info["names"])
@@ -1102,37 +1100,38 @@ def handle_search(search_info):
         estab_data = [
             estab for estab in estabs if estab[0] == city and estab[1] in estab_names
         ]
+
         progress_value = 100 / len(product)
         # comentar para injeção
-        scrap = scrapper.Scrap(
-            estab_data,
-            city,
-            estab_names,
-            product,
-            active,
-            search_id,
-            False,
-            0,
-            progress_value,
-        )
+        # scrap = scrapper.Scrap(
+        #     estab_data,
+        #     city,
+        #     estab_names,
+        #     product,
+        #     active,
+        #     search_id,
+        #     False,
+        #     0,
+        #     progress_value,
+        # )
 
         # comentar para injeção
-        db.db_save_backup(
-            {
-                "active": "0.0",
-                "city": city,
-                "done": 0,
-                "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
-                "product_info": json.dumps(product),
-                "search_id": search_id,
-                "duration": 0,
-                "progress_value": progress_value,
-            }
-        )
+        # db.db_save_backup(
+        #     {
+        #         "active": "0.0",
+        #         "city": city,
+        #         "done": 0,
+        #         "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
+        #         "product_info": json.dumps(product),
+        #         "search_id": search_id,
+        #         "duration": 0,
+        #         "progress_value": progress_value,
+        #     }
+        # )
 
     global session_data
     # comentar para injeção
-    session_data["scrap"] = scrap
+    # session_data["scrap"] = scrap
     session_data["search_id"] = search_id
     session_data["cancel"] = False
     session_data["pause"] = False
@@ -1141,36 +1140,36 @@ def handle_search(search_info):
     try:
 
         # comentar para injeção
-        is_chrome_installed = scrap.run()
+        # is_chrome_installed = scrap.run()
 
         # comentar para injeção
-        if not is_chrome_installed:
+        # if not is_chrome_installed:
 
-            emit(
-                "captcha",
-                {"type": "chrome", "installed": False},
-                broadcast=True,
-            )
-            session_data["cancel"] = True
-            session_data["pause"] = True
+        #     emit(
+        #         "captcha",
+        #         {"type": "chrome", "installed": False},
+        #         broadcast=True,
+        #     )
+        #     session_data["cancel"] = True
+        #     session_data["pause"] = True
 
-        if not session_data["cancel"] and not session_data["pause"]:
+        # if not session_data["cancel"] and not session_data["pause"]:
 
-            emit(
-                "captcha",
-                {"type": "notification", "message": "Pesquisa concluida."},
-                broadcast=True,
-            )
-            emit(
-                "captcha",
-                {"type": "progress", "done": 1},
-                broadcast=True,
-            )
-            session_data["software_reload"] = True
-            # search_id = xlsx_to_bd(db, search_info["city"])
-            """Comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa."""
+        #     emit(
+        #         "captcha",
+        #         {"type": "notification", "message": "Pesquisa concluida."},
+        #         broadcast=True,
+        #     )
+        #     emit(
+        #         "captcha",
+        #         {"type": "progress", "done": 1},
+        #         broadcast=True,
+        #     )
+        #     session_data["software_reload"] = True
+        search_id = xlsx_to_bd(db, search_info["city"])
+        """Comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa."""
 
-            bd_to_xlsx(db, search_id, estab_data, city)
+        bd_to_xlsx(db, search_id, estab_data, city)
 
     except:
 
@@ -1242,24 +1241,29 @@ def run_app():
 
     elif __file__:
         # DEV
-        application_path = os.path.dirname(__file__)
-        config_path = os.path.join(application_path, config_name)
-        # windows
         if os.name == "nt":
-            os.environ["WDM_LOCAL"] = "1"
-            chrome_installed = str(is_chrome_installed())
-            webbrowser.open(url)
-            # eventlet.wsgi.server(
-            #     eventlet.listen(("127.0.0.1", 5000)), app, debug=True
-            # )
-            socketio.run(app, debug=True)
+            if not is_port_in_use(5000):
+                os.environ["WDM_LOCAL"] = "1"
+                chrome_installed = str(is_chrome_installed())
+                webbrowser.open(url)
+                # eventlet.wsgi.server(
+                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                # )
+                socketio.run(app, debug=True)
+            else:
+                webbrowser.open(url)
         else:
-            # os.environ["WDM_LOCAL"] = "1"
-            webbrowser.open(url)
-            # eventlet.wsgi.server(
-            #     eventlet.listen(("127.0.0.1", 5000)), app, debug=True
-            # )
-            socketio.run(app, debug=True)
+            # por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto
+            if not is_port_in_use(5000):
+                os.environ["WDM_LOCAL"] = "1"
+                chrome_installed = str(is_chrome_installed())
+                webbrowser.open(url)
+                # eventlet.wsgi.server(
+                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                # )
+                socketio.run(app, debug=True)
+            else:
+                webbrowser.open(url)
 
 
 if __name__ == "__main__":

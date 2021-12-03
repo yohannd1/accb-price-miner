@@ -7,6 +7,8 @@
 .title{
 	font-size:xx-large;
 	color: #f1f1f1;
+	margin: 0;
+	margin-bottom: .5em;
 }
 
 button, a{
@@ -53,13 +55,15 @@ a.primary_color:hover{
 
 
 html{
-	height: 100vh;
+	/* height: 100vh; */
+	height: fit-content;
+	/* height: 100%; */
 	background: rgb(16,45,66);
 	background: -moz-linear-gradient(0deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
 	background: -webkit-linear-gradient(0deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
 	background: linear-gradient(0deg, rgba(16,45,66,1) 0%, rgba(10,57,89,1) 59%, rgba(2,66,111,1) 100%);
 	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#102d42",endColorstr="#02426f",GradientType=1);
-	padding: 8em 5em;
+	padding: 0 5em;
 	/* height: fit-content; */
 	display: flex;
 	justify-content: center;
@@ -69,12 +73,20 @@ html{
 header{
 	text-align: center;
     justify-content: center;
-    display: flex;
+    /* display: flex; */
     align-content: center;
     align-self: center;
     align-self: center;
     background: transparent;
     margin: 0 auto;
+}
+
+#top-menu{
+	text-align: center;
+    display: flex;
+    background: transparent;
+    margin: 0 auto;
+	justify-content: space-between;
 }
 
 
@@ -135,7 +147,7 @@ h5{
 
 main {
 	background-color: rgba(255,255,255,.54);
-	height: 65vh;
+	height: 45vw;
 	border-radius: 10px;
 	padding: 2.5em 1em;
 	margin-top: 1em;
@@ -144,7 +156,7 @@ main {
 }
 
 .top-logo {
-	position: absolute;
+	/* position: absolute; */
 	top: 0;
 	left: 10px;
 	padding: 15px;
@@ -165,16 +177,16 @@ main {
 }
 
 .tab-content{
-	height: 50%;
+	height: 100%;
 	margin: auto;
-	position: absolute;
-	top: 0; left: 0; bottom: 0; right: 0;
+	/* position: absolute; */
+	/* top: 0; left: 0; bottom: 0; right: 0; */
 }
 
 .tab-content-listagem{
-	height: 75%;
+	height: 90%;
 	margin: auto;
-	position: absolute;
+	/* position: absolute; */
 	top: 0; left: 0; bottom: 0; right: 0;
 	overflow: auto;
 }
@@ -186,8 +198,9 @@ main {
 	align-content:center;
 	justify-content:center;
 	margin: auto;
-	position: absolute;
-	top: 6%; left: 0; bottom: 0; right: 0;
+	height: 85%;
+	/* position: absolute; */
+	/* top: 6%; left: 0; bottom: 0; right: 0; */
 }
 
 .select-wrapper-main {
@@ -230,10 +243,10 @@ main {
 }
 
 .button-menu{
-	position: absolute;
+	/* position: absolute;
 	left: 50%;
 	transform: translate(-50%, -50%);
-	bottom: -5%;
+	bottom: -5%; */
 	width: 100%;
 }
 
@@ -268,7 +281,7 @@ main {
 
 #progress_log{
 	padding: 1em;
-	height: 100%;
+	height: 100% !important;
     /* overflow: auto; */
 	height: inherit;
     background: #4c6577;
@@ -278,8 +291,16 @@ main {
 #progress_container {
 	width: 98%;
 	background-color: #4c6577;
-	margin: 2.5em auto;
+	margin: .5em auto;
 	border-radius: 10px;
+}
+
+#progress_scroll{
+	overflow: auto;
+	height: 65%;
+	padding: 1em;
+	border-radius: 10px;
+	display: block;
 }
 
 #progress_bar {
@@ -743,4 +764,29 @@ blockquote {
 	list-style:lower-roman;
 	height: 75%;
 	overflow:auto;
+}
+
+
+@media screen and (min-height: 810px) {
+
+	main{
+		height: 70vh;
+	}
+
+	html{
+		height: 100%;
+	}
+
+}
+
+@media screen and (min-width: 1000px) and (max-height: 800) {
+
+	main{
+		height: 70vh;
+	}
+
+	html{
+		height: fit-content;
+	}
+
 }
