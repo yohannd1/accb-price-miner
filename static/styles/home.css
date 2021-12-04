@@ -281,7 +281,7 @@ main {
 
 #progress_log{
 	padding: 1em;
-	height: 100% !important;
+	height: 100% ;
     /* overflow: auto; */
 	height: inherit;
     background: #4c6577;

@@ -733,6 +733,18 @@ $(document).ready(function () {
 			});
 			$("#pause-loader").fadeOut(500);
 			$(".pause-overlay").fadeOut(500);
+		} else if (msg['type'] == 'error') {
+			$("#progress_bar").css("width", "0%");
+			$("#progress_bar").html("0%");
+			$('ul.tabs').tabs('select', 'pesquisar');
+			$("#progress h5").html(`Iniciando Pesquisa`);
+			$(".tabs a").addClass('enable');
+			$(".log_item").remove();
+			$("#progress_log").css("height", "100%");
+			new Notification("ACCB - Pesquisa Automática", {
+				body: msg['message'],
+			});
+			alert(msg['message'])
 		}
 	});
 
@@ -904,15 +916,12 @@ $(document).ready(function () {
 	$("#pause").click(function (e) {
 
 		e.preventDefault();
-		// $(this).html("PAUSANDO PESQUISA");
-		// $(this).addClass('disable');
-		if (window.confirm(`Realmente deseja PAUSAR a pesquisa ? Todos o progresso será salvo.`)) {
+		if (window.confirm(`Realmente deseja PARAR a pesquisa ? Todo o progresso será salvo.`)) {
 			socket.emit('pause');
-			$("#progress h5").html(`Pausando Pesquisa`);
+			$("#progress h5").html(`Parando Pesquisa`);
 			$(".pause-overlay").fadeIn(500);
 			$("#pause-loader").fadeIn(500);
 			$(window).off();
-
 		}
 
 

@@ -315,6 +315,7 @@ class Scrap:
         else:
 
             self.exit_thread(True)
+            raise ValueError("Sem conexão com a rede!")
 
     def run(self):
         """
@@ -323,6 +324,8 @@ class Scrap:
         """
 
         URL = "https://precodahora.ba.gov.br/produtos"
+        raise ValueError("Sem conexão com a rede!")
+
         self.url = URL
         times = 4
         try:

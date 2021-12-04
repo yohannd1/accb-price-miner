@@ -1173,6 +1173,29 @@ def handle_search(search_info):
 
     except:
 
+        try:
+            search_info["error"] += 1
+            if search_info["error"] > 3:
+                emit(
+                    "captcha",
+                    {
+                        "type": "error",
+                        "message": "Ocorreram muitos erros em sucessão, a pesquisa será parada, inicie manualmente para garantir a segurança do processo.",
+                    },
+                    broadcast=True,
+                )
+
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+                return
+
+        except:
+
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+            search_info["error"] = 1
+
         emit(
             "captcha",
             {
@@ -1181,8 +1204,7 @@ def handle_search(search_info):
             },
             broadcast=True,
         )
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
         handle_search(search_info)
 
 
