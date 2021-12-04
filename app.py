@@ -1103,35 +1103,35 @@ def handle_search(search_info):
 
         progress_value = 100 / len(product)
         # comentar para injeção
-        # scrap = scrapper.Scrap(
-        #     estab_data,
-        #     city,
-        #     estab_names,
-        #     product,
-        #     active,
-        #     search_id,
-        #     False,
-        #     0,
-        #     progress_value,
-        # )
+        scrap = scrapper.Scrap(
+            estab_data,
+            city,
+            estab_names,
+            product,
+            active,
+            search_id,
+            False,
+            0,
+            progress_value,
+        )
 
         # comentar para injeção
-        # db.db_save_backup(
-        #     {
-        #         "active": "0.0",
-        #         "city": city,
-        #         "done": 0,
-        #         "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
-        #         "product_info": json.dumps(product),
-        #         "search_id": search_id,
-        #         "duration": 0,
-        #         "progress_value": progress_value,
-        #     }
-        # )
+        db.db_save_backup(
+            {
+                "active": "0.0",
+                "city": city,
+                "done": 0,
+                "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
+                "product_info": json.dumps(product),
+                "search_id": search_id,
+                "duration": 0,
+                "progress_value": progress_value,
+            }
+        )
 
     global session_data
     # comentar para injeção
-    # session_data["scrap"] = scrap
+    session_data["scrap"] = scrap
     session_data["search_id"] = search_id
     session_data["cancel"] = False
     session_data["pause"] = False
@@ -1140,46 +1140,50 @@ def handle_search(search_info):
     try:
 
         # comentar para injeção
-        # is_chrome_installed = scrap.run()
+        is_chrome_installed = scrap.run()
 
         # comentar para injeção
-        # if not is_chrome_installed:
+        if not is_chrome_installed:
 
-        #     emit(
-        #         "captcha",
-        #         {"type": "chrome", "installed": False},
-        #         broadcast=True,
-        #     )
-        #     session_data["cancel"] = True
-        #     session_data["pause"] = True
+            emit(
+                "captcha",
+                {"type": "chrome", "installed": False},
+                broadcast=True,
+            )
+            session_data["cancel"] = True
+            session_data["pause"] = True
 
-        # if not session_data["cancel"] and not session_data["pause"]:
+        if not session_data["cancel"] and not session_data["pause"]:
 
-        #     emit(
-        #         "captcha",
-        #         {"type": "notification", "message": "Pesquisa concluida."},
-        #         broadcast=True,
-        #     )
-        #     emit(
-        #         "captcha",
-        #         {"type": "progress", "done": 1},
-        #         broadcast=True,
-        #     )
-        #     session_data["software_reload"] = True
-        search_id = xlsx_to_bd(db, search_info["city"])
-        """Comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa."""
+            emit(
+                "captcha",
+                {"type": "notification", "message": "Pesquisa concluida."},
+                broadcast=True,
+            )
+            emit(
+                "captcha",
+                {"type": "progress", "done": 1},
+                broadcast=True,
+            )
+            session_data["software_reload"] = True
+            # search_id = xlsx_to_bd(db, search_info["city"])
+            """Comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa."""
 
-        bd_to_xlsx(db, search_id, estab_data, city)
+            bd_to_xlsx(db, search_id, estab_data, city)
 
     except:
 
         emit(
             "captcha",
-            {"type": "notification", "message": "Ocorreu um erro durante a pesquisa."},
+            {
+                "type": "notification",
+                "message": "Ocorreu um erro durante a pesquisa, a pesquisa será reiniciada, aguarde um instante.",
+            },
             broadcast=True,
         )
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+        handle_search(search_info)
 
 
 @app.context_processor

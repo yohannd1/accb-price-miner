@@ -39,7 +39,7 @@
 }
 
 .modal-menu{
-    position: absolute;
+    /* position: absolute; */
     display: flex;
     bottom: 10%;
     right: 0;

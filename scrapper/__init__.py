@@ -46,9 +46,6 @@ class Scrap:
         PROGRESS_VALUE,
     ):
 
-        self.win = tk.Tk()
-        self.win.withdraw()
-
         # OUT
         self.ID = ID
         """ ID da pesquisa atual."""
@@ -282,11 +279,16 @@ class Scrap:
             broadcast=True,
         )
 
+        win = tk.Tk()
+        win.withdraw()
+
         result = messagebox.showinfo(
             "CAPTCHA",
             "Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay",
             icon="warning",
         )
+
+        win.destroy()
 
         if result:
 
@@ -447,7 +449,7 @@ class Scrap:
 
                     self.exit = True
                     self.exit_thread()
-                    return
+                    return True
 
                 else:
 
@@ -513,7 +515,7 @@ class Scrap:
                     self.exit = True
                     self.exit_thread()
 
-                    return
+                    return True
                 # Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados
                 try:
 
@@ -535,8 +537,7 @@ class Scrap:
 
                             self.exit = True
                             self.exit_thread()
-
-                            return
+                            return True
 
                         try:
 
@@ -566,7 +567,7 @@ class Scrap:
 
                         self.exit = True
                         self.exit_thread()
-                        return
+                        return True
 
                     self.get_data(product, keyword)
 

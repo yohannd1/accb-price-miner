@@ -360,23 +360,23 @@
 
 		<!-- MODAL DINAMICO PARA EDIÇÃO DE ESTAB -->
 
-		<div id="edit-modal" class="modal">
+		<div id="edit-modal"  style="min-height: 450px" class="modal">
 			<a href="#" rel="modal:close" />
 		</div>
 
 		<!-- MODAL DINAMICO PARA EDIÇÃO DE PRODUTO -->
 
-		<div style="height: 45%;"id="edit-modal-product" class="modal">
+		<div style="height: 45%;  min-height: 350px;"id="edit-modal-product" class="modal">
 			<a href="#" rel="modal:close" />
 		</div>
 
 		<!-- MODAL ADICIONANDO PRODUTO -->
-		<div style="height: 45%;" id="add-modal-product" class="modal">
+		<div style="height: 45%; min-height: 350px;" id="add-modal-product" class="modal">
 			<div class="modal-content">
 				<div>
-					<h5 class="modal-title">Adicionar Estabelecimento</h5>
+					<h5 class="modal-title">Adicionar Produto</h5>
 				</div>
-					<div class="row">
+					<div>
 						<div style="margin: 20px 0;">
 							<div class="input-field col s12">
 								<input placeholder="" id="product_name" type="text" >
@@ -388,7 +388,7 @@
 							</div>
 						</div>
 					</div>
-					<div class="modal-menu">
+					<div class="modal-menu" style="position: relative;">
 						<button  class="cancel primary_color btn-large" href="#add-modal-product" rel="modal:close">Cancelar</button>
 						<button id="save-add-product" class="primary_color btn-large">Adicionar Produto</button>
 					</div>
@@ -396,12 +396,12 @@
 		</div>
 
 		<!-- MODAL ADICIONANDO ESTAB -->
-		<div id="add-modal" class="modal">
+		<div id="add-modal" style="min-height: 450px;" class="modal">
 			<div class="modal-content">
 				<div>
 					<h5 class="modal-title">Adicionar Estabelecimento</h5>
 				</div>
-					<div class="row">
+					<div>
 						<div style="margin: 20px 0;">
 							<div class="input-field col s6">
 								<select id="city_name-save" style="color: black !important;">
@@ -438,7 +438,7 @@
 				<div>
 					<h5 class="modal-title">Deletar Cidade</h5>
 				</div>
-					<div class="row">
+					<div>
 						<div style="margin: 20px 0;">
 							<div class="input-field col s12">
 								<select id="city-delete-select" style="color: black !important;">
@@ -456,12 +456,12 @@
 				</div>
 		</div>
 		<!-- MODAL EDITANDO CIDADE -->
-		<div id="edit-city" class="modal" style="max-width: 50%; height: 40%;">
+		<div id="edit-city" class="modal" style="max-width: 50%; height: 40%; min-height: 350px;">
 			<div class="modal-content">
 				<div>
 					<h5 class="modal-title">Editar Cidade</h5>
 				</div>
-					<div class="row">
+					<div>
 						<div style="margin: 20px 0;">
 							<div class="input-field col s6">
 								<select id="city-edit-select" style="color: black !important;">
@@ -489,7 +489,7 @@
 				<div>
 					<h5 class="modal-title">Adicionar Cidade</h5>
 				</div>
-					<div class="row">
+					<div>
 						<div style="margin: 20px 0;">
 							<div class="input-field col s12">
 								<input placeholder="Cidade" id="save-city" type="text" >
@@ -536,7 +536,7 @@
 						</select>
 						<label style="left: 0;">Formatação</label>
 					</div>
-					<div id="file-list" style="max-height: 500px; height: 250px; overflow: auto; width: 100%;display: inline-flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px; align-items: center;">
+					<div id="file-list" style="max-height: 250px;overflow: auto; width: 100%;display: inline-flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px; align-items: center;">
 						<!-- <div class="select_wrapper col s12">
 							<i class="fa fa-spinner fa-pulse" id="loader"></i>
 						</div> -->

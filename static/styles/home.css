@@ -603,9 +603,13 @@ input:-webkit-autofill:active {
 }
 
 #list-search{
-	height: 72%;
+	height: 68%;
 	overflow: auto;
 	padding: 10px;
+}
+
+#search-file{
+	min-height: 480px;
 }
 
 #list-search td{
@@ -777,12 +781,20 @@ blockquote {
 		height: 100%;
 	}
 
+	#list-search{
+		height: 72%;
+	}
+
 }
 
 @media screen and (min-width: 1000px) and (max-height: 800) {
 
 	main{
 		height: 70vh;
+	}
+
+	#list-search{
+		height: 72%;
 	}
 
 	html{

@@ -489,7 +489,7 @@ const get_modal_content = (estab_name, cities) => {
 		<div class="modal-content">
 			<primary_key style="display: none;" value="${filtered_estab[1]}" />
 			<h5 class="modal-title">${filtered_estab[1]}</h5>
-			<div class="row">
+			<div>
 				<div style="margin: 20px 0;">
 					<div class="input-field col s6">
 						<select id="city_name" style="color: black !important;">
@@ -544,10 +544,10 @@ const get_modal_content_product = (product_name) => {
 	// console.log({ filtered_product, keywords });
 
 	let modal = `
-		<div class="modal-content">
+		<div class="modal-content"">
 			<primary_key_product style="display: none;" value="${filtered_product[0]}" />
 			<h5 class="modal-title">${filtered_product[0]}</h5>
-			<div class="row">
+			<div>
 				<div style="margin: 20px 0;">
 					<div class="input-field col s12">
 						<input value="${filtered_product[0]}" placeholder="Produto" id="product_name_edit" type="text" class="validate">
@@ -559,7 +559,7 @@ const get_modal_content_product = (product_name) => {
 					</div>
 				</div>
 				</div>
-				<div class="modal-menu">
+				<div class="modal-menu" style="position: relative;">
 					<button id="cancel" class="primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
 					<button id="save-edit-product" class="primary_color   btn-large">Salvar Alterações</button>
 				</div>
