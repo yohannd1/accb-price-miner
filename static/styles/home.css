@@ -282,7 +282,7 @@ main {
 #progress_log{
 	padding: 1em;
 	height: 100% ;
-    /* overflow: auto; */
+    overflow: auto;
 	height: inherit;
     background: #4c6577;
 	border-radius: 10px;

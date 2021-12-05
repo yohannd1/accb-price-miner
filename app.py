@@ -33,6 +33,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+import math
 
 app = Flask(__name__)
 Material(app)
@@ -373,7 +374,7 @@ def home():
         active=active,
         product_len=len(product_len),
         search_info=search_info,
-        progress_value=progress_value,
+        progress_value=math.floor(progress_value),
         month=month,
         active_month=day.month,
         chrome_installed=chrome_installed,
@@ -979,6 +980,7 @@ def handle_reload():
 def handle_pause(cancel=False):
     """Rota responsável por pausar a pesquisa"""
     global session_data
+    session_data["software_reload"] = True
 
     if cancel != False:
         # Cancela
@@ -994,6 +996,7 @@ def handle_cancel():
     """Rota cancelar por pausar a pesquisa"""
 
     global session_data
+    session_data["software_reload"] = True
     # log_error([session_data])
 
     db = database.Database()
@@ -1015,21 +1018,21 @@ def disconnect():
     global connected
     global session_data
     connected -= 1
-    # print("disconnnected {}".format(connected))
-    # if connected == 0 and not session_data["software_reload"]:
-    #     log_error([connected, session_data])
-    #     os._exit(0)
-    # else:
-    #     try:
+    print("disconnnected {}".format(connected))
+    if connected == 0 and not session_data["software_reload"]:
+        log_error([connected, session_data])
+        os._exit(0)
+    else:
+        try:
 
-    #         if session_data["software_reload"] and connected == 0:
+            if session_data["software_reload"] and connected == 0:
 
-    #             session_data["software_reload"] = False
-    #             log_error([connected, session_data])
+                session_data["software_reload"] = False
+                log_error([connected, session_data])
 
-    #     except:
+        except:
 
-    #         pass
+            pass
 
 
 # Inicia pesquisa
@@ -1090,7 +1093,7 @@ def handle_search(search_info):
             query = "DELETE FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
         # comentar para injeção
-        # search_id = db.db_save_search(0, search_info["city"], 0)
+        search_id = db.db_save_search(0, search_info["city"], 0)
         active = "0.0"
         city = search_info["city"]
         estab_names = json.loads(search_info["names"])
@@ -1196,16 +1199,16 @@ def handle_search(search_info):
             log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
             search_info["error"] = 1
 
-        emit(
-            "captcha",
-            {
-                "type": "notification",
-                "message": "Ocorreu um erro durante a pesquisa, a pesquisa será reiniciada, aguarde um instante.",
-            },
-            broadcast=True,
-        )
+            emit(
+                "captcha",
+                {
+                    "type": "notification",
+                    "message": "Ocorreu um erro durante a pesquisa, a pesquisa será reiniciada, aguarde um instante.",
+                },
+                broadcast=True,
+            )
 
-        handle_search(search_info)
+            handle_search(search_info)
 
 
 @app.context_processor
@@ -1253,7 +1256,6 @@ def run_app():
             else:
                 webbrowser.open(url)
         else:
-            # por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
                 chrome_installed = str(is_chrome_installed())
@@ -1272,21 +1274,16 @@ def run_app():
                 os.environ["WDM_LOCAL"] = "1"
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
-                # eventlet.wsgi.server(
-                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
-                # )
+
                 socketio.run(app, debug=True)
             else:
                 webbrowser.open(url)
         else:
-            # por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
-                # eventlet.wsgi.server(
-                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
-                # )
+
                 socketio.run(app, debug=True)
             else:
                 webbrowser.open(url)

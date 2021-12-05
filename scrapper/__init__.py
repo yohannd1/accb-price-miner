@@ -227,6 +227,9 @@ class Scrap:
                     )
                     # self.log_progress(item)
             except:
+                # import traceback
+
+                # print(traceback.format_exc())
                 pass
             print(
                 "------------------------------------------------------------------------------------"
@@ -324,7 +327,6 @@ class Scrap:
         """
 
         URL = "https://precodahora.ba.gov.br/produtos"
-        raise ValueError("Sem conexão com a rede!")
 
         self.url = URL
         times = 4
@@ -432,7 +434,6 @@ class Scrap:
         driver.find_element_by_id("aplicar").click()
 
         time.sleep(2 * times)
-
         for index, (product, keywords) in enumerate(self.PRODUCT_INFO[self.index :]):
 
             if not self.stop:
