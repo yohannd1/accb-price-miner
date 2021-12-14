@@ -31,9 +31,11 @@ from tabulate import tabulate
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 import math
+from tkinter import filedialog
+import tkinter as tk
+
 
 app = Flask(__name__)
 Material(app)
@@ -47,9 +49,12 @@ session_data["software_reload"] = False
 """Responsável pelo controle de reload do programa."""
 chrome_installed = None
 """ Variavel indicativa da instalação do Google Chrome."""
+path = None
+"""Variável de caminho padrão para gerar coleção excel."""
 
 
 def is_chrome_installed():
+    """Função responsável por confirmar a instalação do Google Chrome no sistema atual."""
 
     try:
 
@@ -179,27 +184,32 @@ def log_error(err):
 def bd_to_xlsx(db, search_id, estab_data, city):
 
     """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]"""
+    global path
 
     today = date.today()
     # day = today.strftime("%d-%m-%Y")
     day = datetime.datetime.now()
     day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
-    dic = "{} {}".format(city, day)
+    dic = "{} {}".format(path, city, day)
 
     folder_name = dic
 
-    if not os.path.exists(dic):
+    if os.name == "nt":
+        if not os.path.exists(f"{path}/{dic}"):
 
-        os.makedirs(dic)
+            os.makedirs(f"{path}/{dic}")
+    else:
+        if not os.path.exists(f"{path}/{dic}"):
+            os.makedirs(f"{path}/{dic}")
 
     for city, name, adress, web_name in estab_data:
 
         # print("Geran do Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
         new_file = name
         if os.name == "nt":
-            path = "{}\{}.xlsx".format(folder_name, new_file)
+            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
         else:
-            path = "{}/{}.xlsx".format(folder_name, new_file)
+            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
 
         products = db.db_run_query(
             "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
@@ -224,7 +234,7 @@ def bd_to_xlsx(db, search_id, estab_data, city):
         df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
 
         # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-        writer = pd.ExcelWriter(path, engine="openpyxl")
+        writer = pd.ExcelWriter(file_path, engine="openpyxl")
 
         df = df.to_excel(
             writer,
@@ -763,6 +773,36 @@ def delete_city():
         }
 
 
+@app.route("/set_path")
+def set_path():
+
+    try:
+        global path
+
+        win = tk.Tk()
+        win.withdraw()
+        win.attributes("-topmost", True)
+
+        path = filedialog.askdirectory()
+
+        win.destroy()
+
+        return {
+            "success": True,
+            "message": "Caminho configurado com sucesso.",
+            "path": path,
+        }
+
+    except:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+        return {
+            "success": False,
+            "message": "Ocorreu um erro durante a configuração de caminho padrão.",
+        }
+
+
 # Gerando Arquivos
 
 
@@ -842,6 +882,7 @@ def bd_to_xlsx_route():
 
     """Rota geradora de coleção de dados das pesquisas em excel."""
     db = database.Database()
+    global path
 
     try:
         city = request.args.get("city_name")
@@ -861,18 +902,22 @@ def bd_to_xlsx_route():
 
         folder_name = dic
 
-        if not os.path.exists(dic):
+        if os.name == "nt":
+            if not os.path.exists(f"{path}/{dic}"):
 
-            os.makedirs(dic)
+                os.makedirs(f"{path}/{dic}")
+        else:
+            if not os.path.exists(f"{path}/{dic}"):
+                os.makedirs(f"{path}/{dic}")
 
         for city, name, adress, web_name in estab_data:
 
             # print("Geran do Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
             new_file = name
             if os.name == "nt":
-                path = "{}\{}.xlsx".format(folder_name, new_file)
+                file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
             else:
-                path = "{}/{}.xlsx".format(folder_name, new_file)
+                file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
 
             products = db.db_run_query(
                 "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
@@ -896,7 +941,7 @@ def bd_to_xlsx_route():
             df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
 
             # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-            writer = pd.ExcelWriter(path, engine="openpyxl")
+            writer = pd.ExcelWriter(file_path, engine="openpyxl")
 
             df = df.to_excel(
                 writer,
@@ -1018,9 +1063,9 @@ def disconnect():
     global connected
     global session_data
     connected -= 1
-    print("disconnnected {}".format(connected))
+    # print("disconnnected {}".format(connected))
     if connected == 0 and not session_data["software_reload"]:
-        log_error([connected, session_data])
+        # log_error([connected, session_data])
         os._exit(0)
     else:
         try:
@@ -1028,11 +1073,20 @@ def disconnect():
             if session_data["software_reload"] and connected == 0:
 
                 session_data["software_reload"] = False
-                log_error([connected, session_data])
+                # log_error([connected, session_data])
 
         except:
 
             pass
+
+
+@socketio.on("set_path")
+def set_path(config_path):
+
+    global path
+    path = config_path["path"]
+    if not os.path.exists(path):
+        emit("set_path", broadcast=True)
 
 
 # Inicia pesquisa

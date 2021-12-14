@@ -283,9 +283,10 @@ class Scrap:
         )
 
         win = tk.Tk()
+        win.attributes("-topmost", True)
         win.withdraw()
 
-        result = messagebox.showinfo(
+        result = messagebox.showwarning(
             "CAPTCHA",
             "Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay",
             icon="warning",

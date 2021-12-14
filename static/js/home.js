@@ -23,7 +23,11 @@ function move(val) {
 	elem.style.width = floor.toString() + "%";
 	elem.innerHTML = floor.toString() + "%";
 }
-
+/**
+ * Retorna um ratio de similaridade entre uma string s1 e s2
+ * @param  {string} s1
+ * @param  {string} s2
+ */
 function similarity(s1, s2) {
 	var longer = s1;
 	var shorter = s2;
@@ -38,6 +42,10 @@ function similarity(s1, s2) {
 	return (longerLength - distance(longer, shorter)) / parseFloat(longerLength);
 }
 
+/**
+ * Filtra a aba de pesquisa de acordo com o mês passado
+ * @param  {string} month
+ */
 function filter_search(month) {
 	var search_id = $("#search-select").val();
 
@@ -85,7 +93,11 @@ function filter_search(month) {
 
 	});
 }
-
+/**
+ * Função de ajuda para a similarity, retorna a distancia entre as palavras.
+ * @param  {string} s1
+ * @param  {string} s2
+ */
 function distance(s1, s2) {
 	s1 = s1.toLowerCase();
 	s2 = s2.toLowerCase();
@@ -112,7 +124,9 @@ function distance(s1, s2) {
 	}
 	return costs[s2.length];
 }
-
+/**
+ * Cria um input customizado select na página de configuração.
+ */
 const custom_select = () => {
 
 	$('.config-menu select').each(function () {
@@ -187,6 +201,9 @@ const custom_select = () => {
 	});
 
 }
+/**
+ * Cria um input customizado select na página de pesquisa para os meses.
+ */
 const custom_select_date = () => {
 
 	$('#month-picker').each(function () {
@@ -263,6 +280,10 @@ const custom_select_date = () => {
 	});
 
 }
+
+/**
+ * Cria um input customizado select na página de pesquisa para as pesquisas.
+ */
 const custom_select_search = () => {
 
 	$('#pesquisa select').each(function () {
@@ -333,7 +354,10 @@ const custom_select_search = () => {
 }
 
 // Listagem de cidades
-
+/**
+ * Lista todos os estabelecimentos para uma cidade de id CITY, na pagina de configuração.
+ * @param  {integer} city=undefined
+ */
 const list_estab = (city = undefined) => {
 
 	if (city == undefined)
@@ -371,7 +395,10 @@ const list_estab = (city = undefined) => {
 }
 
 // Lista Pesquisas
-
+/**
+ * Lista todos os dados de pesquisas para uma pesquisa de id search_id, na pagina de pesquisas.
+ * @param  {integer} search_id=undefined
+ */
 const list_search = (search_id = undefined) => {
 
 	$("#search-loader").show();
@@ -437,7 +464,9 @@ const list_search = (search_id = undefined) => {
 }
 
 // Listagem de produtos
-
+/**
+ * Lista todos os produtos na página de produtos.
+ */
 const list_product = () => {
 
 	$.get("/select_product", (response) => {
@@ -469,7 +498,11 @@ const list_product = () => {
 }
 
 // Conteudo do modal dinamico
-
+/**
+ * Modal dinâmico que retorna o conteúdo do estabelecimento estab_name para uma cidade cities filtrada.
+ * @param  {string} estab_name
+ * @param  {Array(string)} cities
+ */
 const get_modal_content = (estab_name, cities) => {
 
 	$('#edit-modal .modal-content').remove();
@@ -530,6 +563,10 @@ const get_modal_content = (estab_name, cities) => {
 
 // Conteudo do modal dinamico - Produto
 
+/**
+ * Modal dinâmico que retorna o conteúdo do produto product_name.
+ * @param  {string} product_name
+ */
 const get_modal_content_product = (product_name) => {
 
 	$('#edit-modal-product .modal-content').remove();
@@ -576,7 +613,10 @@ const get_modal_content_product = (product_name) => {
 }
 
 // Cria novo estab adidiconado e o coloca no front end
-
+/**
+ * Adiciona um novo elemento .estab para a listagem de estabs com o nome novo dele. Chamado pel modal de criação de estabelecimento.
+ * @param  {string} new_estab
+ */
 const create_estab_element = (new_estab) => {
 
 	var element =
@@ -597,7 +637,10 @@ const create_estab_element = (new_estab) => {
 }
 
 // Cria novo produto adidiconado e o coloca no front end
-
+/**
+ * Adiciona um novo elemento .product para a listagem de produtos com o nome novo dele. Chamado pel modal de criação de produtos.
+ * @param  {string} new_product
+ */
 const create_product_element = (new_product) => {
 
 	var element =
@@ -617,7 +660,11 @@ const create_product_element = (new_product) => {
 }
 
 // Valida formulários para campos vázios
-
+/**
+ * Confirma se todos os dados foram preenchidos em um dado array info.
+ * @param  {Array} info
+ * @param  {boolean} edit=false
+ */
 const validate_form = (info, edit = false) => {
 
 	if (!edit) {
@@ -645,6 +692,11 @@ const validate_form = (info, edit = false) => {
 
 $(document).ready(function () {
 
+
+	/**
+	 * Confirma se temos permissão para exibir notificações no sistema.
+	 * @param  {boolean} Notification.permission==="granted"
+	 */
 	if (Notification.permission === "granted") {
 		//  alert("we have permission");
 		// new Notification("Teste message", {
@@ -656,8 +708,12 @@ $(document).ready(function () {
 			// console.log(permission);
 		});
 	}
-
 	var socket = io().connect("http://127.0.0.1:5000/");
+	/**
+	 * Função responsável por tratar todas as emisões do tipo catpcha vinda do servidor.
+	 * @param  {route} 'captcha'
+	 * @param  {json} msg
+	 */
 	socket.on('captcha', (msg) => {
 		if (msg['type'] == 'notification') {
 
@@ -747,7 +803,11 @@ $(document).ready(function () {
 			alert(msg['message'])
 		}
 	});
-
+	/**
+	 * Função responsável por tratar todas as emisões do tipo catpcha vinda do servidor.
+	 * @param  {route} 'search'
+	 * @param  {json} msg
+	 */
 	socket.on('search', (msg) => {
 
 		if (msg['type'] == 'error') {
@@ -859,6 +919,7 @@ $(document).ready(function () {
 
 	});
 
+	// Inicia todos os elementos js da aplicação.
 	$('.modal').modal();
 
 	var city = undefined;
@@ -873,20 +934,12 @@ $(document).ready(function () {
 
 
 	$("#sec-navigation").tabs({
-		onShow: () => {
-
-			// console.log("kaka");
-			// $("#sec-navigation").find("a").each(function (e) {
-
-			// 	$(this).parent().css("width", "10px");
-
-			// });
-			// $("#sec-navigation").find("a.active").parent().css("width", "100%");
-			// $("#sec-navigation").find("a.active").parent().css("width", "100%");
-
-		},
+		onShow: () => { },
 	})
-
+	/**
+	 * Listener responsável por parar a pesquisa.
+	 * @param  {id} "#pause"
+	 */
 	$("#pause").click(function (e) {
 
 		e.preventDefault();
@@ -900,7 +953,10 @@ $(document).ready(function () {
 
 
 	});
-
+	/**
+	 * Listener responsável por cancelar a pesquisa.
+	 * @param  {id} "#cancel"
+	 */
 	$("#cancel").click(function (e) {
 
 		e.preventDefault();
@@ -1520,6 +1576,8 @@ $(document).ready(function () {
 		}
 	});
 
+	// Botão ao lado da barra de pesquisa
+
 	$('#do_search').on("click", function (e) {
 
 		var row_len = $("#list-search table tr").length;
@@ -1591,12 +1649,14 @@ $(document).ready(function () {
 
 	});
 
+	// Botão da tab de navegação que leva para a aba de pesquisa
 	$("#search_check").one("click", (e) => {
 		e.preventDefault();
 		if ($("#search-select").val() == "null")
 			alert("Realize uma pesquisa para utilizar essa função.");
 	});
 
+	// Abre o modal para gerar a coleção de arquivos para uma pesquisa existente (aba de pesquisas).
 	$("#open-search-file").on("click", (e) => {
 
 		e.preventDefault();
@@ -1644,6 +1704,7 @@ $(document).ready(function () {
 
 	});
 
+	// Realiza a geração de coleção de arquivos para uma pesquisa existente no modal de gerar arquivos (aba de pesquisas).
 	$("#generate-file").on('click', () => {
 
 		var city_name = $("#search-select option:selected").attr("city");
@@ -1674,7 +1735,7 @@ $(document).ready(function () {
 					// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
 					// });
 				} else {
-					// console.log(response);
+					Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
 				}
 
 			});
@@ -1683,6 +1744,7 @@ $(document).ready(function () {
 
 	});
 
+	// Remove uma pesquisa.
 	$("#remove-search").on("click", () => {
 
 		var search_id = $("#search-select").val();
@@ -1713,6 +1775,7 @@ $(document).ready(function () {
 
 	});
 
+	// Botão responsável por exportar as configurações da aplicação.
 	$("#export").on("click", (e) => {
 		e.preventDefault();
 
@@ -1733,12 +1796,14 @@ $(document).ready(function () {
 
 	});
 
+	// Botão responsável por abrir o popup de importação de configuração da aplicação.
 	$("#import").on("click", (e) => {
 
 		$("#import_file").click();
 
 	});
 
+	// Listener para o input de importação de configuração.
 	$("#import_file").on("change", function (e) {
 
 		e.preventDefault();
@@ -1746,8 +1811,13 @@ $(document).ready(function () {
 
 		var form_data = new FormData();
 		var files = $('#import_file')[0].files;
+		console.log({ files });
+		console.log(files[0].name);
+		if (!files[0].name.includes(".sql")) {
+			Materialize.toast("Insira um arquivo Importar.sql válido.", 8000, 'rounded');
+			return
+		}
 
-		// Check file selected or not  fd.append('file',files[0]);
 		form_data.append('file', files[0]);
 		$.ajax({
 			url: '/import_database',
@@ -1759,15 +1829,13 @@ $(document).ready(function () {
 			success: function (response) {
 				if (response.status == "success") {
 					alert(response["message"]);
-					window.location = window.location.origin + "#co$figurar";
+					window.location = window.location.origin + "#configurar";
 					window.location.reload(true);
 				} else {
 					Materialize.toast(response["message"], 8000, 'rounded');
 				}
 			},
 		});
-
-		// console.log({ file, file_name });
 
 	});
 

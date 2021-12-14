@@ -52,12 +52,14 @@
 					/>
 				</div>
 				<div style="margin-top: 2em;">
-					<a style="background: #fea621 !important; margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+
 					{% if search %}
-						<a style="background: #fea621 !important; margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
+					<a style="background: #fea621 !important; margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
 					{% else %}
-						<a  style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
+					<a  style="margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
 					{% endif %}
+					<a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
+					<a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
 				</div>
 			</div>
 			<div>
@@ -587,9 +589,6 @@
 
 						$('#main-navigation').tabs('select', 'progress');
 						$('#main-navigation  a').addClass("disabled");
-						$(window).on('unload', function( event ) {
-							return "Realmente deseja sair ? Existe uma pesquisa em andamento.";
-						});
 
 					}
 
@@ -612,8 +611,28 @@
 					search_loaded()
 				}
 
+				if(Cookies.get("path") === undefined){
+
+					alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+
+					$.get("/set_path", (response) => {
+
+						if(response["path"] != ''){
+
+							if (response["status"] == "success") {
+								alert(response["message"])
+							} else {
+								alert(response["message"])
+							}
+							Cookies.set("path", response["path"], {expires: 10});
+						}
+					});
+				}else{
+					socket.emit('set_path', { path : Cookies.get("path") });
+				}
+
 				if(chrome_installed == "False")
-					alert("Instale uma versão do Google Chrome para poder realizar uma pesquisa.");
+					alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
 			}
 
 			if(search == 'True')
@@ -622,6 +641,44 @@
 					search_loaded();
 
 				});
+
+			$("#config_path").on("click", (e) => {
+				e.preventDefault();
+				alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+				$.get("/set_path", (response) => {
+
+					if(response["path"] != ''){
+
+						if (response["status"] == "success") {
+							alert(response["message"])
+						} else {
+							alert(response["message"])
+						}
+						Cookies.set("path", response["path"], {expires: 10});
+					}
+
+				});
+			});
+
+			socket.on('set_path', function(){
+
+				alert("O antigo diretório foi deletado ! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+
+				$.get("/set_path", (response) => {
+
+					if(response["path"] != ''){
+
+						if (response["status"] == "success") {
+							alert(response["message"])
+						} else {
+							alert(response["message"])
+						}
+						Cookies.set("path", response["path"], {expires: 10});
+					}
+
+				});
+
+			});
 
 		</script>
 	{% endblock %}

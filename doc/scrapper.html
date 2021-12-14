@@ -185,9 +185,6 @@ scrapper    </h1>
         <span class="n">PROGRESS_VALUE</span><span class="p">,</span>
     <span class="p">):</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">win</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">win</span><span class="o">.</span><span class="n">withdraw</span><span class="p">()</span>
-
         <span class="c1"># OUT</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">=</span> <span class="n">ID</span>
         <span class="sd">&quot;&quot;&quot; ID da pesquisa atual.&quot;&quot;&quot;</span>
@@ -369,6 +366,9 @@ scrapper    </h1>
                     <span class="p">)</span>
                     <span class="c1"># self.log_progress(item)</span>
             <span class="k">except</span><span class="p">:</span>
+                <span class="c1"># import traceback</span>
+
+                <span class="c1"># print(traceback.format_exc())</span>
                 <span class="k">pass</span>
             <span class="nb">print</span><span class="p">(</span>
                 <span class="s2">&quot;------------------------------------------------------------------------------------&quot;</span>
@@ -421,11 +421,16 @@ scrapper    </h1>
             <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="n">win</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+        <span class="n">win</span><span class="o">.</span><span class="n">withdraw</span><span class="p">()</span>
+
         <span class="n">result</span> <span class="o">=</span> <span class="n">messagebox</span><span class="o">.</span><span class="n">showinfo</span><span class="p">(</span>
             <span class="s2">&quot;CAPTCHA&quot;</span><span class="p">,</span>
             <span class="s2">&quot;Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay&quot;</span><span class="p">,</span>
             <span class="n">icon</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="n">win</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
 
@@ -452,6 +457,7 @@ scrapper    </h1>
         <span class="k">else</span><span class="p">:</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Sem conexão com a rede!&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -460,6 +466,7 @@ scrapper    </h1>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">URL</span> <span class="o">=</span> <span class="s2">&quot;https://precodahora.ba.gov.br/produtos&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">URL</span>
         <span class="n">times</span> <span class="o">=</span> <span class="mi">4</span>
         <span class="k">try</span><span class="p">:</span>
@@ -566,7 +573,6 @@ scrapper    </h1>
         <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s2">&quot;aplicar&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
 
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">times</span><span class="p">)</span>
-
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">keywords</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PRODUCT_INFO</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="p">:]):</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">:</span>
@@ -586,7 +592,7 @@ scrapper    </h1>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-                    <span class="k">return</span>
+                    <span class="k">return</span> <span class="kc">True</span>
 
                 <span class="k">else</span><span class="p">:</span>
 
@@ -652,7 +658,7 @@ scrapper    </h1>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
 
-                    <span class="k">return</span>
+                    <span class="k">return</span> <span class="kc">True</span>
                 <span class="c1"># Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados</span>
                 <span class="k">try</span><span class="p">:</span>
 
@@ -674,8 +680,7 @@ scrapper    </h1>
 
                             <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-
-                            <span class="k">return</span>
+                            <span class="k">return</span> <span class="kc">True</span>
 
                         <span class="k">try</span><span class="p">:</span>
 
@@ -705,7 +710,7 @@ scrapper    </h1>
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-                        <span class="k">return</span>
+                        <span class="k">return</span> <span class="kc">True</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">keyword</span><span class="p">)</span>
 
@@ -783,9 +788,6 @@ scrapper    </h1>
         <span class="n">PROGRESS_VALUE</span><span class="p">,</span>
     <span class="p">):</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">win</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">win</span><span class="o">.</span><span class="n">withdraw</span><span class="p">()</span>
-
         <span class="c1"># OUT</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">=</span> <span class="n">ID</span>
         <span class="sd">&quot;&quot;&quot; ID da pesquisa atual.&quot;&quot;&quot;</span>
@@ -967,6 +969,9 @@ scrapper    </h1>
                     <span class="p">)</span>
                     <span class="c1"># self.log_progress(item)</span>
             <span class="k">except</span><span class="p">:</span>
+                <span class="c1"># import traceback</span>
+
+                <span class="c1"># print(traceback.format_exc())</span>
                 <span class="k">pass</span>
             <span class="nb">print</span><span class="p">(</span>
                 <span class="s2">&quot;------------------------------------------------------------------------------------&quot;</span>
@@ -1019,11 +1024,16 @@ scrapper    </h1>
             <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="n">win</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+        <span class="n">win</span><span class="o">.</span><span class="n">withdraw</span><span class="p">()</span>
+
         <span class="n">result</span> <span class="o">=</span> <span class="n">messagebox</span><span class="o">.</span><span class="n">showinfo</span><span class="p">(</span>
             <span class="s2">&quot;CAPTCHA&quot;</span><span class="p">,</span>
             <span class="s2">&quot;Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay&quot;</span><span class="p">,</span>
             <span class="n">icon</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="n">win</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
 
@@ -1050,6 +1060,7 @@ scrapper    </h1>
         <span class="k">else</span><span class="p">:</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Sem conexão com a rede!&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1058,6 +1069,7 @@ scrapper    </h1>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">URL</span> <span class="o">=</span> <span class="s2">&quot;https://precodahora.ba.gov.br/produtos&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">URL</span>
         <span class="n">times</span> <span class="o">=</span> <span class="mi">4</span>
         <span class="k">try</span><span class="p">:</span>
@@ -1164,7 +1176,6 @@ scrapper    </h1>
         <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s2">&quot;aplicar&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
 
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">times</span><span class="p">)</span>
-
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">keywords</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PRODUCT_INFO</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="p">:]):</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">:</span>
@@ -1184,7 +1195,7 @@ scrapper    </h1>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-                    <span class="k">return</span>
+                    <span class="k">return</span> <span class="kc">True</span>
 
                 <span class="k">else</span><span class="p">:</span>
 
@@ -1250,7 +1261,7 @@ scrapper    </h1>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
 
-                    <span class="k">return</span>
+                    <span class="k">return</span> <span class="kc">True</span>
                 <span class="c1"># Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados</span>
                 <span class="k">try</span><span class="p">:</span>
 
@@ -1272,8 +1283,7 @@ scrapper    </h1>
 
                             <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-
-                            <span class="k">return</span>
+                            <span class="k">return</span> <span class="kc">True</span>
 
                         <span class="k">try</span><span class="p">:</span>
 
@@ -1303,7 +1313,7 @@ scrapper    </h1>
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-                        <span class="k">return</span>
+                        <span class="k">return</span> <span class="kc">True</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">keyword</span><span class="p">)</span>
 
@@ -1386,9 +1396,6 @@ scrapper    </h1>
         <span class="n">DURATION</span><span class="p">,</span>
         <span class="n">PROGRESS_VALUE</span><span class="p">,</span>
     <span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">win</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">win</span><span class="o">.</span><span class="n">withdraw</span><span class="p">()</span>
 
         <span class="c1"># OUT</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ID</span> <span class="o">=</span> <span class="n">ID</span>
@@ -1840,6 +1847,9 @@ scrapper    </h1>
                     <span class="p">)</span>
                     <span class="c1"># self.log_progress(item)</span>
             <span class="k">except</span><span class="p">:</span>
+                <span class="c1"># import traceback</span>
+
+                <span class="c1"># print(traceback.format_exc())</span>
                 <span class="k">pass</span>
             <span class="nb">print</span><span class="p">(</span>
                 <span class="s2">&quot;------------------------------------------------------------------------------------&quot;</span>
@@ -1927,11 +1937,16 @@ scrapper    </h1>
             <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="n">win</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+        <span class="n">win</span><span class="o">.</span><span class="n">withdraw</span><span class="p">()</span>
+
         <span class="n">result</span> <span class="o">=</span> <span class="n">messagebox</span><span class="o">.</span><span class="n">showinfo</span><span class="p">(</span>
             <span class="s2">&quot;CAPTCHA&quot;</span><span class="p">,</span>
             <span class="s2">&quot;Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay&quot;</span><span class="p">,</span>
             <span class="n">icon</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="n">win</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
 
@@ -1976,6 +1991,7 @@ scrapper    </h1>
         <span class="k">else</span><span class="p">:</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Sem conexão com a rede!&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -2002,6 +2018,7 @@ scrapper    </h1>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">URL</span> <span class="o">=</span> <span class="s2">&quot;https://precodahora.ba.gov.br/produtos&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">URL</span>
         <span class="n">times</span> <span class="o">=</span> <span class="mi">4</span>
         <span class="k">try</span><span class="p">:</span>
@@ -2108,7 +2125,6 @@ scrapper    </h1>
         <span class="n">driver</span><span class="o">.</span><span class="n">find_element_by_id</span><span class="p">(</span><span class="s2">&quot;aplicar&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
 
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">times</span><span class="p">)</span>
-
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">keywords</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PRODUCT_INFO</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="p">:]):</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">:</span>
@@ -2128,7 +2144,7 @@ scrapper    </h1>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-                    <span class="k">return</span>
+                    <span class="k">return</span> <span class="kc">True</span>
 
                 <span class="k">else</span><span class="p">:</span>
 
@@ -2194,7 +2210,7 @@ scrapper    </h1>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
 
-                    <span class="k">return</span>
+                    <span class="k">return</span> <span class="kc">True</span>
                 <span class="c1"># Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados</span>
                 <span class="k">try</span><span class="p">:</span>
 
@@ -2216,8 +2232,7 @@ scrapper    </h1>
 
                             <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-
-                            <span class="k">return</span>
+                            <span class="k">return</span> <span class="kc">True</span>
 
                         <span class="k">try</span><span class="p">:</span>
 
@@ -2247,7 +2262,7 @@ scrapper    </h1>
 
                         <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="kc">True</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">exit_thread</span><span class="p">()</span>
-                        <span class="k">return</span>
+                        <span class="k">return</span> <span class="kc">True</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">product</span><span class="p">,</span> <span class="n">keyword</span><span class="p">)</span>
 

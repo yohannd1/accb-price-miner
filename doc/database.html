@@ -42,6 +42,12 @@
                                 <a class="variable" href="#Database.conn">conn</a>
                         </li>
                         <li>
+                                <a class="function" href="#Database.dump_table">dump_table</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Database.import_database">import_database</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Database.log_error">log_error</a>
                         </li>
                         <li>
@@ -162,6 +168,79 @@ database    </h1>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Inicia a conexão com o banco de dados.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_connection</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">dump_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Importa um arquivo sql para ser injetado no banco de dados.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Mimic the sqlite3 console shell&#39;s .dump command</span>
+        <span class="c1"># Author: Paul Kippes &lt;kippesp@gmail.com&gt;</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an iterator to the dump of the database in an SQL text format.</span>
+
+<span class="sd">        Used to produce an SQL dump of the database.  Useful to save an in-memory</span>
+<span class="sd">        database for later restoration.  This function should not be called</span>
+<span class="sd">        directly but instead called from the Connection method, iterdump().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;schema.sql&quot;</span><span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">table_name</span> <span class="o">=</span> <span class="n">table_name</span>
+
+        <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;BEGIN TRANSACTION;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># sqlite_master table contains the SQL CREATE statements for the database.</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT name, type, sql</span>
+<span class="s2">            FROM sqlite_master</span>
+<span class="s2">                WHERE sql NOT NULL AND</span>
+<span class="s2">                type == &#39;table&#39; AND</span>
+<span class="s2">                name == :table_name</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+        <span class="n">schema_res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;table_name&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">})</span>
+        <span class="k">for</span> <span class="n">table_name</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">sql</span> <span class="ow">in</span> <span class="n">schema_res</span><span class="o">.</span><span class="n">fetchall</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;sqlite_sequence&quot;</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;DELETE FROM sqlite_sequence;&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;sqlite_stat1&quot;</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;ANALYZE sqlite_master;&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">table_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;sqlite_&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">;&quot;</span> <span class="o">%</span> <span class="n">sql</span><span class="p">)</span>
+
+            <span class="c1"># Build the insert statement for each row of the current table</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA table_info(&#39;</span><span class="si">%s</span><span class="s2">&#39;)&quot;</span> <span class="o">%</span> <span class="n">table_name</span><span class="p">)</span>
+            <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">table_info</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">table_info</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="s1">&#39;SELECT </span><span class="se">\&#39;</span><span class="s1">INSERT INTO &quot;</span><span class="si">%(tbl_name)s</span><span class="s1">&quot; VALUES(&#39;</span>
+            <span class="n">q</span> <span class="o">+=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;&#39;||quote(&quot;</span> <span class="o">+</span> <span class="n">col</span> <span class="o">+</span> <span class="s2">&quot;)||&#39;&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">column_names</span><span class="p">])</span>
+            <span class="n">q</span> <span class="o">+=</span> <span class="s2">&quot;)&#39; FROM &#39;</span><span class="si">%(tbl_name)s</span><span class="s2">&#39;&quot;</span>
+            <span class="n">query_res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span> <span class="o">%</span> <span class="p">{</span><span class="s2">&quot;tbl_name&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">})</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">query_res</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">;&quot;</span> <span class="o">%</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;COMMIT;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">import_database</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Importa um arquivo sql e injeta ele no banco de dados.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">file_path</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="sd">&quot;&quot;&quot;Metodo de importação para debug.&quot;&quot;&quot;</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;importar.sql&quot;</span><span class="p">)</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+                        <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">file_path</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+                    <span class="k">pass</span>
 
     <span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Loga um erro que aconteceu durante a execução do programa no arquivo error.log&quot;&quot;&quot;</span>
@@ -587,6 +666,79 @@ database    </h1>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Inicia a conexão com o banco de dados.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_connection</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">dump_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Importa um arquivo sql para ser injetado no banco de dados.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Mimic the sqlite3 console shell&#39;s .dump command</span>
+        <span class="c1"># Author: Paul Kippes &lt;kippesp@gmail.com&gt;</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an iterator to the dump of the database in an SQL text format.</span>
+
+<span class="sd">        Used to produce an SQL dump of the database.  Useful to save an in-memory</span>
+<span class="sd">        database for later restoration.  This function should not be called</span>
+<span class="sd">        directly but instead called from the Connection method, iterdump().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;schema.sql&quot;</span><span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">table_name</span> <span class="o">=</span> <span class="n">table_name</span>
+
+        <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;BEGIN TRANSACTION;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># sqlite_master table contains the SQL CREATE statements for the database.</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT name, type, sql</span>
+<span class="s2">            FROM sqlite_master</span>
+<span class="s2">                WHERE sql NOT NULL AND</span>
+<span class="s2">                type == &#39;table&#39; AND</span>
+<span class="s2">                name == :table_name</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+        <span class="n">schema_res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;table_name&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">})</span>
+        <span class="k">for</span> <span class="n">table_name</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">sql</span> <span class="ow">in</span> <span class="n">schema_res</span><span class="o">.</span><span class="n">fetchall</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;sqlite_sequence&quot;</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;DELETE FROM sqlite_sequence;&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;sqlite_stat1&quot;</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;ANALYZE sqlite_master;&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">table_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;sqlite_&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">;&quot;</span> <span class="o">%</span> <span class="n">sql</span><span class="p">)</span>
+
+            <span class="c1"># Build the insert statement for each row of the current table</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA table_info(&#39;</span><span class="si">%s</span><span class="s2">&#39;)&quot;</span> <span class="o">%</span> <span class="n">table_name</span><span class="p">)</span>
+            <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">table_info</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">table_info</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="s1">&#39;SELECT </span><span class="se">\&#39;</span><span class="s1">INSERT INTO &quot;</span><span class="si">%(tbl_name)s</span><span class="s1">&quot; VALUES(&#39;</span>
+            <span class="n">q</span> <span class="o">+=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;&#39;||quote(&quot;</span> <span class="o">+</span> <span class="n">col</span> <span class="o">+</span> <span class="s2">&quot;)||&#39;&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">column_names</span><span class="p">])</span>
+            <span class="n">q</span> <span class="o">+=</span> <span class="s2">&quot;)&#39; FROM &#39;</span><span class="si">%(tbl_name)s</span><span class="s2">&#39;&quot;</span>
+            <span class="n">query_res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span> <span class="o">%</span> <span class="p">{</span><span class="s2">&quot;tbl_name&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">})</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">query_res</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">;&quot;</span> <span class="o">%</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;COMMIT;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">import_database</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Importa um arquivo sql e injeta ele no banco de dados.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">file_path</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="sd">&quot;&quot;&quot;Metodo de importação para debug.&quot;&quot;&quot;</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;importar.sql&quot;</span><span class="p">)</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+                        <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">file_path</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+                    <span class="k">pass</span>
 
     <span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Loga um erro que aconteceu durante a execução do programa no arquivo error.log&quot;&quot;&quot;</span>
@@ -1020,6 +1172,115 @@ database    </h1>
     </div>
 
     
+
+                            </div>
+                            <div id="Database.dump_table" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Database.dump_table">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">dump_table</span><span class="signature">(self, table_name)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">dump_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Importa um arquivo sql para ser injetado no banco de dados.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Mimic the sqlite3 console shell&#39;s .dump command</span>
+        <span class="c1"># Author: Paul Kippes &lt;kippesp@gmail.com&gt;</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an iterator to the dump of the database in an SQL text format.</span>
+
+<span class="sd">        Used to produce an SQL dump of the database.  Useful to save an in-memory</span>
+<span class="sd">        database for later restoration.  This function should not be called</span>
+<span class="sd">        directly but instead called from the Connection method, iterdump().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;schema.sql&quot;</span><span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">table_name</span> <span class="o">=</span> <span class="n">table_name</span>
+
+        <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;BEGIN TRANSACTION;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># sqlite_master table contains the SQL CREATE statements for the database.</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT name, type, sql</span>
+<span class="s2">            FROM sqlite_master</span>
+<span class="s2">                WHERE sql NOT NULL AND</span>
+<span class="s2">                type == &#39;table&#39; AND</span>
+<span class="s2">                name == :table_name</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+        <span class="n">schema_res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;table_name&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">})</span>
+        <span class="k">for</span> <span class="n">table_name</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">sql</span> <span class="ow">in</span> <span class="n">schema_res</span><span class="o">.</span><span class="n">fetchall</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;sqlite_sequence&quot;</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;DELETE FROM sqlite_sequence;&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">table_name</span> <span class="o">==</span> <span class="s2">&quot;sqlite_stat1&quot;</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;ANALYZE sqlite_master;&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">table_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;sqlite_&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">;&quot;</span> <span class="o">%</span> <span class="n">sql</span><span class="p">)</span>
+
+            <span class="c1"># Build the insert statement for each row of the current table</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA table_info(&#39;</span><span class="si">%s</span><span class="s2">&#39;)&quot;</span> <span class="o">%</span> <span class="n">table_name</span><span class="p">)</span>
+            <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">table_info</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">table_info</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="s1">&#39;SELECT </span><span class="se">\&#39;</span><span class="s1">INSERT INTO &quot;</span><span class="si">%(tbl_name)s</span><span class="s1">&quot; VALUES(&#39;</span>
+            <span class="n">q</span> <span class="o">+=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;&#39;||quote(&quot;</span> <span class="o">+</span> <span class="n">col</span> <span class="o">+</span> <span class="s2">&quot;)||&#39;&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">column_names</span><span class="p">])</span>
+            <span class="n">q</span> <span class="o">+=</span> <span class="s2">&quot;)&#39; FROM &#39;</span><span class="si">%(tbl_name)s</span><span class="s2">&#39;&quot;</span>
+            <span class="n">query_res</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">q</span> <span class="o">%</span> <span class="p">{</span><span class="s2">&quot;tbl_name&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">})</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">query_res</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">;&quot;</span> <span class="o">%</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">yield</span> <span class="p">(</span><span class="s2">&quot;COMMIT;&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Importa um arquivo sql para ser injetado no banco de dados.</p>
+</div>
+
+
+                            </div>
+                            <div id="Database.import_database" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Database.import_database">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">import_database</span><span class="signature">(self, file_path=None)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">import_database</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Importa um arquivo sql e injeta ele no banco de dados.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">file_path</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="sd">&quot;&quot;&quot;Metodo de importação para debug.&quot;&quot;&quot;</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_path</span><span class="p">(</span><span class="s2">&quot;importar.sql&quot;</span><span class="p">)</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+                        <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;accb.sqlite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">file_path</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;latin-1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+                    <span class="k">pass</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Importa um arquivo sql e injeta ele no banco de dados.</p>
+</div>
+
 
                             </div>
                             <div id="Database.log_error" class="classattr">

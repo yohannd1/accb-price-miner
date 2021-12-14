@@ -114,6 +114,12 @@
                     <a class="function" href="#delete_search">delete_search</a>
             </li>
             <li>
+                    <a class="function" href="#export_database">export_database</a>
+            </li>
+            <li>
+                    <a class="function" href="#import_database">import_database</a>
+            </li>
+            <li>
                     <a class="function" href="#bd_to_xlsx_route">bd_to_xlsx_route</a>
             </li>
             <li>
@@ -196,6 +202,7 @@ app    </h1>
 <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
 <span class="kn">from</span> <span class="nn">selenium.webdriver.chrome.options</span> <span class="kn">import</span> <span class="n">Options</span>
 <span class="kn">from</span> <span class="nn">webdriver_manager.chrome</span> <span class="kn">import</span> <span class="n">ChromeDriverManager</span>
+<span class="kn">import</span> <span class="nn">math</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">Material</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
@@ -212,6 +219,7 @@ app    </h1>
 
 
 <span class="k">def</span> <span class="nf">is_chrome_installed</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Função responsável por confirmar a instalação do Google Chrome no sistema atual.&quot;&quot;&quot;</span>
 
     <span class="k">try</span><span class="p">:</span>
 
@@ -286,13 +294,13 @@ app    </h1>
     <span class="n">last_line</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="c1"># because Fail message could be translated</span>
+
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
-            <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-            <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">last_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">3</span>
-        <span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot; last_line = Nome do programa em questão. &quot;&quot;&quot;</span>
-        <span class="sd">&quot;&quot;&quot; last_line.strip().split()[3] = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado.&quot;&quot;&quot;</span>
+        <span class="n">is_app_name</span> <span class="o">=</span> <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">instances</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">last_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="n">is_app_name</span> <span class="ow">and</span> <span class="n">instances</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot; app_name = Nome do programa em questão. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; instances = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado.&quot;&quot;&quot;</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
@@ -454,6 +462,7 @@ app    </h1>
 <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">home</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação&quot;&quot;&quot;</span>
+
     <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
 
     <span class="n">search_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span>
@@ -464,12 +473,13 @@ app    </h1>
 
     <span class="n">product_len</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span><span class="s2">&quot;SELECT product_name FROM product&quot;</span><span class="p">)</span>
     <span class="n">search</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">active</span> <span class="o">=</span> <span class="s2">&quot;0.0&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">search_id</span> <span class="o">=</span> <span class="n">search_id</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">backup_info</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_get_backup</span><span class="p">(</span><span class="n">search_id</span><span class="p">)</span>
-        <span class="n">log_error</span><span class="p">(</span><span class="n">backup_info</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># log_error(backup_info[0])</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">backup_info</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
 
             <span class="p">(</span>
@@ -489,9 +499,6 @@ app    </h1>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">product_len</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">product_len</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">pass</span>
 
     <span class="n">day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
     <span class="n">search_info</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span>
@@ -506,7 +513,7 @@ app    </h1>
     <span class="n">estab_names</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_get_estab</span><span class="p">()</span>
     <span class="n">product</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_get_product</span><span class="p">()</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CONNECTED </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">connected</span><span class="p">))</span>
+    <span class="c1"># print(&quot;CONNECTED {}&quot;.format(connected))</span>
     <span class="c1"># Se tiver mais que uma pagina aberta, renderiza o notallowed.html,</span>
     <span class="c1"># por algum motivo o flask com socketio chama a função de conexão 2x então</span>
     <span class="c1"># acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2</span>
@@ -537,7 +544,7 @@ app    </h1>
         <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span>
         <span class="n">product_len</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">product_len</span><span class="p">),</span>
         <span class="n">search_info</span><span class="o">=</span><span class="n">search_info</span><span class="p">,</span>
-        <span class="n">progress_value</span><span class="o">=</span><span class="n">progress_value</span><span class="p">,</span>
+        <span class="n">progress_value</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">progress_value</span><span class="p">),</span>
         <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span>
         <span class="n">active_month</span><span class="o">=</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
         <span class="n">chrome_installed</span><span class="o">=</span><span class="n">chrome_installed</span><span class="p">,</span>
@@ -951,6 +958,55 @@ app    </h1>
         <span class="p">}</span>
 
 
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/export_database&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">export_database</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Rota responsável por exportar os dados do banco&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
+        <span class="n">tables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">,</span> <span class="s2">&quot;estab&quot;</span><span class="p">,</span> <span class="s2">&quot;product&quot;</span><span class="p">]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;importar.sql&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">dump_table</span><span class="p">(</span><span class="n">table</span><span class="p">):</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">line</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Dados exportados com sucesso, agora é possível importa-lo em outro computador com o arquivo importar.sql.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+        <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a exportação dos dados.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/import_database&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">import_database</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Rota responsável por importar os dados do banco&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">session_data</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">]</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">import_database</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+        <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Dados importados com sucesso.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+        <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a importação dos dados.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+
 <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/generate_file&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">bd_to_xlsx_route</span><span class="p">():</span>
 
@@ -1094,6 +1150,7 @@ app    </h1>
 <span class="k">def</span> <span class="nf">handle_pause</span><span class="p">(</span><span class="n">cancel</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Rota responsável por pausar a pesquisa&quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">session_data</span>
+    <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">if</span> <span class="n">cancel</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">:</span>
         <span class="c1"># Cancela</span>
@@ -1109,7 +1166,8 @@ app    </h1>
     <span class="sd">&quot;&quot;&quot;Rota cancelar por pausar a pesquisa&quot;&quot;&quot;</span>
 
     <span class="k">global</span> <span class="n">session_data</span>
-    <span class="n">log_error</span><span class="p">([</span><span class="n">session_data</span><span class="p">])</span>
+    <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1"># log_error([session_data])</span>
 
     <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
     <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;DELETE FROM search WHERE id = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;search_id&quot;</span><span class="p">])</span>
@@ -1130,19 +1188,21 @@ app    </h1>
     <span class="k">global</span> <span class="n">connected</span>
     <span class="k">global</span> <span class="n">session_data</span>
     <span class="n">connected</span> <span class="o">-=</span> <span class="mi">1</span>
-    <span class="c1"># print(&quot;disconnnected {}&quot;.format(connected))</span>
-    <span class="c1"># if connected == 0 and not session_data[&quot;software_reload&quot;]:</span>
-    <span class="c1">#     os._exit(0)</span>
-    <span class="c1"># else:</span>
-    <span class="c1">#     try:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;disconnnected </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">connected</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">connected</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]:</span>
+        <span class="n">log_error</span><span class="p">([</span><span class="n">connected</span><span class="p">,</span> <span class="n">session_data</span><span class="p">])</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">_exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
 
-    <span class="c1">#         if session_data[&quot;software_reload&quot;] and connected == 0:</span>
+            <span class="k">if</span> <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">connected</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
 
-    <span class="c1">#             session_data[&quot;software_reload&quot;] = False</span>
-    <span class="c1">#     except:</span>
+                <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">log_error</span><span class="p">([</span><span class="n">connected</span><span class="p">,</span> <span class="n">session_data</span><span class="p">])</span>
 
-    <span class="c1">#         log_error([connected, session_data])</span>
-    <span class="c1">#         pass</span>
+        <span class="k">except</span><span class="p">:</span>
+
+            <span class="k">pass</span>
 
 
 <span class="c1"># Inicia pesquisa</span>
@@ -1213,6 +1273,7 @@ app    </h1>
         <span class="n">estab_data</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">estab</span> <span class="k">for</span> <span class="n">estab</span> <span class="ow">in</span> <span class="n">estabs</span> <span class="k">if</span> <span class="n">estab</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">city</span> <span class="ow">and</span> <span class="n">estab</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">estab_names</span>
         <span class="p">]</span>
+
         <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
         <span class="c1"># comentar para injeção</span>
         <span class="n">scrap</span> <span class="o">=</span> <span class="n">scrapper</span><span class="o">.</span><span class="n">Scrap</span><span class="p">(</span>
@@ -1285,13 +1346,39 @@ app    </h1>
 
     <span class="k">except</span><span class="p">:</span>
 
-        <span class="n">emit</span><span class="p">(</span>
-            <span class="s2">&quot;captcha&quot;</span><span class="p">,</span>
-            <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;notification&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a pesquisa.&quot;</span><span class="p">},</span>
-            <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
-        <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">emit</span><span class="p">(</span>
+                    <span class="s2">&quot;captcha&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreram muitos erros em sucessão, a pesquisa será parada, inicie manualmente para garantir a segurança do processo.&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+                <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+
+                <span class="k">return</span>
+
+        <span class="k">except</span><span class="p">:</span>
+
+            <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+            <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+            <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="n">emit</span><span class="p">(</span>
+                <span class="s2">&quot;captcha&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;notification&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a pesquisa, a pesquisa será reiniciada, aguarde um instante.&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">handle_search</span><span class="p">(</span><span class="n">search_info</span><span class="p">)</span>
 
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">context_processor</span>
@@ -1328,7 +1415,7 @@ app    </h1>
         <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">application_path</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
         <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">process_exists</span><span class="p">(</span><span class="s2">&quot;ACCB.exe&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
                 <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
@@ -1339,7 +1426,6 @@ app    </h1>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
                 <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
@@ -1353,24 +1439,24 @@ app    </h1>
 
     <span class="k">elif</span> <span class="vm">__file__</span><span class="p">:</span>
         <span class="c1"># DEV</span>
-        <span class="n">application_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
-        <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">application_path</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
-        <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
-            <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
-            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-            <span class="c1"># eventlet.wsgi.server(</span>
-            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
-            <span class="c1"># )</span>
-            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># os.environ[&quot;WDM_LOCAL&quot;] = &quot;1&quot;</span>
-            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-            <span class="c1"># eventlet.wsgi.server(</span>
-            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
-            <span class="c1"># )</span>
-            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
@@ -1426,6 +1512,7 @@ app    </h1>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">is_chrome_installed</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Função responsável por confirmar a instalação do Google Chrome no sistema atual.&quot;&quot;&quot;</span>
 
     <span class="k">try</span><span class="p">:</span>
 
@@ -1458,7 +1545,9 @@ app    </h1>
 
         </details>
 
-    
+            <div class="docstring"><p>Função responsável por confirmar a instalação do Google Chrome no sistema atual.</p>
+</div>
+
 
                 </section>
                 <section id="get_time">
@@ -1566,13 +1655,13 @@ app    </h1>
     <span class="n">last_line</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="c1"># because Fail message could be translated</span>
+
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
-            <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-            <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">last_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">3</span>
-        <span class="p">)</span>
-        <span class="sd">&quot;&quot;&quot; last_line = Nome do programa em questão. &quot;&quot;&quot;</span>
-        <span class="sd">&quot;&quot;&quot; last_line.strip().split()[3] = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado.&quot;&quot;&quot;</span>
+        <span class="n">is_app_name</span> <span class="o">=</span> <span class="n">last_line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">process_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">instances</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">last_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="n">is_app_name</span> <span class="ow">and</span> <span class="n">instances</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot; app_name = Nome do programa em questão. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; instances = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado.&quot;&quot;&quot;</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 </pre></div>
@@ -1803,6 +1892,7 @@ app    </h1>
             <div class="codehilite"><pre><span></span><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">home</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação&quot;&quot;&quot;</span>
+
     <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
 
     <span class="n">search_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span>
@@ -1813,12 +1903,13 @@ app    </h1>
 
     <span class="n">product_len</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span><span class="s2">&quot;SELECT product_name FROM product&quot;</span><span class="p">)</span>
     <span class="n">search</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">active</span> <span class="o">=</span> <span class="s2">&quot;0.0&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">search_id</span> <span class="o">=</span> <span class="n">search_id</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">backup_info</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_get_backup</span><span class="p">(</span><span class="n">search_id</span><span class="p">)</span>
-        <span class="n">log_error</span><span class="p">(</span><span class="n">backup_info</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># log_error(backup_info[0])</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">backup_info</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
 
             <span class="p">(</span>
@@ -1838,9 +1929,6 @@ app    </h1>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">product_len</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">product_len</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">pass</span>
 
     <span class="n">day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
     <span class="n">search_info</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_run_query</span><span class="p">(</span>
@@ -1855,7 +1943,7 @@ app    </h1>
     <span class="n">estab_names</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_get_estab</span><span class="p">()</span>
     <span class="n">product</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">db_get_product</span><span class="p">()</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CONNECTED </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">connected</span><span class="p">))</span>
+    <span class="c1"># print(&quot;CONNECTED {}&quot;.format(connected))</span>
     <span class="c1"># Se tiver mais que uma pagina aberta, renderiza o notallowed.html,</span>
     <span class="c1"># por algum motivo o flask com socketio chama a função de conexão 2x então</span>
     <span class="c1"># acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2</span>
@@ -1886,7 +1974,7 @@ app    </h1>
         <span class="n">active</span><span class="o">=</span><span class="n">active</span><span class="p">,</span>
         <span class="n">product_len</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">product_len</span><span class="p">),</span>
         <span class="n">search_info</span><span class="o">=</span><span class="n">search_info</span><span class="p">,</span>
-        <span class="n">progress_value</span><span class="o">=</span><span class="n">progress_value</span><span class="p">,</span>
+        <span class="n">progress_value</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">progress_value</span><span class="p">),</span>
         <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span>
         <span class="n">active_month</span><span class="o">=</span><span class="n">day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
         <span class="n">chrome_installed</span><span class="o">=</span><span class="n">chrome_installed</span><span class="p">,</span>
@@ -2574,6 +2662,91 @@ app    </h1>
 
 
                 </section>
+                <section id="export_database">
+                            <div class="attr function"><a class="headerlink" href="#export_database">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@app.route(&#39;/export_database&#39;)</div>
+
+            <span class="def">def</span>
+            <span class="name">export_database</span><span class="signature">()</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/export_database&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">export_database</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Rota responsável por exportar os dados do banco&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
+        <span class="n">tables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">,</span> <span class="s2">&quot;estab&quot;</span><span class="p">,</span> <span class="s2">&quot;product&quot;</span><span class="p">]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;importar.sql&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">dump_table</span><span class="p">(</span><span class="n">table</span><span class="p">):</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">line</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Dados exportados com sucesso, agora é possível importa-lo em outro computador com o arquivo importar.sql.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+        <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a exportação dos dados.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Rota responsável por exportar os dados do banco</p>
+</div>
+
+
+                </section>
+                <section id="import_database">
+                            <div class="attr function"><a class="headerlink" href="#import_database">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@app.route(&#39;/import_database&#39;, methods=[&#39;POST&#39;])</div>
+
+            <span class="def">def</span>
+            <span class="name">import_database</span><span class="signature">()</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/import_database&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">import_database</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Rota responsável por importar os dados do banco&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">session_data</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">]</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">import_database</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+        <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Dados importados com sucesso.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+        <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a importação dos dados.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Rota responsável por importar os dados do banco</p>
+</div>
+
+
+                </section>
                 <section id="bd_to_xlsx_route">
                             <div class="attr function"><a class="headerlink" href="#bd_to_xlsx_route">#&nbsp;&nbsp</a>
 
@@ -2763,6 +2936,7 @@ app    </h1>
 <span class="k">def</span> <span class="nf">handle_pause</span><span class="p">(</span><span class="n">cancel</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Rota responsável por pausar a pesquisa&quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">session_data</span>
+    <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">if</span> <span class="n">cancel</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">:</span>
         <span class="c1"># Cancela</span>
@@ -2796,7 +2970,8 @@ app    </h1>
     <span class="sd">&quot;&quot;&quot;Rota cancelar por pausar a pesquisa&quot;&quot;&quot;</span>
 
     <span class="k">global</span> <span class="n">session_data</span>
-    <span class="n">log_error</span><span class="p">([</span><span class="n">session_data</span><span class="p">])</span>
+    <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1"># log_error([session_data])</span>
 
     <span class="n">db</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">Database</span><span class="p">()</span>
     <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;DELETE FROM search WHERE id = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;search_id&quot;</span><span class="p">])</span>
@@ -2853,19 +3028,21 @@ app    </h1>
     <span class="k">global</span> <span class="n">connected</span>
     <span class="k">global</span> <span class="n">session_data</span>
     <span class="n">connected</span> <span class="o">-=</span> <span class="mi">1</span>
-    <span class="c1"># print(&quot;disconnnected {}&quot;.format(connected))</span>
-    <span class="c1"># if connected == 0 and not session_data[&quot;software_reload&quot;]:</span>
-    <span class="c1">#     os._exit(0)</span>
-    <span class="c1"># else:</span>
-    <span class="c1">#     try:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;disconnnected </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">connected</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">connected</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]:</span>
+        <span class="n">log_error</span><span class="p">([</span><span class="n">connected</span><span class="p">,</span> <span class="n">session_data</span><span class="p">])</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">_exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
 
-    <span class="c1">#         if session_data[&quot;software_reload&quot;] and connected == 0:</span>
+            <span class="k">if</span> <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">connected</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
 
-    <span class="c1">#             session_data[&quot;software_reload&quot;] = False</span>
-    <span class="c1">#     except:</span>
+                <span class="n">session_data</span><span class="p">[</span><span class="s2">&quot;software_reload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">log_error</span><span class="p">([</span><span class="n">connected</span><span class="p">,</span> <span class="n">session_data</span><span class="p">])</span>
 
-    <span class="c1">#         log_error([connected, session_data])</span>
-    <span class="c1">#         pass</span>
+        <span class="k">except</span><span class="p">:</span>
+
+            <span class="k">pass</span>
 </pre></div>
 
         </details>
@@ -2953,6 +3130,7 @@ app    </h1>
         <span class="n">estab_data</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">estab</span> <span class="k">for</span> <span class="n">estab</span> <span class="ow">in</span> <span class="n">estabs</span> <span class="k">if</span> <span class="n">estab</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">city</span> <span class="ow">and</span> <span class="n">estab</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">estab_names</span>
         <span class="p">]</span>
+
         <span class="n">progress_value</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
         <span class="c1"># comentar para injeção</span>
         <span class="n">scrap</span> <span class="o">=</span> <span class="n">scrapper</span><span class="o">.</span><span class="n">Scrap</span><span class="p">(</span>
@@ -3025,13 +3203,39 @@ app    </h1>
 
     <span class="k">except</span><span class="p">:</span>
 
-        <span class="n">emit</span><span class="p">(</span>
-            <span class="s2">&quot;captcha&quot;</span><span class="p">,</span>
-            <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;notification&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a pesquisa.&quot;</span><span class="p">},</span>
-            <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
-        <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">emit</span><span class="p">(</span>
+                    <span class="s2">&quot;captcha&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreram muitos erros em sucessão, a pesquisa será parada, inicie manualmente para garantir a segurança do processo.&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+                <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+
+                <span class="k">return</span>
+
+        <span class="k">except</span><span class="p">:</span>
+
+            <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+            <span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">))</span>
+            <span class="n">search_info</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="n">emit</span><span class="p">(</span>
+                <span class="s2">&quot;captcha&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;notification&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Ocorreu um erro durante a pesquisa, a pesquisa será reiniciada, aguarde um instante.&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">broadcast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">handle_search</span><span class="p">(</span><span class="n">search_info</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -3103,7 +3307,7 @@ app    </h1>
         <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">application_path</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
         <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">process_exists</span><span class="p">(</span><span class="s2">&quot;ACCB.exe&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
                 <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
@@ -3114,7 +3318,6 @@ app    </h1>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># por motivos especificos não conseguimos utilizar a mesma lógica no linux, então se a porta tiver em uso assumimos que o programa está aberto</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
                 <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
@@ -3128,24 +3331,24 @@ app    </h1>
 
     <span class="k">elif</span> <span class="vm">__file__</span><span class="p">:</span>
         <span class="c1"># DEV</span>
-        <span class="n">application_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
-        <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">application_path</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
-        <span class="c1"># windows</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;nt&quot;</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
-            <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
-            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-            <span class="c1"># eventlet.wsgi.server(</span>
-            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
-            <span class="c1"># )</span>
-            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># os.environ[&quot;WDM_LOCAL&quot;] = &quot;1&quot;</span>
-            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-            <span class="c1"># eventlet.wsgi.server(</span>
-            <span class="c1">#     eventlet.listen((&quot;127.0.0.1&quot;, 5000)), app, debug=True</span>
-            <span class="c1"># )</span>
-            <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_port_in_use</span><span class="p">(</span><span class="mi">5000</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;WDM_LOCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+                <span class="n">chrome_installed</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">is_chrome_installed</span><span class="p">())</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+                <span class="n">socketio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 </pre></div>
 
         </details>
