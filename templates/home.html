@@ -577,6 +577,7 @@
 					if(confirm("Uma pesquisa foi encontrada em progresso, deseja retoma-la?")){
 
 						$("#backup-button").addClass("disable");
+						$("#config_path").addClass("disable");
 						$("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
 						socket.emit('search', { names: '', city: '', backup: 1});
 
