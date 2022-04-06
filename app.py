@@ -36,6 +36,8 @@ import math
 from tkinter import filedialog
 import tkinter as tk
 
+# DELETAR PESQUISAS DE 3 EM 3 MESES
+# SCHEMA, CRIAR UM LUGAR PRA SALVAR A DATA INICIAL
 
 app = Flask(__name__)
 Material(app)
@@ -190,7 +192,7 @@ def bd_to_xlsx(db, search_id, estab_data, city):
     # day = today.strftime("%d-%m-%Y")
     day = datetime.datetime.now()
     day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
-    dic = "{} {}".format(path, city, day)
+    dic = "{} {}".format(city, day)
 
     folder_name = dic
 
@@ -340,13 +342,12 @@ def home():
         if not len(product_len) == 0:
             progress_value = 100 / len(product_len)
 
-    day = datetime.datetime.now()
+    day = str(date.today()).split("-")[1]
     search_info = db.db_run_query(
         "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
-            day.month
+           day
         )
     )
-
     # sys.exit()
 
     city = db.db_get_city()
@@ -386,7 +387,7 @@ def home():
         search_info=search_info,
         progress_value=math.floor(progress_value),
         month=month,
-        active_month=day.month,
+        active_month=day,
         chrome_installed=chrome_installed,
     )
 
@@ -1064,20 +1065,20 @@ def disconnect():
     global session_data
     connected -= 1
     # print("disconnnected {}".format(connected))
-    if connected == 0 and not session_data["software_reload"]:
-        # log_error([connected, session_data])
-        os._exit(0)
-    else:
-        try:
+    # if connected == 0 and not session_data["software_reload"]:
+    #     # log_error([connected, session_data])
+    #     os._exit(0)
+    # else:
+    #     try:
 
-            if session_data["software_reload"] and connected == 0:
+    #         if session_data["software_reload"] and connected == 0:
 
-                session_data["software_reload"] = False
-                # log_error([connected, session_data])
+    #             session_data["software_reload"] = False
+    #             # log_error([connected, session_data])
 
-        except:
+    #     except:
 
-            pass
+    #         pass
 
 
 @socketio.on("set_path")

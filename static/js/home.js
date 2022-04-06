@@ -775,6 +775,8 @@ $(document).ready(function () {
 			});
 			$(".pause-overlay").fadeOut(500);
 			$("#pause-loader").fadeOut(500);
+			socket.emit('reload');
+			window.location.reload(true);
 
 		} else if (msg['type'] == 'pause') {
 			$("#progress_bar").css("width", "0%");
@@ -1336,6 +1338,7 @@ $(document).ready(function () {
 				return "Realmente deseja sair ? Existe uma pesquisa em andamento.";
 			});
 			$("#backup-button").addClass("disable");
+			$("#config_path").addClass("disable");
 
 		}
 
