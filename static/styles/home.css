@@ -972,6 +972,7 @@ blockquote {
 
 	.about-item{
 		justify-content: center;
+		max-height: 80% !important;
 	}
 
 }

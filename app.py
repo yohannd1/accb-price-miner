@@ -801,9 +801,7 @@ def set_path():
             "message": "Ocorreu um erro durante a configuração de caminho padrão.",
         }
 
-
 # Gerando Arquivos
-
 
 @app.route("/delete_search")
 def delete_search():
@@ -880,18 +878,16 @@ def bd_to_xlsx_all(city, search_id, db):
 
     result = db.db_run_query(
         """
-		SELECT DISTINCT * FROM search_item
-		WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
-		AND search_id={}
-		GROUP BY web_name
-	""".format(
-            search_id
-        )
+          SELECT DISTINCT * FROM search_item
+          WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
+          AND search_id={}
+          GROUP BY web_name
+        """.format(search_id)
     )
 
     # with open("estabs.log", "w+", encoding="latin-1") as outfile:
 
-    # 	outfile.write(json.dumps(result, indent=4, sort_keys=True))
+    #   outfile.write(json.dumps(result, indent=4, sort_keys=True))
 
     day = datetime.datetime.now()
     day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
@@ -1002,7 +998,7 @@ def bd_to_xlsx_all(city, search_id, db):
 
         writer.save()
 
-        return dic
+    return dic
 
 
 @app.route("/open_folder")
@@ -1215,21 +1211,21 @@ def disconnect():
     global connected
     global session_data
     connected -= 1
-    # print("disconnnected {}".format(connected))
-    # if connected == 0 and not session_data["software_reload"]:
-    #     # log_error([connected, session_data])
-    #     os._exit(0)
-    # else:
-    #     try:
+    print("disconnnected {}".format(connected))
+    if connected == 0 and not session_data["software_reload"]:
+        # log_error([connected, session_data])
+        os._exit(0)
+    else:
+        try:
 
-    #         if session_data["software_reload"] and connected == 0:
+            if session_data["software_reload"] and connected == 0:
 
-    #             session_data["software_reload"] = False
-    #             # log_error([connected, session_data])
+                session_data["software_reload"] = False
+                # log_error([connected, session_data])
 
-    #     except:
+        except:
 
-    #         pass
+            pass
 
 
 @socketio.on("set_path")
