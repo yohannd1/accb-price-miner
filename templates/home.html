@@ -285,7 +285,7 @@
 										</div>
 										<div>
 
-												<a onclick="copyToClipboard('github.com/smvasconcelos')"><img src="{{ url_for('static',filename='img/github.svg') }}" /> github.com/smvasconcelos</a>
+												<a href="https://github.com/smvasconcelos" target="_blank"><img src="{{ url_for('static',filename='img/github.svg') }}" /> github.com/smvasconcelos</a>
 										</div>
 									</div>
 								</div>
@@ -294,7 +294,7 @@
 									<div>
 										<div>
 
-												<a target="_blank" href="http://lattes.cnpq.br/0053869533760582"><img src="{{ url_for('static',filename='img/lattes.svg') }}" />Marta Magda Dornelles/</a>
+												<a target="_blank" href="http://lattes.cnpq.br/0053869533760582"><img src="{{ url_for('static',filename='img/lattes.svg') }}" />Marta Magda Dornelles</a>
 										</div>
 										<div>
 												<a onclick="copyToClipboard('mmbertoldi@uesc.br')"><img src="{{ url_for('static',filename='img/gmail.svg') }}" />mmbertoldi@uesc.br</a>
@@ -322,10 +322,20 @@
 							<h5>Sobre o programa</h5>
 						</div>
 						<div class="about-program">
-							<img src="{{ url_for('static',filename='img/calab.png') }}" />
+							<!-- <img src="{{ url_for('static',filename='img/calab.png') }}" /> -->
 							<p>
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Tenetur ut expedita excepturi consequuntur, ullam dolorum nulla in? Nisi cumque quis amet quod quisquam fugit nesciunt sed sunt, corporis maiores debitis.lorem Lorem ipsum dolor sit amet consectetur adipisicing elit. Provident doloremque eos alias amet reprehenderit quibusdam facilis, sit neque sunt aspernatur nam ex. Placeat at iste animi ullam, quibusdam quisquam excepturi.
-							</p>
+								O presente trabalho objetivou modernizar o processo de coleta de preços dos produtos
+								que compõem a cesta básica do projeto de extensão intitulado Acompanhamento do
+								Custo da Cesta Básica (ACCB). Para isso foram desenvolvidas duas ferramentas uma delas sendo esta ferramenta.
+								Esta aplicação desktop automatiza a pesquisa na plataforma Preço da
+								Hora – Bahia (precodahora.ba.gov.br) que disponibiliza os preços de produtos em
+								diversos estabelecimentos da Bahia. Esta aplicação desktop, atualmente disponível
+								somente para o sistema operacional Windows, com alguns testes realizados na
+								plataforma Linux, formata os dados coletados no processo de scrapping no referido site
+								e devolve uma coleção de arquivos em excel contendo informações de preços de
+								produtos de interesse em diferentes formatação e agrupamento de dados para facilitar o
+								entendimento geral dos dados coletados. Essa ferramenta pode ser utilizada por outras
+								instituições da Bahia, bastando apenas alterar o arquivo de configuração do programa
 						</div>
 					</div>
 					<ul id="sec-navigation" class="tabs" style="width: 100%;">
@@ -410,7 +420,7 @@
 		</div>
 
 		<!-- MODAL DELETANDO CIDADE -->
-		<div id="delete-city" class="modal" style="max-width: 50%; height: 40%;">
+		<div id="delete-city" class="modal" style="height: 40%;">
 			<div class="modal-content">
 				<div>
 					<h5 class="modal-title">Deletar Cidade</h5>
@@ -433,7 +443,7 @@
 				</div>
 		</div>
 		<!-- MODAL EDITANDO CIDADE -->
-		<div id="edit-city" class="modal" style="max-width: 50%; height: 40%; min-height: 350px;">
+		<div id="edit-city" class="modal" style="height: 40%; min-height: 350px;">
 			<div class="modal-content">
 				<div>
 					<h5 class="modal-title">Editar Cidade</h5>
@@ -461,7 +471,7 @@
 		</div>
 
 		<!-- MODAL ADICIONANDO CIDADE -->
-		<div style="max-width: 50%; height: 40%;" id="add-city-modal" class="modal">
+		<div style="height: 40%;" id="add-city-modal" class="modal">
 			<div class="modal-content">
 				<div>
 					<h5 class="modal-title">Adicionar Cidade</h5>
@@ -533,16 +543,16 @@
 
 	{% block scripts %}
 		{{super()}}
+		<script type="module" src="{{url_for('static', filename='js/cookie.min.mjs')}}"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/materialize.js')}}"></script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/modal.js')}}"></script>
 		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
-		<script type="module" src="{{url_for('static', filename='js/cookie.min.mjs')}}"></script>
 		<script type="text/javascript" charset="utf-8">
 
 			function copyToClipboard(value) {
 				navigator.clipboard.writeText(value);
-				Materialize.toast('Texto copiado para sua área de cópias.', 2000, 'rounded');
+				Materialize.toast('Texto copiado para área de transferências.', 2000, 'rounded');
 			}
 
 

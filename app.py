@@ -5,6 +5,7 @@
 
 # eventlet.patcher.monkey_patch(select=True, socket=True)
 # from engineio.async_drivers import gevent
+from textwrap import indent
 from engineio.async_drivers import threading
 
 """Necessário para evitar bugs com aplicações que rodam tarefas no background."""
@@ -342,7 +343,7 @@ def home():
     day = str(date.today()).split("-")[1]
     search_info = db.db_run_query(
         "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
-           day
+            day
         )
     )
     # sys.exit()
@@ -874,13 +875,150 @@ def import_database():
             "message": "Ocorreu um erro durante a importação dos dados.",
         }
 
-def bd_to_xlsx_monthly(params):
 
-	pass
+def bd_to_xlsx_all(city, search_id, db):
 
-def bd_to_xlsx_all(params):
+    result = db.db_run_query(
+        """
+		SELECT DISTINCT * FROM search_item
+		WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
+		AND search_id={}
+		GROUP BY web_name
+	""".format(
+            search_id
+        )
+    )
 
-	pass
+    # with open("estabs.log", "w+", encoding="latin-1") as outfile:
+
+    # 	outfile.write(json.dumps(result, indent=4, sort_keys=True))
+
+    day = datetime.datetime.now()
+    day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
+    dic = "Todos {} {}".format(city, day)
+
+    folder_name = dic
+
+    if os.name == "nt":
+        if not os.path.exists(f"{path}/{dic}"):
+
+            os.makedirs(f"{path}/{dic}")
+    else:
+        if not os.path.exists(f"{path}/{dic}"):
+            os.makedirs(f"{path}/{dic}")
+
+    for id, product, web_name, adress, price, keyword in result:
+
+        # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+        new_file = web_name
+        if os.name == "nt":
+            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
+        else:
+            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
+
+        products = db.db_run_query(
+            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
+                search_id, web_name, adress
+            )
+        )
+
+        # print("QUERY RESULTS:")
+        df = pd.DataFrame(
+            data=products,
+            columns=[
+                "PRODUTO",
+                "ESTABELECIMENTO",
+                "PALAVRA-CHAVE",
+                "ENDEREÇO",
+                "PREÇO",
+            ],
+        )
+        # Filtra por endereço
+        pattern = "|".join(adress.upper().split(" "))
+        df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
+
+        # df = df[df.ENDEREÇO.str.contains(adress.upper())]
+        writer = pd.ExcelWriter(file_path, engine="openpyxl")
+
+        df = df.to_excel(
+            writer,
+            sheet_name="Pesquisa",
+            index=False,
+            startrow=0,
+            startcol=1,
+            engine="openpyxl",
+        )
+
+        border = Border(
+            left=Side(border_style="thin", color="FF000000"),
+            right=Side(border_style="thin", color="FF000000"),
+            top=Side(border_style="thin", color="FF000000"),
+            bottom=Side(border_style="thin", color="FF000000"),
+            diagonal=Side(border_style="thin", color="FF000000"),
+            diagonal_direction=0,
+            outline=Side(border_style="thin", color="FF000000"),
+            vertical=Side(border_style="thin", color="FF000000"),
+            horizontal=Side(border_style="thin", color="FF000000"),
+        )
+
+        workbook = writer.book["Pesquisa"]
+        worksheet = workbook
+        for cell in worksheet["B"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["C"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["D"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["E"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for cell in worksheet["F"]:
+
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center")
+
+        for col in worksheet.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2) * 1.2
+            worksheet.column_dimensions[column].width = adjusted_width
+
+        writer.save()
+
+        return dic
+
+
+@app.route("/open_folder")
+def open_explorer():
+
+    try:
+        path = request.args.get("path")
+        print(f"explorer {path}")
+        path = path.replace("/", "\\")
+        subprocess.Popen(f"explorer {path}")
+        return {"status": "success"}
+    except:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+        return {"status": "error"}
+
 
 @app.route("/generate_file")
 def bd_to_xlsx_route():
@@ -890,26 +1028,29 @@ def bd_to_xlsx_route():
     global path
 
     try:
+
         format_type = request.args.get("format")
         city = request.args.get("city_name")
+        search_id = request.args.get("search_id")
+        day = datetime.datetime.now()
+        day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
+        dic = "{} {}".format(city, day)
+
+        # ? Criar função pra formatar todos os estabelecimentos não cadastrados e retornar uma coleção formatada deles bd_to_xlsx_all
+
+        if format_type == "all":
+            dic = bd_to_xlsx_all(city, search_id, db)
+            return {"status": "success", "dic": dic}
+
         estab_names = json.loads(request.args.get("names"))
         estabs = db.db_get_estab()
         product = db.db_get_product()
-        search_id = request.args.get("search_id")
 
         estab_data = [
             estab for estab in estabs if estab[0] == city and estab[1] in estab_names
         ]
 
         # day = today.strftime("%d-%m-%Y")
-        day = datetime.datetime.now()
-        day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
-        dic = "{} {}".format(city, day)
-
-        # ? Criar função pra formatar todos os estabelecimentos não cadastrados e retornar uma coleção formatada deles bd_to_xlsx_all
-        if format_type == "all":
-            return
-
 
         folder_name = dic
 
@@ -1099,10 +1240,12 @@ def set_path(config_path):
     if not os.path.exists(path):
         emit("set_path", broadcast=True)
 
+
 @socketio.on("exit")
 def exit_program():
 
-	os._exit(1);
+    os._exit(1)
+
 
 # Inicia pesquisa
 @socketio.on("search")

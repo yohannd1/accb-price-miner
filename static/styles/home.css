@@ -325,6 +325,8 @@ main {
 
 .disabled {
     pointer-events: none;
+    background: #dfdfdf;
+    color: #9f9f9f !important;
 }
 
 /* Idicators */

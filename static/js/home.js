@@ -1711,10 +1711,40 @@ $(document).ready(function () {
 	$("#generate-file").on('click', () => {
 
 		var city_name = $("#search-select option:selected").attr("city");
+		const format_type = $("#file_format").val();
 
-		if (!$('.estab').hasClass("select-item-active")) {
+		if (!$('.estab').hasClass("select-item-active") && format_type != "all") {
 			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
 		} else {
+
+			var search_id = $("#search-select").val();
+			if (format_type == "all") {
+
+				$.get("/generate_file", { city_name: city_name, search_id: search_id, format: format_type }, (response) => {
+
+					if (response["status"] == "success") {
+						// console.log(response);
+						const default_path = document.cookie
+							.split('; ')
+							.find(row => row.startsWith('path='))
+							.split('=')[1];
+						$('.estab').removeClass("select-item-active");
+						const path = `${default_path}/${response.dic}`;
+						if (window.confirm(`Deseja abrir o diretório ${path}`))
+							$.get("/open_folder", { path: path }, (res) => { });
+						else
+							Materialize.toast(`Arquivos gerados com sucesso no diretório ${default_path}/${response.dic}.`, 15000, 'rounded');
+						// new Notification("ACCB - Pesquisa Automática", {
+						// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
+						// });
+					} else {
+						Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
+					}
+
+				});
+				return
+
+			}
 
 			var estabs = $(".select-item-active");
 			var names = [];
@@ -1725,16 +1755,23 @@ $(document).ready(function () {
 
 			});
 
-			var search_id = $("#search-select").val();
-			var format_type = $("#file_format").val();
 			// console.table(form_data);
 			// socket.emit('search', form_data);
 			$.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id, format: format_type }, (response) => {
 1
 				if (response["status"] == "success") {
 					// console.log(response);
+					const default_path = document.cookie
+						.split('; ')
+						.find(row => row.startsWith('path='))
+						.split('=')[1];
 					$('.estab').removeClass("select-item-active");
-					Materialize.toast(`Arquivos gerados com sucesso no diretório ${response.dic}.`, 15000, 'rounded');
+					const path = `${default_path}/${response.dic}`;
+					if (window.confirm(`Deseja abrir o diretório ${path}`))
+						$.get("/open_folder", { path: path }, (res) => { });
+					else
+						Materialize.toast(`Arquivos gerados com sucesso no diretório ${default_path}/${response.dic}.`, 15000, 'rounded');
+
 					// new Notification("ACCB - Pesquisa Automática", {
 					// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
 					// });
@@ -1746,6 +1783,16 @@ $(document).ready(function () {
 
 		}
 
+	});
+
+	$("#file_format").on("change", function () {
+		if (this.value == "all") {
+			$("#select-all-file").addClass("disabled");
+			$(".select-item.estab").addClass("disabled");
+		} else {
+			$("#select-all-file").removeClass("disabled");
+			$(".select-item.estab").removeClass("disabled");
+		}
 	});
 
 	// Remove uma pesquisa.
