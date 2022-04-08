@@ -60,7 +60,7 @@ function filter_search(month) {
 		if (response.success) {
 
 			var data = JSON.parse(response.data);
-			console.log(month);
+			// console.log(month);
 			if (data.length != 0) {
 
 				$("#search-loader").fadeIn(500);
@@ -77,7 +77,7 @@ function filter_search(month) {
 				;
 				$("#search-select").parent().find(".styledSelect").remove();
 				$("#search-select").parent().find("ul.options").remove();
-				list_search();
+				list_search(data[0][0]);
 				custom_select_search();
 				return true;
 
@@ -87,8 +87,8 @@ function filter_search(month) {
 			}
 
 		} else {
-			return false;
 			Materialize.toast(response.message, 2000, 'rounded');
+			return false;
 		}
 
 	});
@@ -286,7 +286,7 @@ const custom_select_date = () => {
  */
 const custom_select_search = () => {
 
-	$('#pesquisa select').each(function () {
+	$('#pesquisa #search-select').each(function () {
 
 		// Cache the number of options
 		var $this = $(this),
@@ -753,7 +753,7 @@ $(document).ready(function () {
 		} else if (msg['type'] == 'log') {
 
 			var log_data = JSON.parse(msg['data'])
-			console.table(log_data);
+			// console.table(log_data);
 			$("#progress_log").css("height", "fit-content");
 			log_data.map((data) => {
 				$("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
@@ -1705,6 +1705,46 @@ $(document).ready(function () {
 		});
 
 
+	});
+
+	// Limpa todas as pesquisas da aplicação
+	$("#clean-search").on('click', () => {
+		var search_id = $("#search-select").val();
+
+		if (search_id == "null") {
+			alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
+			return;
+		}
+
+		if (!window.confirm("Realmente deseja excluir todas as pesquisas salvas ?"))
+			return
+
+		var generate = window.confirm("Deseja gerar uma coleção de arquivos excel com todas as pesquisas existentes ?");
+		alert(generate);
+
+		$.get("/clean_search", { generate: generate.toString() }, (response) => {
+
+			if (response["status"] == "success") {
+
+				const path = `${response.dic}`;
+
+				if (generate) {
+					Materialize.toast(`Arquivos gerados com sucesso no diretório ${response.dic}.`, 15000, 'rounded');
+					$.get("/open_folder", { path: path }, (res) => { });
+				}
+				else
+					Materialize.toast(response.message, 15000, 'rounded');
+				setInterval(() => {
+					window.location.reload();
+				}, 3000);
+				// new Notification("ACCB - Pesquisa Automática", {
+				// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
+				// });
+			} else {
+				Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
+			}
+
+		});
 	});
 
 	// Realiza a geração de coleção de arquivos para uma pesquisa existente no modal de gerar arquivos (aba de pesquisas).

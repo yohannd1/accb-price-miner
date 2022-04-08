@@ -60,6 +60,7 @@
 					{% endif %}
 					<a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
 					<a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+					<a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder" ><i class="fa fa-folder"></i></a>
 					<a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app" ><i class="fa fa-close"></i></a>
 				</div>
 			</div>
@@ -230,11 +231,23 @@
 									{% endfor %}
 								</select>
 							</div>
+							<!-- <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Ano" >
+								<select id="year-picker" class="browser-default">
+									{% for index,year in enumerate(years) %}
+										{% if year == active_year %}
+											<option selected value="{{year[0]}}">{{year[0]}}</option>
+										{% else %}
+											<option value="{{year[0]}}">{{year[0]}}</option>
+										{% endif %}
+									{% endfor %}
+								</select>
+							</div> -->
 						</div>
 						<!-- <a style="margin-left: 10px; margin-right: 10px;" id="month-picker" type="text" class="btn-floating btn-large primary_color"><i class="fa fa-calendar"></i></a> -->
 						<div>
 							<a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
 							<a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
+							<a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped"  id="clean-search" data-position="left" data-tooltip="Limpar Pesquisas"><i class="fa fa-trash"></i></a>
 						</div>
 					</div>
 					<h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
@@ -281,7 +294,7 @@
 									<div>
 										<div>
 
-												<a target="_blank" href="https://linkedin.com/in/samuel-vasconcelos-b196001ba/"><img src="{{ url_for('static',filename='img/linkedin.svg') }}" /> samuel-vasconcelos-b196001ba/</a>
+												<a target="_blank" href="https://linkedin.com/in/samuel-vasconcelos-b196001ba/"><img src="{{ url_for('static',filename='img/linkedin.svg') }}" />Samuel Mendonça Vasconcelos</a>
 										</div>
 										<div>
 
@@ -681,6 +694,12 @@
 					});
 					window.close();
 				}
+			});
+			$("#open_folder").on("click", () => {
+				// alert("fechando ..");
+				const path = Cookies.get("path");
+				if(path)
+					$.get("/open_folder", {'path': path}, () => {});
 			});
 
 		</script>

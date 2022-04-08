@@ -342,11 +342,12 @@ def home():
 
     day = str(date.today()).split("-")[1]
     search_info = db.db_run_query(
-        "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
+        "SELECT *  FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
             day
         )
     )
-    # sys.exit()
+
+    search_years = db.db_run_query("SELECT DISTINCT SUBSTR(search_date, '____',5) FROM search WHERE done = 1")
 
     city = db.db_get_city()
     estab_names = db.db_get_estab()
@@ -386,7 +387,9 @@ def home():
         progress_value=math.floor(progress_value),
         month=month,
         active_month=day,
+        active_year= str(date.today()).split("-")[0],
         chrome_installed=chrome_installed,
+	    	years=search_years,
     )
 
 
@@ -482,15 +485,23 @@ def select_search_info():
     """Rota de seleção de informação das pesquisas no banco de dados."""
     db = database.Database()
     month = request.args.get("month")
+    try:
+      year = request.args.get("year")
+    except:
+      year = ""
 
     try:
 
-        search_data = db.db_run_query(
-            "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%' ORDER BY city_name ASC".format(
-                month
-            )
-        )
-
+        if year == "":
+          search_data = db.db_run_query(
+              "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%' ORDER BY city_name ASC".format(
+                  month
+              )
+          )
+        else:
+          search_data = db.db_run_query(
+              f"SELECT * FROM search WHERE done = 1 AND search_date LIKE '{year}%' ORDER BY city_name ASC"
+          )
         return {"success": True, "data": json.dumps(search_data)}
 
     except sqlite3.Error as er:
@@ -888,29 +899,24 @@ def bd_to_xlsx_all(city, search_id, db):
     # with open("estabs.log", "w+", encoding="latin-1") as outfile:
 
     #   outfile.write(json.dumps(result, indent=4, sort_keys=True))
+    if not os.path.exists(f"{path}/Todos/"):
+      os.makedirs(f"{path}/Todos")
 
     day = datetime.datetime.now()
     day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
-    dic = "Todos {} {}".format(city, day)
+    dic = "{} {}".format(city, day)
 
     folder_name = dic
 
-    if os.name == "nt":
-        if not os.path.exists(f"{path}/{dic}"):
+    if not os.path.exists(f"{path}/Todos/{dic}"):
 
-            os.makedirs(f"{path}/{dic}")
-    else:
-        if not os.path.exists(f"{path}/{dic}"):
-            os.makedirs(f"{path}/{dic}")
+      os.makedirs(f"{path}/Todos/{dic}")
 
     for id, product, web_name, adress, price, keyword in result:
 
         # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
         new_file = web_name
-        if os.name == "nt":
-            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
-        else:
-            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
+        file_path = "{}/Todos/{}/{}.xlsx".format(path, folder_name, new_file)
 
         products = db.db_run_query(
             "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
@@ -1010,6 +1016,148 @@ def open_explorer():
         path = path.replace("/", "\\")
         subprocess.Popen(f"explorer {path}")
         return {"status": "success"}
+    except:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+        return {"status": "error"}
+
+@app.route("/clean_search")
+def clean_search():
+
+
+    """Rota geradora de coleção de dados das pesquisas em excel."""
+    generate = request.args.get("generate")
+    global session_data
+    db = database.Database()
+    global path
+    generate = True if generate == "false" else False
+    if not generate:
+      db.db_run_query("DELETE FROM search_item")
+      db.db_run_query("DELETE FROM search")
+      return {"status": "success", "message": "Pesquisas deletadas com sucesso."}
+
+    try:
+
+        cities = db.db_get_city()
+        if not os.path.exists(f"{path}/Limpeza"):
+
+            os.makedirs(f"{path}/Limpeza")
+
+        for city in cities:
+
+          estab_data = db.db_run_query("SELECT * FROM estab WHERE city_name = '{}'".format(city[0]))
+          folder_name = f"{path}/Limpeza/{city[0]}"
+          new_path = f"{path}/Limpeza/{city[0]}"
+          search_info = db.db_run_query("SELECT DISTINCT id,search_date FROM search WHERE done = 1")
+
+          if not os.path.exists(new_path):
+
+              os.makedirs(new_path)
+
+          for id, search_date in search_info:
+
+            for city, name, adress, web_name in estab_data:
+
+                # print(id, web_name)
+
+                # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+                new_file = name
+                file_path = "{}/{}/{}.xlsx".format(new_path,search_date, new_file)
+                if not os.path.exists("{}/{}".format(new_path,search_date)):
+
+                  os.makedirs("{}/{}".format(new_path,search_date))
+
+                products = db.db_run_query(
+                    "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
+                        id, web_name
+                    )
+                )
+                # print("QUERY RESULTS:")
+                df = pd.DataFrame(
+                    data=products,
+                    columns=[
+                        "PRODUTO",
+                        "ESTABELECIMENTO",
+                        "PALAVRA-CHAVE",
+                        "ENDEREÇO",
+                        "PREÇO",
+                    ],
+                )
+                # Filtra por endereço
+                # pattern = "|".join(adress.upper().split(" "))
+                # df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
+
+                # df = df[df.ENDEREÇO.str.contains(adress.upper())]
+                writer = pd.ExcelWriter(file_path, engine="openpyxl")
+
+                df = df.to_excel(
+                    writer,
+                    sheet_name="Pesquisa",
+                    index=False,
+                    startrow=0,
+                    startcol=1,
+                    engine="openpyxl",
+                )
+
+                border = Border(
+                    left=Side(border_style="thin", color="FF000000"),
+                    right=Side(border_style="thin", color="FF000000"),
+                    top=Side(border_style="thin", color="FF000000"),
+                    bottom=Side(border_style="thin", color="FF000000"),
+                    diagonal=Side(border_style="thin", color="FF000000"),
+                    diagonal_direction=0,
+                    outline=Side(border_style="thin", color="FF000000"),
+                    vertical=Side(border_style="thin", color="FF000000"),
+                    horizontal=Side(border_style="thin", color="FF000000"),
+                )
+
+                workbook = writer.book["Pesquisa"]
+                worksheet = workbook
+                for cell in worksheet["B"]:
+
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal="center")
+
+                for cell in worksheet["C"]:
+
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal="center")
+
+                for cell in worksheet["D"]:
+
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal="center")
+
+                for cell in worksheet["E"]:
+
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal="center")
+
+                for cell in worksheet["F"]:
+
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal="center")
+
+                for col in worksheet.columns:
+                    max_length = 0
+                    column = col[0].column_letter
+                    for cell in col:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = (max_length + 2) * 1.2
+                    worksheet.column_dimensions[column].width = adjusted_width
+
+                writer.save()
+
+
+        db.db_run_query("DELETE FROM search_item")
+        db.db_run_query("DELETE FROM search")
+        session_data["software_reload"] = True
+        return {"status": "success", "dic": f"{path}/Limpeza", "message": "Pesquisas deletadas com sucesso."}
+
     except:
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
@@ -1211,7 +1359,7 @@ def disconnect():
     global connected
     global session_data
     connected -= 1
-    print("disconnnected {}".format(connected))
+    # print("disconnnected {}".format(connected))
     if connected == 0 and not session_data["software_reload"]:
         # log_error([connected, session_data])
         os._exit(0)
