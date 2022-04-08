@@ -1726,10 +1726,11 @@ $(document).ready(function () {
 			});
 
 			var search_id = $("#search-select").val();
+			var format_type = $("#file_format").val();
 			// console.table(form_data);
 			// socket.emit('search', form_data);
-			$.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id }, (response) => {
-
+			$.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id, format: format_type }, (response) => {
+1
 				if (response["status"] == "success") {
 					// console.log(response);
 					$('.estab').removeClass("select-item-active");

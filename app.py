@@ -36,9 +36,6 @@ import math
 from tkinter import filedialog
 import tkinter as tk
 
-# DELETAR PESQUISAS DE 3 EM 3 MESES
-# SCHEMA, CRIAR UM LUGAR PRA SALVAR A DATA INICIAL
-
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
@@ -877,6 +874,13 @@ def import_database():
             "message": "Ocorreu um erro durante a importação dos dados.",
         }
 
+def bd_to_xlsx_monthly(params):
+
+	pass
+
+def bd_to_xlsx_all(params):
+
+	pass
 
 @app.route("/generate_file")
 def bd_to_xlsx_route():
@@ -886,6 +890,7 @@ def bd_to_xlsx_route():
     global path
 
     try:
+        format_type = request.args.get("format")
         city = request.args.get("city_name")
         estab_names = json.loads(request.args.get("names"))
         estabs = db.db_get_estab()
@@ -901,6 +906,11 @@ def bd_to_xlsx_route():
         day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
         dic = "{} {}".format(city, day)
 
+        # ? Criar função pra formatar todos os estabelecimentos não cadastrados e retornar uma coleção formatada deles bd_to_xlsx_all
+        if format_type == "all":
+            return
+
+
         folder_name = dic
 
         if os.name == "nt":
@@ -913,7 +923,7 @@ def bd_to_xlsx_route():
 
         for city, name, adress, web_name in estab_data:
 
-            # print("Geran do Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+            # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
             new_file = name
             if os.name == "nt":
                 file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
@@ -1089,6 +1099,10 @@ def set_path(config_path):
     if not os.path.exists(path):
         emit("set_path", broadcast=True)
 
+@socketio.on("exit")
+def exit_program():
+
+	os._exit(1);
 
 # Inicia pesquisa
 @socketio.on("search")

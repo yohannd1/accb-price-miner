@@ -94,7 +94,9 @@ header{
 	text-align: center;
 	width: auto;
 	border-radius: 3px;
+	width: fit-content;
 }
+
 
 .tabs i {
 	font-size: 1.5em;
@@ -369,6 +371,7 @@ main {
 
 #configurar{
 	padding: 1em;
+	max-height: 70%;
 }
 
 .tab-content-config{
@@ -442,9 +445,10 @@ main {
 }
 
 #list-config {
-	height: 80%;
 	overflow: auto;
 	padding: 1em;
+	height: fit-content;
+	max-height: 100%;
 }
 
 #list-config .right{
@@ -452,9 +456,9 @@ main {
 }
 
 #list-product {
-	height: 80%;
-	overflow: auto;
 	padding: 1em;
+	height: fit-content;
+	max-height: 100%;
 }
 
 .estab-config a{
@@ -471,9 +475,11 @@ main {
 .config-title{
 	display: flex;
 	width: 100%;
-	margin: 0 auto;
-	margin-top: 2em;
-	margin-bottom: 2em;
+	margin: 3em 0;
+	flex-direction: row;
+	justify-content: space-between;
+	/* margin-top: 2em; */
+	/* margin-bottom: 2em; */
 }
 
 #export , #import {
@@ -534,20 +540,20 @@ main {
     background-color:#216fa7;
 }
 .options {
-    display:none;
-    position:absolute;
-    top:104%;
-    right:0;
-    left:0;
-    z-index:999;
-    margin:0 0;
+	display:none;
+	position:absolute;
+	top:104%;
+	right:0;
+	left:0;
+	z-index:999;
+	margin:0 0;
 	border-radius:5px;
-    list-style:none;
-    /* border:1px solid #ccc; */
-    background-color:transparent;
-    -webkit-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
-    -moz-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
-    box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+	list-style:none;
+	/* border:1px solid #ccc; */
+	background-color:transparent;
+	-webkit-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+	-moz-box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
+	box-shadow:0 1px 2px rgba(0, 0, 0, 0.2);
 	max-height: 35vh;
 	overflow: auto !important;
 }
@@ -588,6 +594,8 @@ input:-webkit-autofill:active {
 	box-shadow: 0 0 0 30px transparent inset !important;
 	background-color: transparent !important;
 }
+
+
 
 .jquery-modal input:-webkit-autofill{
 	-webkit-text-fill-color: #f1f1f1  !important;
@@ -640,9 +648,16 @@ td, th {
 	height: 0%;
 	padding-left: 1em;
 	color: #f1f1f1 !important;
-	width: 89%;
+	width: 90%;
 	box-shadow: none !important;
 	margin: 0;
+}
+
+.search_div{
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
 }
 
 
@@ -671,34 +686,143 @@ td, th {
 
 #about ul.tabs{
 	width: fit-content;
-    display: flex;
-    flex-direction: column;
-    height: fit-content;
-    padding: 0;
-    margin: 0;
-    position: absolute;
+	display: flex;
+	flex-direction: column;
+	height: fit-content;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+	position: absolute;
     /* left: -7%; */
 	border-radius: 10px;
-    bottom: 10px;
-    background: transparent;
+	bottom: 10px;
+	background: transparent;
 	display: flex;
-    width: fit-content;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    left: 42%;
+	width: fit-content;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	left: 0%;
 }
 
 #about ul a{
 	display: flex;
-    justify-content: center;
-    align-items: center;
+	justify-content: center;
+	align-items: center;
 	background-color: white;
 	border-radius: 10px;
 }
 
+
+.about-program{
+	position: absolute;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+	height: 55%;
+	text-align: justify;
+}
+
+.about-program img{
+	width: 30%;
+}
+.about-program p{
+	width: 80%;
+	font-weight: bold;
+	font-size: 17px;
+}
+
+
+
 .about-item{
-	height: 67%;
+	max-height: 80%;
+	/* padding: 2em !important; */
+	/* background-color: #17527b; */
+	color: #fafafafa;
+	border-radius: 10px;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	padding: 0 !important;
+}
+
+.about-container{
+	/* display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	width: 100%; */
+	display: flex;
+	flex-flow: column;
+	justify-content: center;
+	flex-direction: column;
+	align-items: center;
+	width: 100% !important;
+}
+
+.about-profile{
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: center;
+	background-color: #0e3049;
+	border-radius: 5px;
+	width: 49%;
+	max-height: 50%;
+	margin: .5em 0;
+}
+
+.about-profile > div{
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+.about-profile img{
+	/* width: 20% !important; */
+	/* height: 100% !important; */
+	width: 80px !important;
+	margin: 0 !important;
+	border-radius: 5px;
+	border-bottom-right-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.about-profile div > div{
+	padding: .5em;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+}
+
+.about-profile a{
+	cursor: pointer;
+	text-decoration: none;
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: center;
+	color: #fafafafa;
+	width: 100%;
+	border-radius: 5px;
+}
+.about-profile a > img{
+	margin: 0 .5em!important;
+	width: 6% !important;
+}
+
+.about-item img{
+	width: 37%;
+	margin-right: 10px;
+	height: auto;
 }
 
 blockquote {
@@ -720,6 +844,13 @@ blockquote {
 	margin-left: 10px;
 	transition: width .4s ease-in-out;
 	z-index: 999;
+}
+
+#sec-navigation li a i{
+	margin-right: 20px;
+}
+#sec-navigation{
+	overflow: hidden !important;
 }
 
 
@@ -782,23 +913,60 @@ blockquote {
 	}
 
 	#list-search{
-		height: 72%;
+		height: 63%;
 	}
 
 }
 
-@media screen and (min-width: 1000px) and (max-height: 800) {
+@media screen and (min-width: 1000px) and (max-height: 800px) {
 
 	main{
 		height: 70vh;
 	}
 
 	#list-search{
-		height: 72%;
+		height: 63%;
 	}
 
 	html{
 		height: fit-content;
+	}
+
+}
+
+
+@media screen and (max-width: 1150px) {
+	#search_bar{
+		width: 85% !important;
+	}
+	h5{
+		font-size: 1.5em;
+	}
+	.tabs{
+		max-width: 92%;
+		overflow: scroll;
+		overflow: scroll !important;
+		overflow-y: hidden !important;
+		height: 70px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	body{
+		width: 95% !important;
+	}
+
+	html{
+		height: fit-content;
+	}
+
+
+}
+
+@media screen and (min-width: 1200px) {
+
+	.about-item{
+		justify-content: center;
 	}
 
 }

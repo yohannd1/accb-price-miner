@@ -41,7 +41,7 @@
 .modal-menu{
     /* position: absolute; */
     display: flex;
-    bottom: 10%;
+    /* bottom: 10%; */
     right: 0;
     width: 100%;
     justify-content: center;
@@ -145,6 +145,14 @@
 .modal-spinner .rect4 {
   -webkit-animation-delay: -0.9s;
   animation-delay: -0.9s;
+}
+
+.modal-content{
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	justify-content: center;
+	height: 100%;
 }
 
 @-webkit-keyframes sk-stretchdelay {

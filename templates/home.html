@@ -60,11 +60,11 @@
 					{% endif %}
 					<a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
 					<a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+					<a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app" ><i class="fa fa-close"></i></a>
 				</div>
 			</div>
 			<div>
 				<p class="title"><i class="fa fa-shopping-cart"> </i> Preço da Hora Bahia - Coleta Semi-Automática </p>
-
 				<ul id="main-navigation" class="tabs" style="width: fit-content;">
 					<li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
 					<li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
@@ -208,35 +208,39 @@
 			<div id="pesquisa" class="col s12 tab" >
 				<div class="tab-content-search">
 					<div class="config-title" style="margin: 0;">
-						<div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa" >
-							<select id="search-select" class="browser-default">
-								{% if len(search_info) == 0 %}
-									<option value="null">Nenhuma Pesquisa</option>
-								{% endif %}
-								{% for search in search_info %}
-									<option city="{{search[2]}}" value="{{search[0]}}">{{search[2]}} {{search[3]}}</option>
-								{% endfor %}
-							</select>
-						</div>
-						<div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês" >
-							<select id="month-picker" class="browser-default">
-								{% for index,mont in enumerate(month) %}
-									{% if index + 1 == active_month %}
-										<option selected value="{{index}}">{{mont}}</option>
-									{% else %}
-										<option value="{{index}}">{{mont}}</option>
+						<div>
+							<div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa" >
+								<select id="search-select" class="browser-default">
+									{% if len(search_info) == 0 %}
+										<option value="null">Nenhuma Pesquisa</option>
 									{% endif %}
-								{% endfor %}
-							</select>
+									{% for search in search_info %}
+										<option city="{{search[2]}}" value="{{search[0]}}">{{search[2]}} {{search[3]}}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês" >
+								<select id="month-picker" class="browser-default">
+									{% for index,mont in enumerate(month) %}
+										{% if index + 1 == active_month %}
+											<option selected value="{{index}}">{{mont}}</option>
+										{% else %}
+											<option value="{{index}}">{{mont}}</option>
+										{% endif %}
+									{% endfor %}
+								</select>
+							</div>
 						</div>
 						<!-- <a style="margin-left: 10px; margin-right: 10px;" id="month-picker" type="text" class="btn-floating btn-large primary_color"><i class="fa fa-calendar"></i></a> -->
-						<h5 style="width: calc(100% - 500px);">Listagem de Pesquisa</h5>
-						<a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
-						<a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
+						<div>
+							<a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
+							<a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
+						</div>
 					</div>
-					<div class="input-field ">
+					<h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
+					<div class="input-field search_div">
 						<input placeholder="Nome do Estabelecimento : dalnordes .." class="browser-default z-depth-2" id="search_bar">
-						<a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
+						<a class="round btn-floating btn-large  primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
 					</div>
 					<div id="list-search">
 							<table class="centered striped">
@@ -265,97 +269,68 @@
 					<span class="left duration" >Tempo de duração da pesquisa : NaN  </span>
 			</div>
 			<div id="about" class="col s12 tab" >
-				<div class="tab-content-config row" style="padding-bottom: 5%;">
+				<div class="tab-content-config row center" style="padding-bottom: 5%;">
+					<div id="doc" class="row tab" style="margin: 1em 0;">
 					<div class="config-title">
-						<h5>Sobre o Programa</h5>
+						<h5>Colaboradores</h5>
 					</div>
-					<div id="doc" class="row tab" style="margin: 2em 0;">
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
-						</div>
+						<div class="col s12 m12 center about-item">
+							<div class="about-container">
+								<div class="about-profile z-depth-5">
+									<img src="{{ url_for('static',filename='img/okay.jpg') }}" />
+									<div>
+										<div>
 
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
-						</div>
+												<a target="_blank" href="https://linkedin.com/in/samuel-vasconcelos-b196001ba/"><img src="{{ url_for('static',filename='img/linkedin.svg') }}" /> samuel-vasconcelos-b196001ba/</a>
+										</div>
+										<div>
 
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
-						</div>
+												<a onclick="copyToClipboard('github.com/smvasconcelos')"><img src="{{ url_for('static',filename='img/github.svg') }}" /> github.com/smvasconcelos</a>
+										</div>
+									</div>
+								</div>
+								<div class="about-profile z-depth-5">
+									<img style="height: 100px !important;" src="{{ url_for('static',filename='img/marta.jpg') }}" />
+									<div>
+										<div>
 
-					</div>
-					<div id="doc2" class="row tab" style="margin: 2em 0;">
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
-						</div>
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
-						</div>
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
+												<a target="_blank" href="http://lattes.cnpq.br/0053869533760582"><img src="{{ url_for('static',filename='img/lattes.svg') }}" />Marta Magda Dornelles/</a>
+										</div>
+										<div>
+												<a onclick="copyToClipboard('mmbertoldi@uesc.br')"><img src="{{ url_for('static',filename='img/gmail.svg') }}" />mmbertoldi@uesc.br</a>
+										</div>
+									</div>
+								</div>
+								<div class="about-profile z-depth-5">
+									<img src="{{ url_for('static',filename='img/monica.gif') }}" />
+									<div>
+										<div>
+
+												<a href="http://lattes.cnpq.br/6157255488660799"><img src="{{ url_for('static',filename='img/lattes.svg') }}" />Mônica de Moura Pires</a>
+										</div>
+										<div>
+
+												<a onclick="copyToClipboard('mpires@uesc.br')"><img src="{{ url_for('static',filename='img/gmail.svg') }}" />mpires@uesc.br</a>
+										</div>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
-					<div id="doc3" class="row tab" style="margin: 2em 0;">
-
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
+					<div id="doc2" class="row tab" style="margin: 1em 0; position: relative;">
+						<div class="config-title">
+							<h5>Sobre o programa</h5>
 						</div>
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
-						</div>
-						<div class="col s4 m4 center about-item">
-							<h5 style="display: flex; font-size: large; justify-content: center;"> <i style="margin-right: 10px;" class="fa fa-shopping-cart"> </i> Lorem ipsum dolor sit</h5>
-							<blockquote>
-								This is an example quotation that uses the blockquote tag. Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem tempore doloremque harum eaque, animi fugit repudiandae placeat voluptates exercitationem porro dicta tempora! Tempore, totam neque. Rem aperiam similique placeat et. Lorem ipsum dolor sit, amet consectetur adipisicing elit. Incidunt, dolorum quos, voluptates at necessitatibus assumenda aut optio velit culpa ipsum totam nobis ad nemo numquam natus, dolor ratione mollitia libero.
-								Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero saepe, doloribus velit rerum expedita sint dolorum nam delectus nesciunt voluptate atque sequi sed tempora, harum quasi unde minima, facere magni!
-								Lorem, ipsum dolor sit amet consectetur adipisicing elit. Minima numquam, dolorum modi perferendis doloribus exercitationem fuga, in itaque totam provident ut alias amet fugiat ipsa libero blanditiis! Explicabo, nulla fugit.
-							</blockquote>
+						<div class="about-program">
+							<img src="{{ url_for('static',filename='img/calab.png') }}" />
+							<p>
+								Lorem ipsum dolor sit amet consectetur adipisicing elit. Tenetur ut expedita excepturi consequuntur, ullam dolorum nulla in? Nisi cumque quis amet quod quisquam fugit nesciunt sed sunt, corporis maiores debitis.lorem Lorem ipsum dolor sit amet consectetur adipisicing elit. Provident doloremque eos alias amet reprehenderit quibusdam facilis, sit neque sunt aspernatur nam ex. Placeat at iste animi ullam, quibusdam quisquam excepturi.
+							</p>
 						</div>
 					</div>
-
-					<ul id="sec-navigation" class="tabs" style="width: fit-content;">
-						<li class="tab col s3"><a href="#doc"> <i class="fa fa-map-marker"> </i></a></li>
-						<li class="tab col s3"><a href="#doc2"> <i class="fa fa-map-marker"> </i></a></li>
-						<li class="tab col s3"><a href="#doc3"> <i class="fa fa-map-marker"> </i></a></li>
+					<ul id="sec-navigation" class="tabs" style="width: 100%;">
+						<li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>  Colaboradores </a></li>
+						<li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i> O programa</a></li>
 					</ul>
 			</div>
 		</main>
@@ -533,8 +508,9 @@
 				</div>
 				<div style="margin-top: 1.8em;">
 					<div class="input-field col s12">
-						<select style="color: black !important;">
-								<option value="1" >Padrão</option>
+						<select id="file_format" style="color: black !important;">
+								<option value="default" >Padrão (Estabelecimentos cadastrados)</option>
+								<option value="all" >Todos (Estabelecimentos não cadastrados)</option>
 						</select>
 						<label style="left: 0;">Formatação</label>
 					</div>
@@ -563,6 +539,12 @@
 		<script type='text/javascript' src="{{url_for('static', filename='js/home.js')}}"></script>
 		<script type="module" src="{{url_for('static', filename='js/cookie.min.mjs')}}"></script>
 		<script type="text/javascript" charset="utf-8">
+
+			function copyToClipboard(value) {
+				navigator.clipboard.writeText(value);
+				Materialize.toast('Texto copiado para sua área de cópias.', 2000, 'rounded');
+			}
+
 
 			var search = '{{search}}';
 			var active = '{{active}}';
@@ -679,6 +661,16 @@
 
 				});
 
+			});
+
+			$("#close_app").on("click", () => {
+				// alert("fechando ..");
+				if(window.confirm("Realmente deseja fechar o programa ?")){
+					socket.emit('exit', function(){
+						window.close();
+					});
+					window.close();
+				}
 			});
 
 		</script>
