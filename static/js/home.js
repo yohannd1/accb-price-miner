@@ -47,16 +47,18 @@ function similarity(s1, s2) {
  * @param  {string} month
  */
 function filter_search(month) {
-	var search_id = $("#search-select").val();
+	// var search_id = $("#search-select").val();
 
-	if (search_id == "null") {
-		alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
-		return;
-	}
+	// if (search_id == "null") {
+	// 	alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
+	// 	return;
+	// }
 
 
 	$.get("/select_search_info", { month: month }, (response) => {
 
+		console.log("TO AKI")
+		console.log({ response });
 		if (response.success) {
 
 			var data = JSON.parse(response.data);
@@ -74,7 +76,6 @@ function filter_search(month) {
 
 				});
 
-				;
 				$("#search-select").parent().find(".styledSelect").remove();
 				$("#search-select").parent().find("ul.options").remove();
 				list_search(data[0][0]);
@@ -1720,7 +1721,6 @@ $(document).ready(function () {
 			return
 
 		var generate = window.confirm("Deseja gerar uma coleção de arquivos excel com todas as pesquisas existentes ?");
-		alert(generate);
 
 		$.get("/clean_search", { generate: generate.toString() }, (response) => {
 
@@ -1734,9 +1734,10 @@ $(document).ready(function () {
 				}
 				else
 					Materialize.toast(response.message, 15000, 'rounded');
+
 				setInterval(() => {
-					window.location.reload();
-				}, 3000);
+					window.location.reload(true);
+				}, 2000);
 				// new Notification("ACCB - Pesquisa Automática", {
 				// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
 				// });
@@ -1798,7 +1799,7 @@ $(document).ready(function () {
 			// console.table(form_data);
 			// socket.emit('search', form_data);
 			$.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id, format: format_type }, (response) => {
-1
+				1
 				if (response["status"] == "success") {
 					// console.log(response);
 					const default_path = document.cookie

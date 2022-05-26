@@ -485,16 +485,18 @@ def select_search_info():
     """Rota de seleção de informação das pesquisas no banco de dados."""
     db = database.Database()
     month = request.args.get("month")
+    search_data = ""
     try:
       year = request.args.get("year")
     except:
       year = ""
 
     try:
-
-        if year == "":
+        # print(f"month {month}")
+        if year == None:
+          month = "0" + month if int(month) < 10  else month
           search_data = db.db_run_query(
-              "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%' ORDER BY city_name ASC".format(
+              "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%-{}-%' ORDER BY city_name ASC".format(
                   month
               )
           )
@@ -502,6 +504,7 @@ def select_search_info():
           search_data = db.db_run_query(
               f"SELECT * FROM search WHERE done = 1 AND search_date LIKE '{year}%' ORDER BY city_name ASC"
           )
+        print(f"search_data {search_data}")
         return {"success": True, "data": json.dumps(search_data)}
 
     except sqlite3.Error as er:
@@ -1011,10 +1014,10 @@ def bd_to_xlsx_all(city, search_id, db):
 def open_explorer():
 
     try:
-        path = request.args.get("path")
-        print(f"explorer {path}")
-        path = path.replace("/", "\\")
-        subprocess.Popen(f"explorer {path}")
+        custom_path = request.args.get("path")
+        custom_path = custom_path.replace("/", "\\")
+        print(f"explorer {custom_path}")
+        subprocess.Popen(f"explorer {custom_path}")
         return {"status": "success"}
     except:
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -1025,7 +1028,7 @@ def open_explorer():
 def clean_search():
 
 
-    """Rota geradora de coleção de dados das pesquisas em excel."""
+    """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
     generate = request.args.get("generate")
     global session_data
     db = database.Database()
@@ -1035,7 +1038,6 @@ def clean_search():
       db.db_run_query("DELETE FROM search_item")
       db.db_run_query("DELETE FROM search")
       return {"status": "success", "message": "Pesquisas deletadas com sucesso."}
-
     try:
 
         cities = db.db_get_city()
@@ -1155,7 +1157,6 @@ def clean_search():
 
         db.db_run_query("DELETE FROM search_item")
         db.db_run_query("DELETE FROM search")
-        session_data["software_reload"] = True
         return {"status": "success", "dic": f"{path}/Limpeza", "message": "Pesquisas deletadas com sucesso."}
 
     except:
@@ -1360,20 +1361,20 @@ def disconnect():
     global session_data
     connected -= 1
     # print("disconnnected {}".format(connected))
-    if connected == 0 and not session_data["software_reload"]:
-        # log_error([connected, session_data])
-        os._exit(0)
-    else:
-        try:
+    # if connected == 0 and not session_data["software_reload"]:
+    #     log_error([connected, session_data])
+    #     os._exit(0)
+    # else:
+    #     try:
 
-            if session_data["software_reload"] and connected == 0:
+    #         if session_data["software_reload"] and connected == 0:
 
-                session_data["software_reload"] = False
-                # log_error([connected, session_data])
+    #             session_data["software_reload"] = False
+    #             # log_error([connected, session_data])
 
-        except:
+    #     except:
 
-            pass
+    #         pass
 
 
 @socketio.on("set_path")
