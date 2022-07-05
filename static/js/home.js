@@ -57,8 +57,6 @@ function filter_search(month) {
 
 	$.get("/select_search_info", { month: month }, (response) => {
 
-		console.log("TO AKI")
-		console.log({ response });
 		if (response.success) {
 
 			var data = JSON.parse(response.data);
@@ -71,7 +69,7 @@ function filter_search(month) {
 				$("#search-select option").remove();
 				data.map((value) => {
 
-					console.log(value);
+					// console.log(value);
 					$("#search-select").append(`<option city=${value[2]} value=${value[1]}>${value[2]} ${value[3]}</option>`);
 
 				});
@@ -443,11 +441,11 @@ const list_search = (search_id = undefined) => {
 				time = value[4];
 				$(`
 					<tr class="tr-item flow-text">
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[7]}</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[8]}</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[10]}</td>
-						<td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[6]}</td>
-						<td>${value[9]}</td>
+						<td title="${value[7]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[7]}</td>
+						<td title="${value[8]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[8]}</td>
+						<td title="${value[10]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[10]}</td>
+						<td title="${value[6]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[6]}</td>
+						<td title="${value[9]}">${value[9]}</td>
 					</tr>
 				`).appendTo("#search-tbody");
 			});

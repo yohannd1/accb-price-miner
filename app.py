@@ -7,7 +7,6 @@
 # from engineio.async_drivers import gevent
 from textwrap import indent
 from engineio.async_drivers import threading
-
 """Necessário para evitar bugs com aplicações que rodam tarefas no background."""
 from flask import Flask, render_template, request, g
 from flask_material import Material

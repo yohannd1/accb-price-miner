@@ -68,3 +68,6 @@ docs/_build/
 *teste.py
 *bd_to_xlsx.py
 *drivers.json
+firebaseConfig.json
+manual_video.md
+release.html
