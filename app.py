@@ -35,6 +35,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 import math
 from tkinter import filedialog
 import tkinter as tk
+from webdriver_manager.core.driver_cache import DriverCacheManager
+import logging
 
 app = Flask(__name__)
 Material(app)
@@ -57,7 +59,6 @@ def is_chrome_installed():
 
     try:
 
-        manager = ChromeDriverManager().install()
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
@@ -66,8 +67,12 @@ def is_chrome_installed():
         chrome_options.add_argument("--disable-features=NetworkService")
         chrome_options.add_argument("--window-size=1920x1080")
         chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-        service = Service(manager)
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+
+        # driver_cache_manager = DriverCacheManager(root_dir="testing")
+        # service = Service(ChromeDriverManager(cache_manager=driver_cache_manager).install(), log_path='Nul')
+        driver = webdriver.Chrome(options=chrome_options)
+
+        log_error('Baixei o chrome po rlx')
         driver.close()
         driver.quit()
 
@@ -1359,21 +1364,21 @@ def disconnect():
     global connected
     global session_data
     connected -= 1
-    # print("disconnnected {}".format(connected))
-    # if connected == 0 and not session_data["software_reload"]:
-    #     log_error([connected, session_data])
-    #     os._exit(0)
-    # else:
-    #     try:
+    print("disconnnected {}".format(connected))
+    if connected == 0 and not session_data["software_reload"]:
+        log_error([connected, session_data])
+        os._exit(0)
+    else:
+        try:
 
-    #         if session_data["software_reload"] and connected == 0:
+            if session_data["software_reload"] and connected == 0:
 
-    #             session_data["software_reload"] = False
-    #             # log_error([connected, session_data])
+                session_data["software_reload"] = False
+                # log_error([connected, session_data])
 
-    #     except:
+        except:
 
-    #         pass
+            pass
 
 
 @socketio.on("set_path")
@@ -1606,20 +1611,22 @@ def run_app():
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
                 # eventlet.wsgi.server(
-                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                #     eventlet.listen(("127.0.0.1", 5000)), app
                 # )
-                socketio.run(app, debug=False)
+                socketio.run(app)
             else:
                 webbrowser.open(url)
         else:
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
+                os.environ['WDM_LOG_LEVEL'] = '0'
+
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
                 # eventlet.wsgi.server(
-                #     eventlet.listen(("127.0.0.1", 5000)), app, debug=False
+                #     eventlet.listen(("127.0.0.1", 5000)), app
                 # )
-                socketio.run(app, debug=False)
+                socketio.run(app)
             else:
                 webbrowser.open(url)
 
@@ -1631,12 +1638,14 @@ def run_app():
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
 
-                socketio.run(app, debug=True)
+                socketio.run(app)
             else:
                 webbrowser.open(url)
         else:
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
+                os.environ['WDM_LOG_LEVEL'] = '0'
+
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
 
@@ -1648,4 +1657,8 @@ def run_app():
 if __name__ == "__main__":
 
     # run_app()
+    log = logging.getLogger('werkzeug')
+    log.disabled = True
+    cli = sys.modules['flask.cli']
+    cli.show_server_banner = lambda *x: None
     run_app()

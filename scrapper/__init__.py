@@ -343,9 +343,7 @@ class Scrap:
             chrome_options.add_argument("--disable-features=VizDisplayCompositor")
             # os.environ["WDM_LOCAL"] = "1"
 
-            manager = ChromeDriverManager(log_level=0).install()
-            service = Service(manager)
-            driver = webdriver.Chrome(service=service, chrome_options=chrome_options)
+            driver = webdriver.Chrome(options=chrome_options)
 
             self.driver = driver
 
@@ -367,7 +365,7 @@ class Scrap:
                 EC.presence_of_element_located((By.ID, "informe-sefaz-error"))
             )
 
-            driver.find_element_by_id("informe-sefaz-error").click()
+            driver.find_element(By.ID,"informe-sefaz-error").click()
 
         except:
 
@@ -403,7 +401,7 @@ class Scrap:
 
         finally:
 
-            driver.find_element_by_class_name("location-box").click()
+            driver.find_element(By.CLASS_NAME,"location-box").click()
             time.sleep(2 * times)
 
         # Botão que abre a opção de inserir o CEP
@@ -420,19 +418,19 @@ class Scrap:
 
         finally:
 
-            driver.find_element_by_id("add-center").click()
+            driver.find_element(By.ID,"add-center").click()
             time.sleep(2 * times)
 
         # Envia o MUNICIPIO desejado para o input
 
-        driver.find_element_by_class_name("sbar-municipio").send_keys(self.CITY)
+        driver.find_element(By.CLASS_NAME,"sbar-municipio").send_keys(self.CITY)
         time.sleep(1)
 
         # Pressiona o botão que realiza a pesquisa por MUNICIPIO
-        driver.find_element_by_class_name("set-mun").click()
+        driver.find_element(By.CLASS_NAME,"set-mun").click()
 
         time.sleep(1)
-        driver.find_element_by_id("aplicar").click()
+        driver.find_element(By.ID,"aplicar").click()
 
         time.sleep(2 * times)
         for index, (product, keywords) in enumerate(self.PRODUCT_INFO[self.index :]):
@@ -502,7 +500,7 @@ class Scrap:
 
                 finally:
 
-                    search = driver.find_element_by_id("top-sbar")
+                    search = driver.find_element(By.ID,"top-sbar")
 
                 for w in keyword:
 
@@ -550,7 +548,7 @@ class Scrap:
                                 EC.presence_of_element_located((By.ID, "updateResults"))
                             )
                             time.sleep(2 * times)
-                            driver.find_element_by_id("updateResults").click()
+                            driver.find_element(By.ID,"updateResults").click()
                             flag = flag + 1
 
                             if flag == 3:

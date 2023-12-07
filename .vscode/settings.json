@@ -1,3 +1,4 @@
 {
-	"python.defaultInterpreterPath": "${workspaceFolder:WEB}/Scripts/python.exe"
+	"python.defaultInterpreterPath": "${workspaceFolder}/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
 }
