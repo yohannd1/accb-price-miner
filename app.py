@@ -1,16 +1,15 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-""" Server da aplicação. """
-# import eventlet
+"""Ponto de entrada da aplicação."""
 
+# import eventlet
 # eventlet.patcher.monkey_patch(select=True, socket=True)
 # from engineio.async_drivers import gevent
-from textwrap import indent
+
+# necessário para evitar bugs com aplicações que rodam tarefas no background.
 from engineio.async_drivers import threading
-"""Necessário para evitar bugs com aplicações que rodam tarefas no background."""
+
 from flask import Flask, render_template, request, g
 from flask_material import Material
-from flask_socketio import SocketIO, send, emit
+from flask_socketio import SocketIO, emit
 import time
 import json
 import sqlite3
@@ -29,68 +28,39 @@ import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+
+# from webdriver_manager.chrome import ChromeDriverManager
 import math
 from tkinter import filedialog
 import tkinter as tk
-from webdriver_manager.core.driver_cache import DriverCacheManager
+
+# from webdriver_manager.core.driver_cache import DriverCacheManager
 import logging
+
+from accb.utils import log, log_error, is_chrome_installed
 
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
-connected = 0
 # os.environ["WDM_LOG_LEVEL"] = "0"
+
+connected = 0
 """Conta os clientes conectados"""
+
 session_data = {}
 """Armazenamento de sessão"""
+
 session_data["software_reload"] = False
 """Responsável pelo controle de reload do programa."""
+
 chrome_installed = None
 """ Variavel indicativa da instalação do Google Chrome."""
+
 path = None
 """Variável de caminho padrão para gerar coleção excel."""
 
 
-def is_chrome_installed():
-    """Função responsável por confirmar a instalação do Google Chrome no sistema atual."""
-
-    try:
-
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-features=NetworkService")
-        chrome_options.add_argument("--window-size=1920x1080")
-        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-
-        # driver_cache_manager = DriverCacheManager(root_dir="testing")
-        # service = Service(ChromeDriverManager(cache_manager=driver_cache_manager).install(), log_path='Nul')
-        driver = webdriver.Chrome(options=chrome_options)
-
-        log_error('Baixei o chrome po rlx')
-        driver.close()
-        driver.quit()
-
-        if driver:
-            return True
-        else:
-            return False
-
-    except:
-
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return False
-
-
 def get_time(start):
-
     """Calcula o tempo de execução dado um tempo inicial e retorna o tempo em minutos horas e segundos."""
     end = time.time()
     temp = end - start
@@ -102,13 +72,11 @@ def get_time(start):
 
 
 def print_tab(df):
-
     """Printa um set de dados iteráveis de forma organizada e tabulada no console."""
     print(tabulate(df, headers="keys", tablefmt="psql"))
 
 
 def is_port_in_use(port):
-
     """Confere se uma dada porta port está em uso pelo sistema."""
     import socket
 
@@ -145,7 +113,6 @@ def process_exists(process_name):
 
 
 def xlsx_to_bd(db, city_name):
-
     """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
     df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
     duration = get_time(time.time())
@@ -173,20 +140,7 @@ def xlsx_to_bd(db, city_name):
     return search_id
 
 
-def log_error(err):
-    """Loga um erro que aconteceu durante a execução do programa no arquivo error.log"""
-
-    with open("error.log", "w+", encoding="latin-1") as outfile:
-
-        outfile.write("Date : {} \n".format(time.asctime()))
-        for error in err:
-            outfile.write(str(error))
-
-    return
-
-
 def bd_to_xlsx(db, search_id, estab_data, city):
-
     """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]"""
     global path
 
@@ -351,7 +305,9 @@ def home():
         )
     )
 
-    search_years = db.db_run_query("SELECT DISTINCT SUBSTR(search_date, '____',5) FROM search WHERE done = 1")
+    search_years = db.db_run_query(
+        "SELECT DISTINCT SUBSTR(search_date, '____',5) FROM search WHERE done = 1"
+    )
 
     city = db.db_get_city()
     estab_names = db.db_get_estab()
@@ -391,9 +347,9 @@ def home():
         progress_value=math.floor(progress_value),
         month=month,
         active_month=day,
-        active_year= str(date.today()).split("-")[0],
+        active_year=str(date.today()).split("-")[0],
         chrome_installed=chrome_installed,
-	    	years=search_years,
+        years=search_years,
     )
 
 
@@ -485,29 +441,28 @@ def select_search_data():
 
 @app.route("/select_search_info")
 def select_search_info():
-
     """Rota de seleção de informação das pesquisas no banco de dados."""
     db = database.Database()
     month = request.args.get("month")
     search_data = ""
     try:
-      year = request.args.get("year")
+        year = request.args.get("year")
     except:
-      year = ""
+        year = ""
 
     try:
         # print(f"month {month}")
         if year == None:
-          month = "0" + month if int(month) < 10  else month
-          search_data = db.db_run_query(
-              "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%-{}-%' ORDER BY city_name ASC".format(
-                  month
-              )
-          )
+            month = "0" + month if int(month) < 10 else month
+            search_data = db.db_run_query(
+                "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%-{}-%' ORDER BY city_name ASC".format(
+                    month
+                )
+            )
         else:
-          search_data = db.db_run_query(
-              f"SELECT * FROM search WHERE done = 1 AND search_date LIKE '{year}%' ORDER BY city_name ASC"
-          )
+            search_data = db.db_run_query(
+                f"SELECT * FROM search WHERE done = 1 AND search_date LIKE '{year}%' ORDER BY city_name ASC"
+            )
         print(f"search_data {search_data}")
         return {"success": True, "data": json.dumps(search_data)}
 
@@ -523,7 +478,6 @@ def select_search_info():
 
 @app.route("/update_product")
 def update_product():
-
     """Rota de atualização de produtos no banco de dados."""
     global session_data
     db = database.Database()
@@ -573,7 +527,6 @@ def select_estab():
 
 @app.route("/remove_estab")
 def remove_estab():
-
     """Rota de remoção de estabelecimentos no banco de dados."""
     db = database.Database()
     estab_name = request.args.get("estab_name")
@@ -602,7 +555,6 @@ def remove_estab():
 
 @app.route("/update_estab")
 def update_estab():
-
     """Rota de atualização de estabelecimentos no banco de dados."""
     db = database.Database()
     city_name = request.args.get("city_name")
@@ -819,7 +771,9 @@ def set_path():
             "message": "Ocorreu um erro durante a configuração de caminho padrão.",
         }
 
+
 # Gerando Arquivos
+
 
 @app.route("/delete_search")
 def delete_search():
@@ -900,14 +854,16 @@ def bd_to_xlsx_all(city, search_id, db):
           WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
           AND search_id={}
           GROUP BY web_name
-        """.format(search_id)
+        """.format(
+            search_id
+        )
     )
 
     # with open("estabs.log", "w+", encoding="latin-1") as outfile:
 
     #   outfile.write(json.dumps(result, indent=4, sort_keys=True))
     if not os.path.exists(f"{path}/Todos/"):
-      os.makedirs(f"{path}/Todos")
+        os.makedirs(f"{path}/Todos")
 
     day = datetime.datetime.now()
     day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
@@ -917,7 +873,7 @@ def bd_to_xlsx_all(city, search_id, db):
 
     if not os.path.exists(f"{path}/Todos/{dic}"):
 
-      os.makedirs(f"{path}/Todos/{dic}")
+        os.makedirs(f"{path}/Todos/{dic}")
 
     for id, product, web_name, adress, price, keyword in result:
 
@@ -1028,10 +984,9 @@ def open_explorer():
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
         return {"status": "error"}
 
+
 @app.route("/clean_search")
 def clean_search():
-
-
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
     generate = request.args.get("generate")
     global session_data
@@ -1039,9 +994,9 @@ def clean_search():
     global path
     generate = True if generate == "false" else False
     if not generate:
-      db.db_run_query("DELETE FROM search_item")
-      db.db_run_query("DELETE FROM search")
-      return {"status": "success", "message": "Pesquisas deletadas com sucesso."}
+        db.db_run_query("DELETE FROM search_item")
+        db.db_run_query("DELETE FROM search")
+        return {"status": "success", "message": "Pesquisas deletadas com sucesso."}
     try:
 
         cities = db.db_get_city()
@@ -1051,117 +1006,124 @@ def clean_search():
 
         for city in cities:
 
-          estab_data = db.db_run_query("SELECT * FROM estab WHERE city_name = '{}'".format(city[0]))
-          folder_name = f"{path}/Limpeza/{city[0]}"
-          new_path = f"{path}/Limpeza/{city[0]}"
-          search_info = db.db_run_query("SELECT DISTINCT id,search_date FROM search WHERE done = 1")
+            estab_data = db.db_run_query(
+                "SELECT * FROM estab WHERE city_name = '{}'".format(city[0])
+            )
+            folder_name = f"{path}/Limpeza/{city[0]}"
+            new_path = f"{path}/Limpeza/{city[0]}"
+            search_info = db.db_run_query(
+                "SELECT DISTINCT id,search_date FROM search WHERE done = 1"
+            )
 
-          if not os.path.exists(new_path):
+            if not os.path.exists(new_path):
 
-              os.makedirs(new_path)
+                os.makedirs(new_path)
 
-          for id, search_date in search_info:
+            for id, search_date in search_info:
 
-            for city, name, adress, web_name in estab_data:
+                for city, name, adress, web_name in estab_data:
 
-                # print(id, web_name)
+                    # print(id, web_name)
 
-                # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
-                new_file = name
-                file_path = "{}/{}/{}.xlsx".format(new_path,search_date, new_file)
-                if not os.path.exists("{}/{}".format(new_path,search_date)):
+                    # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+                    new_file = name
+                    file_path = "{}/{}/{}.xlsx".format(new_path, search_date, new_file)
+                    if not os.path.exists("{}/{}".format(new_path, search_date)):
 
-                  os.makedirs("{}/{}".format(new_path,search_date))
+                        os.makedirs("{}/{}".format(new_path, search_date))
 
-                products = db.db_run_query(
-                    "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                        id, web_name
+                    products = db.db_run_query(
+                        "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
+                            id, web_name
+                        )
                     )
-                )
-                # print("QUERY RESULTS:")
-                df = pd.DataFrame(
-                    data=products,
-                    columns=[
-                        "PRODUTO",
-                        "ESTABELECIMENTO",
-                        "PALAVRA-CHAVE",
-                        "ENDEREÇO",
-                        "PREÇO",
-                    ],
-                )
-                # Filtra por endereço
-                # pattern = "|".join(adress.upper().split(" "))
-                # df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
+                    # print("QUERY RESULTS:")
+                    df = pd.DataFrame(
+                        data=products,
+                        columns=[
+                            "PRODUTO",
+                            "ESTABELECIMENTO",
+                            "PALAVRA-CHAVE",
+                            "ENDEREÇO",
+                            "PREÇO",
+                        ],
+                    )
+                    # Filtra por endereço
+                    # pattern = "|".join(adress.upper().split(" "))
+                    # df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
 
-                # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-                writer = pd.ExcelWriter(file_path, engine="openpyxl")
+                    # df = df[df.ENDEREÇO.str.contains(adress.upper())]
+                    writer = pd.ExcelWriter(file_path, engine="openpyxl")
 
-                df = df.to_excel(
-                    writer,
-                    sheet_name="Pesquisa",
-                    index=False,
-                    startrow=0,
-                    startcol=1,
-                    engine="openpyxl",
-                )
+                    df = df.to_excel(
+                        writer,
+                        sheet_name="Pesquisa",
+                        index=False,
+                        startrow=0,
+                        startcol=1,
+                        engine="openpyxl",
+                    )
 
-                border = Border(
-                    left=Side(border_style="thin", color="FF000000"),
-                    right=Side(border_style="thin", color="FF000000"),
-                    top=Side(border_style="thin", color="FF000000"),
-                    bottom=Side(border_style="thin", color="FF000000"),
-                    diagonal=Side(border_style="thin", color="FF000000"),
-                    diagonal_direction=0,
-                    outline=Side(border_style="thin", color="FF000000"),
-                    vertical=Side(border_style="thin", color="FF000000"),
-                    horizontal=Side(border_style="thin", color="FF000000"),
-                )
+                    border = Border(
+                        left=Side(border_style="thin", color="FF000000"),
+                        right=Side(border_style="thin", color="FF000000"),
+                        top=Side(border_style="thin", color="FF000000"),
+                        bottom=Side(border_style="thin", color="FF000000"),
+                        diagonal=Side(border_style="thin", color="FF000000"),
+                        diagonal_direction=0,
+                        outline=Side(border_style="thin", color="FF000000"),
+                        vertical=Side(border_style="thin", color="FF000000"),
+                        horizontal=Side(border_style="thin", color="FF000000"),
+                    )
 
-                workbook = writer.book["Pesquisa"]
-                worksheet = workbook
-                for cell in worksheet["B"]:
+                    workbook = writer.book["Pesquisa"]
+                    worksheet = workbook
+                    for cell in worksheet["B"]:
 
-                    cell.border = border
-                    cell.alignment = Alignment(horizontal="center")
+                        cell.border = border
+                        cell.alignment = Alignment(horizontal="center")
 
-                for cell in worksheet["C"]:
+                    for cell in worksheet["C"]:
 
-                    cell.border = border
-                    cell.alignment = Alignment(horizontal="center")
+                        cell.border = border
+                        cell.alignment = Alignment(horizontal="center")
 
-                for cell in worksheet["D"]:
+                    for cell in worksheet["D"]:
 
-                    cell.border = border
-                    cell.alignment = Alignment(horizontal="center")
+                        cell.border = border
+                        cell.alignment = Alignment(horizontal="center")
 
-                for cell in worksheet["E"]:
+                    for cell in worksheet["E"]:
 
-                    cell.border = border
-                    cell.alignment = Alignment(horizontal="center")
+                        cell.border = border
+                        cell.alignment = Alignment(horizontal="center")
 
-                for cell in worksheet["F"]:
+                    for cell in worksheet["F"]:
 
-                    cell.border = border
-                    cell.alignment = Alignment(horizontal="center")
+                        cell.border = border
+                        cell.alignment = Alignment(horizontal="center")
 
-                for col in worksheet.columns:
-                    max_length = 0
-                    column = col[0].column_letter
-                    for cell in col:
-                        try:
-                            if len(str(cell.value)) > max_length:
-                                max_length = len(str(cell.value))
-                        except:
-                            pass
-                    adjusted_width = (max_length + 2) * 1.2
-                    worksheet.column_dimensions[column].width = adjusted_width
+                    for col in worksheet.columns:
+                        max_length = 0
+                        column = col[0].column_letter
+                        for cell in col:
+                            try:
+                                if len(str(cell.value)) > max_length:
+                                    max_length = len(str(cell.value))
+                            except:
+                                pass
+                        adjusted_width = (max_length + 2) * 1.2
+                        worksheet.column_dimensions[column].width = adjusted_width
 
-                writer.save()
-
+                    writer.save()
 
         db.db_run_query("DELETE FROM search_item")
         db.db_run_query("DELETE FROM search")
-        return {"status": "success", "dic": f"{path}/Limpeza", "message": "Pesquisas deletadas com sucesso."}
+        return {
+            "status": "success",
+            "dic": f"{path}/Limpeza",
+            "message": "Pesquisas deletadas com sucesso.",
+        }
 
     except:
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -1171,7 +1133,6 @@ def clean_search():
 
 @app.route("/generate_file")
 def bd_to_xlsx_route():
-
     """Rota geradora de coleção de dados das pesquisas em excel."""
     db = database.Database()
     global path
@@ -1370,20 +1331,15 @@ def disconnect():
         os._exit(0)
     else:
         try:
-
             if session_data["software_reload"] and connected == 0:
-
                 session_data["software_reload"] = False
                 # log_error([connected, session_data])
-
         except:
-
             pass
 
 
 @socketio.on("set_path")
 def set_path(config_path):
-
     global path
     path = config_path["path"]
     if not os.path.exists(path):
@@ -1392,7 +1348,6 @@ def set_path(config_path):
 
 @socketio.on("exit")
 def exit_program():
-
     os._exit(1)
 
 
@@ -1531,11 +1486,11 @@ def handle_search(search_info):
             )
             session_data["software_reload"] = True
             # search_id = xlsx_to_bd(db, search_info["city"])
-            """Comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa."""
 
+            # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
             bd_to_xlsx(db, search_id, estab_data, city)
 
-    except:
+    except Exception:
 
         try:
             search_info["error"] += 1
@@ -1596,12 +1551,15 @@ def utility_processor():
 
 def run_app():
     """Inicia o programa com as configurações da plataforma atual, windows ou linux."""
+
     config_name = "ACCB.cfg"
     url = "http://127.0.0.1:5000"
     global chrome_installed
 
+    is_in_bundle = getattr(sys, "frozen", False)
+
     # Determina se a aplicação está rodando por um bundle feito pelo pyinstaller (exe) ou command line
-    if getattr(sys, "frozen", False):
+    if is_in_bundle:
         application_path = os.path.dirname(sys.executable)
         config_path = os.path.join(application_path, config_name)
         # windows
@@ -1619,7 +1577,7 @@ def run_app():
         else:
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
-                os.environ['WDM_LOG_LEVEL'] = '0'
+                os.environ["WDM_LOG_LEVEL"] = "0"
 
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
@@ -1632,7 +1590,8 @@ def run_app():
 
     elif __file__:
         # DEV
-        if os.name == "nt":
+        is_windows_nt = os.name == "nt"
+        if is_windows_nt:
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
                 chrome_installed = str(is_chrome_installed())
@@ -1644,7 +1603,7 @@ def run_app():
         else:
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
-                os.environ['WDM_LOG_LEVEL'] = '0'
+                # os.environ['WDM_LOG_LEVEL'] = '0'
 
                 chrome_installed = str(is_chrome_installed())
                 webbrowser.open(url)
@@ -1655,10 +1614,10 @@ def run_app():
 
 
 if __name__ == "__main__":
+    log = logging.getLogger("werkzeug")
+    # log.disabled = True
 
-    # run_app()
-    log = logging.getLogger('werkzeug')
-    log.disabled = True
-    cli = sys.modules['flask.cli']
-    cli.show_server_banner = lambda *x: None
+    cli = sys.modules["flask.cli"]
+    noop = lambda *_: None
+    # cli.show_server_banner = noop
     run_app()
