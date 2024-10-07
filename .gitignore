@@ -54,8 +54,12 @@ coverage.xml
 *.log
 *.pot
 
-# Sphinx documentation
+# Docs
 docs/_build/
+doc/
+
+# ...
+venv/
 *.txt
 *.xlsx
 *.iss
