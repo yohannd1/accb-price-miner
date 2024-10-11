@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-""" Script responsável por realizar o scrapping na plataforma do Preço da Hora Bahia. """
+"""Módulo de pesquisa via scraping."""
+
 import re
 import time
 import os
@@ -29,10 +30,8 @@ from flask_socketio import SocketIO, send, emit
 import time
 
 
-class Scrap:
-    """
-    Classe responsável por realizar o scrapping na página do Preço da Hora Bahia.
-    """
+class Scraper:
+    """Classe responsável por realizar o scraping na página do Preço da Hora Bahia."""
 
     def __init__(
         self,

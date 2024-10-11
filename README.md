@@ -114,7 +114,7 @@ pyi-makespec --noconsole --onefile --add-data="templates;templates" --add-data="
 ## Gerando nova documentação com pdoc
 
 ```
-	pdoc app.py database scrapper -o doc
+	pdoc app.py database scraper -o doc
 ```
 
 ## Caso necessário instalar a ultima versão do pyinstaller

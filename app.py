@@ -18,7 +18,7 @@ import os
 from werkzeug import debug
 import database
 import traceback
-import scrapper
+import scraper
 import pandas as pd
 import webbrowser
 from datetime import date
@@ -1386,7 +1386,7 @@ def handle_search(search_info):
                 {"type": "notification", "message": "Retomando pesquisa ..."},
                 broadcast=True,
             )
-            scrap = scrapper.Scrap(
+            scrap = scraper.Scraper(
                 estab_data,
                 city,
                 estab_names,
@@ -1417,7 +1417,7 @@ def handle_search(search_info):
 
         progress_value = 100 / len(product)
         # comentar para injeção
-        scrap = scrapper.Scrap(
+        scrap = scraper.Scraper(
             estab_data,
             city,
             estab_names,
