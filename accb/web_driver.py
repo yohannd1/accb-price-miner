@@ -1,10 +1,10 @@
+import sys
 from functools import lru_cache
-
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
+from accb.utils import log_error
+import traceback
 
-def is_windows() -> bool:
-    return os.name == "nt"
 
 @lru_cache(maxsize=1)
 def is_chrome_installed() -> bool:
@@ -15,12 +15,11 @@ def is_chrome_installed() -> bool:
         driver.close()
         driver.quit()
         return bool(driver)
-
     except Exception:
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
         return False
+
 
 def open_chrome_driver() -> webdriver.Chrome:
     """Abre uma sessão do WebDriver do Chrome."""

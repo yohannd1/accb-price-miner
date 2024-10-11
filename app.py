@@ -160,17 +160,13 @@ def bd_to_xlsx(db, search_id, estab_data, city):
             os.makedirs(f"{path}/{dic}")
 
     for city, name, adress, web_name in estab_data:
-
-        # print("Geran do Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
+        # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
         new_file = name
-        if os.name == "nt":
-            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
-        else:
-            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
+        file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
 
         products = db.db_run_query(
             "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                search_id, web_name, adress
+                search_id, web_name
             )
         )
 
@@ -882,7 +878,7 @@ def bd_to_xlsx_all(city, search_id, db):
 
         products = db.db_run_query(
             "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                search_id, web_name, adress
+                search_id, web_name
             )
         )
 
@@ -1182,7 +1178,7 @@ def bd_to_xlsx_route():
 
             products = db.db_run_query(
                 "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                    search_id, web_name, adress
+                    search_id, web_name
                 )
             )
 
@@ -1612,7 +1608,7 @@ def run_app():
 
 
 if __name__ == "__main__":
-    log = logging.getLogger("werkzeug")
+    # log = logging.getLogger("werkzeug")
     # log.disabled = True
 
     cli = sys.modules["flask.cli"]

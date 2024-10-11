@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from time import strftime, asctime
 from typing import Iterable
 import traceback
@@ -27,3 +27,6 @@ def log_error(err):
         outfile.write(f"Date : {asctime()}\n")
         for error in err:
             outfile.write(str(error))
+
+def is_windows() -> bool:
+    return os.name == "nt"
