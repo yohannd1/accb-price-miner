@@ -1,3 +1,13 @@
+# ACCB Price Miner
+
+TODO: colocar descrição formal do projeto aqui
+
+Versão anterior do projeto disponível no [repositório de Samuel Vasconcelos](https://github.com/smvasconcelos/ACCB_IT/tree/tcc-apresentacao).
+
+TODO: atualizar resto abaixo
+
+---
+
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
