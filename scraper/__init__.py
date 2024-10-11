@@ -22,6 +22,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver import Chrome
 
 from accb.web_driver import open_chrome_driver
+from accb.utils import log
 from database import Database
 
 import webbrowser
@@ -98,7 +99,7 @@ class Scraper:
 
         end = time.time()
         temp = end - start
-        # print(temp)
+        # log(temp)
         hours = temp // 3600
         temp = temp - 3600 * hours
         minutes = temp // 60
@@ -114,20 +115,18 @@ class Scraper:
             for index, line in enumerate(progress):
                 outfile.write("Index {} : {}\n".format(index, line))
 
-        return
+    def check_connection(self, url: str = "https://www.example.org/") -> bool:
+        """Confere a conexão com a URL desejada."""
 
-    def connect(self):
-        """Confere a conexão com o host desejado."""
-        host = "https://www.youtube.com"
         try:
-            urllib.request.urlopen(host)
+            urllib.request.urlopen(url)
             return True
-        except:
+        except urllib.error.URLError:
             return False
 
     def pause(self, cancel=False):
-
         """Seta as varáveis de controle do programa (parada, cancelar e saída)."""
+
         self.cancel = cancel
         self.exit = True
         self.stop = True
@@ -135,10 +134,7 @@ class Scraper:
     # CHECK
 
     def exit_thread(self, error=False):
-        """
-        Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a ou cancele manualmente.
-
-        """
+        """Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a ou cancele manualmente."""
         if error:
 
             emit(
@@ -199,22 +195,13 @@ class Scraper:
 
         # search_item["search_id"], search_item["city_name"], search_item["estab_name"], search_item["web_name"], search_item["adress"], search_item["price"])
         for item in soup.findAll(True, {"class": "flex-item2"}):
-
-            print(
-                "------------------------------------------------------------------------------------"
-            )
-
             product_name = adjust_and_clean(item.find("strong").text)
             product_address = adjust_and_clean(item.find(attrs={"data-original-title": "Endereço"}).parent.text)
             product_local = adjust_and_clean(item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text)
             product_price = item.find(text=re.compile(r" R\$ \d+(,\d{1,2})")).lstrip()
 
-            # TODO: trocar pra a função de log
-            print(
-                "Endereço:{}\nEstabelecimento:{}\nPreço:{}\nNome:{}".format(
-                    product_address, product_local, product_price, product_name
-                )
-            )
+            log(f"Produto encontrado - endereço: {product_address}; estab.: {product_local}; preço: {product_price}; nome: {product_name};")
+
             try:
                 if not self.stop:
                     self.db.db_save_search_item(
@@ -237,14 +224,9 @@ class Scraper:
                         ]
                     )
                     # self.log_progress(item)
-            except:
-                # import traceback
-
-                # print(traceback.format_exc())
+            except Exception:
+                # TODO: handle exception
                 pass
-            print(
-                "------------------------------------------------------------------------------------"
-            )
         if not self.stop:
             emit(
                 "captcha",
@@ -267,7 +249,7 @@ class Scraper:
 
         except:
 
-            # print("Captcha desativado.")
+            # log("Captcha desativado")
             time.sleep(1)
             excpt = False
             return False
@@ -276,7 +258,7 @@ class Scraper:
 
             if excpt:
 
-                # print("Captcha ativado.")
+                # log("Captcha ativado")
 
                 return True
 
@@ -314,7 +296,7 @@ class Scraper:
 
         # Se eu tenho conexão o captcha foi ativado, se não, é erro de rede.
 
-        if self.connect():
+        if self.check_connection():
 
             while True:
 
@@ -325,7 +307,7 @@ class Scraper:
 
                 else:
 
-                    # print("CAPTCHA FALSE")
+                    # log("CAPTCHA FALSE")
                     return
         else:
 
@@ -364,7 +346,7 @@ class Scraper:
 
         except:
 
-            # print("Pop Up Error")
+            # log("Pop Up Error")
             pass
 
         # * Processo de pesquisa de produto
@@ -554,7 +536,7 @@ class Scraper:
 
                             if not self.check_captcha(0):
 
-                                # print("Quantidade máxima de paginas abertas.")
+                                # log("Quantidade máxima de paginas abertas.")
                                 break
 
                             else:
@@ -570,7 +552,7 @@ class Scraper:
                     self.get_data(product, keyword)
 
             if not self.stop:
-                print("PROGRESS : {}".format(self.options.progress_value))
+                log(f"Progress: {self.options.progress_value}")
                 emit(
                     "captcha",
                     {

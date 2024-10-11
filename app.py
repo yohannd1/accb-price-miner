@@ -26,6 +26,7 @@ import datetime
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
+from dataclasses import dataclass
 
 # from webdriver_manager.chrome import ChromeDriverManager
 import math
@@ -43,14 +44,26 @@ Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
 # os.environ["WDM_LOG_LEVEL"] = "0"
 
-connected = 0
-"""Conta os clientes conectados"""
+
+@dataclass
+class SessionData:
+    """Dados utilizados ao longo do programa"""
+
+    software_reload: bool = False
+    """Controle de reload do programa."""
+    # TODO: como assim? -- pelo que entendi isso previne que o programa feche quando a página precisar ser recarregada
+
+    connected_count: int = 0
+    """Conta a quantidade de clientes conectados"""
+
+    # TODO: adicionar o resto -- "cancel", "scrap", "pause", "search_id", "modified"
+
+
+# TODO: renomear para... session?
+session_data_ = SessionData()
 
 session_data = {}
 """Armazenamento de sessão"""
-
-session_data["software_reload"] = False
-"""Responsável pelo controle de reload do programa."""
 
 chrome_installed = None
 """ Variavel indicativa da instalação do Google Chrome."""
@@ -308,11 +321,13 @@ def home():
     estab_names = db.db_get_estab()
     product = db.db_get_product()
 
-    # print("CONNECTED {}".format(connected))
+    # print("CONNECTED {}".format(session_data_.connected_count))
     # Se tiver mais que uma pagina aberta, renderiza o notallowed.html,
     # por algum motivo o flask com socketio chama a função de conexão 2x então
     # acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2
-    template = "home.html" if 0 >= connected <= 2 else "notallowed.html"
+    template = (
+        "home.html" if 0 >= session_data_.connected_count <= 2 else "notallowed.html"
+    )
 
     month = [
         "Janeiro",
@@ -489,7 +504,7 @@ def update_product():
                 "primary_key": primary_key,
             }
         )
-        session_data["software_reload"] = True
+        session_data_.software_reload = True
         return {
             "success": True,
             "message": "O produto {} foi atualizado com sucesso".format(primary_key),
@@ -654,7 +669,7 @@ def insert_city():
     try:
 
         db.db_save_city(city_name)
-        session_data["software_reload"] = True
+        session_data_.software_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi adicionado com sucesso".format(city_name),
@@ -686,7 +701,7 @@ def update_city():
     try:
 
         db.db_update_city({"city_name": city_name, "primary_key": primary_key})
-        session_data["software_reload"] = True
+        session_data_.software_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi editada com sucesso".format(city_name),
@@ -717,7 +732,7 @@ def delete_city():
     try:
 
         db.db_delete("city", "city_name", city_name)
-        session_data["software_reload"] = True
+        session_data_.software_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi deletada com sucesso".format(city_name),
@@ -780,7 +795,7 @@ def delete_search():
         search_id = request.args.get("search_id")
 
         db.db_delete("search", "id", search_id)
-        session_data["software_reload"] = True
+        session_data_.software_reload = True
         return {"status": "success", "message": "Pesquisa deletada com sucesso."}
 
     except:
@@ -826,7 +841,7 @@ def import_database():
         file = request.files["file"]
         db.import_database(file)
 
-        session_data["software_reload"] = True
+        session_data_.software_reload = True
         return {
             "status": "success",
             "message": "Dados importados com sucesso.",
@@ -1275,14 +1290,14 @@ def bd_to_xlsx_route():
 def handle_reload():
     """Rota responsável por controlar a variavel de reload."""
     global session_data
-    session_data["software_reload"] = True
+    session_data_.software_reload = True
 
 
 @socketio.on("pause")
 def handle_pause(cancel=False):
     """Rota responsável por pausar a pesquisa"""
     global session_data
-    session_data["software_reload"] = True
+    session_data_.software_reload = True
 
     if cancel != False:
         # Cancela
@@ -1298,7 +1313,7 @@ def handle_cancel():
     """Rota cancelar por pausar a pesquisa"""
 
     global session_data
-    session_data["software_reload"] = True
+    session_data_.software_reload = True
     # log_error([session_data])
 
     db = database.Database()
@@ -1307,30 +1322,29 @@ def handle_cancel():
 
 
 @socketio.on("connect")
-def connect():
-    """Rota contas os clientes conectados."""
-    global connected
-    connected += 1
-    print("connnected {}".format(connected))
+def on_connect():
+    """Quando algum cliente conecta"""
+    session_data_.connected_count += 1
+    log(f"New connection; total: {session_data_.connected_count}")
 
 
 @socketio.on("disconnect")
-def disconnect():
+def on_disconnect():
     """Rota contas os clientes desconectados."""
-    global connected
-    global session_data
-    connected -= 1
-    print("disconnnected {}".format(connected))
-    if connected == 0 and not session_data["software_reload"]:
-        log_error([connected, session_data])
-        os._exit(0)
-    else:
-        try:
-            if session_data["software_reload"] and connected == 0:
-                session_data["software_reload"] = False
-                # log_error([connected, session_data])
-        except:
-            pass
+    session_data_.connected_count -= 1
+    log(f"Connection closed; total: {session_data_.connected_count}")
+
+    if session_data_.connected_count <= 0:
+        if not session_data_.software_reload:
+            log(f"Todos os clientes desconectaram; fechando o programa")
+            sys.exit(
+                0
+            )  # TODO: verificar se isso tá funcionando bem. Porque antes tava usando `os._exit(0)`
+
+        log(
+            f"Último cliente desconectou, mas `software_reload` está ativado; aguardando nova conexão"
+        )
+        session_data_.software_reload = False
 
 
 @socketio.on("set_path")
@@ -1405,7 +1419,6 @@ def handle_search(search_info):
         if search_info["backup"] == 1 and len(backup_info) != 0:
             query = "DELETE FROM search WHERE id = {}".format(search_id)
             db.db_run_query(query)
-        # comentar para injeção
         search_id = db.db_save_search(0, search_info["city"], 0)
         active = "0.0"
         city = search_info["city"]
@@ -1419,7 +1432,6 @@ def handle_search(search_info):
 
         progress_value = 100 / len(product)
 
-        # comentar para injeção
         opts = scraper.ScraperOptions(
             locals=estab_data,
             city=city,
@@ -1433,7 +1445,6 @@ def handle_search(search_info):
         )
         scrap = scraper.Scraper(opts)
 
-        # comentar para injeção
         db.db_save_backup(
             {
                 "active": "0.0",
@@ -1448,7 +1459,6 @@ def handle_search(search_info):
         )
 
     global session_data
-    # comentar para injeção
     session_data["scrap"] = scrap
     session_data["search_id"] = search_id
     session_data["cancel"] = False
@@ -1457,10 +1467,8 @@ def handle_search(search_info):
 
     try:
 
-        # comentar para injeção
         is_chrome_installed_ = scrap.run()
 
-        # comentar para injeção
         if not is_chrome_installed_:
 
             emit(
@@ -1483,7 +1491,7 @@ def handle_search(search_info):
                 {"type": "progress", "done": 1},
                 broadcast=True,
             )
-            session_data["software_reload"] = True
+            session_data_.software_reload = True
             # search_id = xlsx_to_bd(db, search_info["city"])
 
             # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
@@ -1562,7 +1570,7 @@ def run_app():
         application_path = os.path.dirname(sys.executable)
         config_path = os.path.join(application_path, config_name)
         # windows
-        if os.name == "nt":
+        if is_windows():
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
                 chrome_installed = str(is_chrome_installed())
