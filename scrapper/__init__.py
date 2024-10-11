@@ -21,8 +21,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
+
+from accb.web_driver import open_chrome_driver
+
 import webbrowser
 from flask_socketio import SocketIO, send, emit
 import time
@@ -332,23 +333,7 @@ class Scrap:
         self.url = URL
         times = 4
         try:
-            chrome_options = Options()
-            # # DISABLES DEVTOOLS LISTENING ON
-            chrome_options.add_argument("--headless")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--disable-features=NetworkService")
-            chrome_options.add_argument("--window-size=1920x1080")
-            chrome_options.add_argument("--disable-features=VizDisplayCompositor")
-            # os.environ["WDM_LOCAL"] = "1"
-
-            driver = webdriver.Chrome(options=chrome_options)
-
-            self.driver = driver
-
-            os.system("cls" if os.name == "nt" else "clear")
-
+            driver = self.driver = open_chrome_driver()
             driver.get(URL)
         except:
             return False

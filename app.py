@@ -23,11 +23,9 @@ import pandas as pd
 import webbrowser
 from datetime import date
 import datetime
-from xlsxwriter.workbook import Workbook
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
-from selenium import webdriver
 
 # from webdriver_manager.chrome import ChromeDriverManager
 import math
@@ -37,7 +35,8 @@ import tkinter as tk
 # from webdriver_manager.core.driver_cache import DriverCacheManager
 import logging
 
-from accb.utils import log, log_error, is_chrome_installed
+from accb.utils import log, log_error, is_windows
+from accb.web_driver import is_chrome_installed
 
 app = Flask(__name__)
 Material(app)
@@ -1459,10 +1458,10 @@ def handle_search(search_info):
     try:
 
         # comentar para injeção
-        is_chrome_installed = scrap.run()
+        is_chrome_installed_ = scrap.run()
 
         # comentar para injeção
-        if not is_chrome_installed:
+        if not is_chrome_installed_:
 
             emit(
                 "captcha",
@@ -1590,8 +1589,7 @@ def run_app():
 
     elif __file__:
         # DEV
-        is_windows_nt = os.name == "nt"
-        if is_windows_nt:
+        if is_windows():
             if not is_port_in_use(5000):
                 os.environ["WDM_LOCAL"] = "1"
                 chrome_installed = str(is_chrome_installed())
@@ -1618,6 +1616,8 @@ if __name__ == "__main__":
     # log.disabled = True
 
     cli = sys.modules["flask.cli"]
-    noop = lambda *_: None
+
+    # def noop(*_): pass
     # cli.show_server_banner = noop
+
     run_app()
