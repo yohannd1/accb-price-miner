@@ -1386,17 +1386,19 @@ def handle_search(search_info):
                 {"type": "notification", "message": "Retomando pesquisa ..."},
                 broadcast=True,
             )
-            scrap = scraper.Scraper(
-                estab_data,
-                city,
-                estab_names,
-                product,
-                active,
-                search_id,
-                False,
-                duration,
-                progress_value,
+
+            opts = scraper.ScraperOptions(
+                locals=estab_data,
+                city=city,
+                locals_name=estab_names,
+                product_info=product,
+                active=active,
+                id=search_id,
+                backup=False,
+                duration=duration,
+                progress_value=progress_value,
             )
+            scrap = scraper.Scraper(opts)
 
     else:
 
@@ -1416,18 +1418,20 @@ def handle_search(search_info):
         ]
 
         progress_value = 100 / len(product)
+
         # comentar para injeção
-        scrap = scraper.Scraper(
-            estab_data,
-            city,
-            estab_names,
-            product,
-            active,
-            search_id,
-            False,
-            0,
-            progress_value,
+        opts = scraper.ScraperOptions(
+            locals=estab_data,
+            city=city,
+            locals_name=estab_names,
+            product_info=product,
+            active=active,
+            id=search_id,
+            backup=False,
+            duration=0,
+            progress_value=progress_value,
         )
+        scrap = scraper.Scraper(opts)
 
         # comentar para injeção
         db.db_save_backup(

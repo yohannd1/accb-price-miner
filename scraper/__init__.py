@@ -1,83 +1,95 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 """Módulo de pesquisa via scraping."""
 
 import re
 import time
 import os
-from bs4 import BeautifulSoup
-import bs4
 import json
 import sys
 import urllib.request
-import database
+from bs4 import BeautifulSoup
+from dataclasses import dataclass
+from typing import Any, Optional
+
 from tkinter import messagebox
 from tkinter import *
 import tkinter as tk
-from selenium import webdriver
 
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver import Chrome
 
 from accb.web_driver import open_chrome_driver
+from database import Database
 
 import webbrowser
 from flask_socketio import SocketIO, send, emit
 import time
 
 
+@dataclass
+class ScraperOptions:
+    """Armazena informações que instruem a pesquisa feita pelo Scraper."""
+    # TODO: colocar tipos para os campos aqui
+
+    # TODO: renomear isso
+    locals: Any
+    """Estabelecimentos onde a pesquisa será realizada."""
+
+    city: Any
+    """Nome da cidade onde a pesquisa será realizada."""
+
+    # TODO: qual a diferença entre isso e locals?
+    locals_name: Any
+    """Nomes dos estabelecimentos onde a pesquisa será realizada."""
+
+    product_info: Any
+    """Produtos a serem pesquisados."""
+
+    active: Any
+    """Valor decimal de indexes ativos 1.1, onde 1. é o index do produto e .1 é o index da palavra chave."""
+
+    id: Any
+    """ID da pesquisa atual."""
+
+    # TODO: isso é usado? pelo jeito não. mas acho que seria bom usar...
+    backup: Any
+    """Se a pesquisa atual é ou não um backup."""
+
+    duration: Any
+    """A duração de execução da pesquisa atual (necessário para reinicialização através de backup)."""
+
+    progress_value: Any
+    """Valor de soma da barra de pesquisa, caso seja adicionado um novo produto é necessário manter os dados da pesquisa anterior."""
+    # TODO: essa descrição tá estranha
+
 class Scraper:
-    """Classe responsável por realizar o scraping na página do Preço da Hora Bahia."""
+    """Realiza o scraping na página do Preço da Hora Bahia."""
 
-    def __init__(
-        self,
-        LOCALS,
-        CITY,
-        LOCALS_NAME,
-        PRODUCT_INFO,
-        ACTIVE,
-        ID,
-        BACKUP,
-        DURATION,
-        PROGRESS_VALUE,
-    ):
+    def __init__(self, options: ScraperOptions) -> None:
+        self.options = options
 
-        # OUT
-        self.ID = ID
-        """ ID da pesquisa atual."""
-        self.ACTIVE = ACTIVE
-        """Valor decimal de indexes ativos 1.1, onde 1. é o index do produto e .1 é o index da palavra chave."""
-        self.LOCALS = LOCALS
-        """Array de estabelecimentos que será relaizado a pesquisa."""
-        self.CITY = CITY
-        """Nome da cidade para realizar a pesquisa."""
-        self.LOCALS_NAME = LOCALS_NAME
-        """Array de nomes estabelecimentos que será relaizado a pesquisa."""
-        self.BACKUP = BACKUP
-        """Variavel booleana que indica se é um backup ou não."""
-        self.duration = DURATION
-        """Armazena a duração de tempo atual de execução da pesquisa (necessário para reinicialização através de backup)."""
-        self.PRODUCT_INFO = PRODUCT_INFO
-        """Array de produtos e para realizar a pesquisa."""
-        self.db = database.Database()
-        """Instância da classe Database, responsável pelas operações do banco de dados."""
-        self.index, self.index_k = [int(x) for x in ACTIVE.split(".")]
+        self.index, self.index_k = [int(x) for x in options.active.split(".")]
         """Index dos produtos e palavras chaves (em caso de reinicialização através de backup);"""
-        # IN
-        self.progress_value = PROGRESS_VALUE
-        """Valor de soma da barra de pesquisa, caso seja adicionado um novo produto é necessário manter os dados da pesquisa anterior."""
-        self.driver = None
+        # TODO: verificar isso e documentar melhor
+
+        self.db = Database()
+        """Instância responsável pela comunicação com o banco de dados."""
+
+        self.driver: Optional[Chrome] = None
         """Instância do navegador do selenium."""
+
         self.stop = False
         """Variável de controle para parar a execução da pesquisa."""
+
         self.exit = False
         """Variável de controle para sair a execução da pesquisa."""
+
         self.cancel = False
         """Variável de controle para cancelar a execução da pesquisa."""
+
         self.start_time = time.time()
         """Valor do tempo no inicio da pesquisa."""
 
@@ -175,42 +187,41 @@ class Scraper:
         Filtra os dados da janela atual aberta do navegador e os salva no banco de dados.
         """
 
+        assert self.driver is not None
         elements = self.driver.page_source
-        soup = bs4.BeautifulSoup(elements, "html.parser")
+        soup = BeautifulSoup(elements, "html.parser")
         arr = []
+
+        patt = re.compile(r"[^A-Za-z0-9,]+")
+
+        def adjust_and_clean(input: str) -> str:
+            return patt.sub(" ", input).lstrip()
+
         # search_item["search_id"], search_item["city_name"], search_item["estab_name"], search_item["web_name"], search_item["adress"], search_item["price"])
         for item in soup.findAll(True, {"class": "flex-item2"}):
 
             print(
                 "------------------------------------------------------------------------------------"
             )
-            product_name = re.sub(
-                "[^A-Za-z0-9,]+", " ", item.find("strong").text
-            ).lstrip()
-            product_adress = re.sub(
-                "[^A-Za-z0-9,]+",
-                " ",
-                item.find(attrs={"data-original-title": "Endereço"}).parent.text,
-            ).lstrip()
-            product_local = re.sub(
-                "[^A-Za-z0-9,]+",
-                " ",
-                item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text,
-            ).lstrip()
+
+            product_name = adjust_and_clean(item.find("strong").text)
+            product_address = adjust_and_clean(item.find(attrs={"data-original-title": "Endereço"}).parent.text)
+            product_local = adjust_and_clean(item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text)
             product_price = item.find(text=re.compile(r" R\$ \d+(,\d{1,2})")).lstrip()
 
+            # TODO: trocar pra a função de log
             print(
                 "Endereço:{}\nEstabelecimento:{}\nPreço:{}\nNome:{}".format(
-                    product_adress, product_local, product_price, product_name
+                    product_address, product_local, product_price, product_name
                 )
             )
             try:
                 if not self.stop:
                     self.db.db_save_search_item(
                         {
-                            "search_id": self.ID,
+                            "search_id": self.options.id,
                             "web_name": product_local,
-                            "adress": product_adress,
+                            "adress": product_address,
                             "product_name": product_name,
                             "price": product_price,
                             "keyword": keyword,
@@ -221,7 +232,7 @@ class Scraper:
                             str(product_name),
                             str(product_local),
                             str(keyword),
-                            str(product_adress),
+                            str(product_address),
                             str(product_price),
                         ]
                     )
@@ -407,7 +418,7 @@ class Scraper:
 
         # Envia o MUNICIPIO desejado para o input
 
-        driver.find_element(By.CLASS_NAME,"sbar-municipio").send_keys(self.CITY)
+        driver.find_element(By.CLASS_NAME,"sbar-municipio").send_keys(self.options.city)
         time.sleep(1)
 
         # Pressiona o botão que realiza a pesquisa por MUNICIPIO
@@ -417,7 +428,7 @@ class Scraper:
         driver.find_element(By.ID,"aplicar").click()
 
         time.sleep(2 * times)
-        for index, (product, keywords) in enumerate(self.PRODUCT_INFO[self.index :]):
+        for index, (product, keywords) in enumerate(self.options.product_info[self.index :]):
 
             if not self.stop:
                 emit(
@@ -442,14 +453,14 @@ class Scraper:
 
                     active = "{}.{}".format(index + self.index, index_k + self.index_k)
                     duration = self.get_time(self.start_time)
-                    duration = duration["minutes"] + self.duration
+                    duration = duration["minutes"] + self.options.duration
 
                     # self.log_progress(
                     #     [
                     #         active,
                     #         duration,
-                    #         self.progress_value,
-                    #         self.PRODUCT_INFO[self.index :],
+                    #         self.options.progress_value,
+                    #         self.options.product_info[self.index :],
                     #         product,
                     #         keywords,
                     #     ]
@@ -458,13 +469,13 @@ class Scraper:
                     self.db.db_update_backup(
                         {
                             "active": active,
-                            "city": self.CITY,
+                            "city": self.options.city,
                             "done": 0,
                             "estab_info": json.dumps(
-                                {"names": self.LOCALS_NAME, "info": self.LOCALS}
+                                {"names": self.options.locals_name, "info": self.options.locals}
                             ),
-                            "product_info": json.dumps(self.PRODUCT_INFO),
-                            "search_id": self.ID,
+                            "product_info": json.dumps(self.options.product_info),
+                            "search_id": self.options.id,
                             "duration": duration,
                         }
                     )
@@ -559,13 +570,13 @@ class Scraper:
                     self.get_data(product, keyword)
 
             if not self.stop:
-                print("PROGRESS : {}".format(self.progress_value))
+                print("PROGRESS : {}".format(self.options.progress_value))
                 emit(
                     "captcha",
                     {
                         "type": "progress",
                         "product": product,
-                        "value": self.progress_value,
+                        "value": self.options.progress_value,
                     },
                     broadcast=True,
                 )
@@ -578,20 +589,20 @@ class Scraper:
 
         duration = self.get_time(self.start_time)
         self.db.db_update_search(
-            {"id": self.ID, "done": 1, "duration": duration["minutes"] + self.duration}
+            {"id": self.options.id, "done": 1, "duration": duration["minutes"] + self.options.duration}
         )
 
         self.db.db_update_backup(
             {
                 "active": "0.0",
-                "city": self.CITY,
+                "city": self.options.city,
                 "done": 1,
                 "estab_info": json.dumps(
-                    {"names": self.LOCALS_NAME, "info": self.LOCALS}
+                    {"names": self.options.locals_name, "info": self.options.locals}
                 ),
-                "product_info": json.dumps(self.PRODUCT_INFO),
-                "search_id": self.ID,
-                "duration": duration["minutes"] + self.duration,
+                "product_info": json.dumps(self.options.product_info),
+                "search_id": self.options.id,
+                "duration": duration["minutes"] + self.options.duration,
             }
         )
 
