@@ -10,15 +10,14 @@ from engineio.async_drivers import threading
 from flask import Flask, render_template, request, g
 from flask_material import Material
 from flask_socketio import SocketIO, emit
+import math
 import time
 import json
 import sqlite3
 import sys
 import os
-from werkzeug import debug
 import database
 import traceback
-import scraper
 import pandas as pd
 import webbrowser
 from datetime import date
@@ -27,15 +26,17 @@ import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
 from dataclasses import dataclass
+from typing import Optional
 
 # from webdriver_manager.chrome import ChromeDriverManager
-import math
 from tkinter import filedialog
 import tkinter as tk
 
 # from webdriver_manager.core.driver_cache import DriverCacheManager
 import logging
 
+import scraper
+from scraper import Scraper
 from accb.utils import log, log_error, is_windows
 from accb.web_driver import is_chrome_installed
 
@@ -56,17 +57,22 @@ class SessionData:
     connected_count: int = 0
     """Conta a quantidade de clientes conectados"""
 
-    # TODO: adicionar o resto -- "cancel", "scrap", "pause", "search_id", "modified"
+    chrome_installed: bool = False
+    """Indica se o Google Chrome está instalado."""
+
+    scraper: Optional[Scraper] = None
+    """Instância do Scraper utilizado para pesquisar."""
+
+    # TODO: adicionar o resto -- "cancel", "pause", "search_id", "modified"
 
 
 # TODO: renomear para... session?
-session_data_ = SessionData()
+session_data_ = SessionData(
+    chrome_installed=is_chrome_installed(),
+)
 
 session_data = {}
 """Armazenamento de sessão"""
-
-chrome_installed = None
-""" Variavel indicativa da instalação do Google Chrome."""
 
 path = None
 """Variável de caminho padrão para gerar coleção excel."""
@@ -164,7 +170,7 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 
     folder_name = dic
 
-    if os.name == "nt":
+    if is_windows():
         if not os.path.exists(f"{path}/{dic}"):
 
             os.makedirs(f"{path}/{dic}")
@@ -358,7 +364,7 @@ def home():
         month=month,
         active_month=day,
         active_year=str(date.today()).split("-")[0],
-        chrome_installed=chrome_installed,
+        chrome_installed=str(session_data_.chrome_installed),
         years=search_years,
     )
 
@@ -754,17 +760,16 @@ def delete_city():
 
 @app.route("/set_path")
 def set_path():
-
     try:
         global path
 
-        win = tk.Tk()
-        win.withdraw()
-        win.attributes("-topmost", True)
-
-        path = filedialog.askdirectory()
-
-        win.destroy()
+        result = filedialog.askdirectory()
+        if result == ():
+            return {
+                "success": False,
+                "message": "Ocorreu um erro durante a configuração de caminho padrão.",
+            }
+        path = result
 
         return {
             "success": True,
@@ -1174,7 +1179,7 @@ def bd_to_xlsx_route():
 
         folder_name = dic
 
-        if os.name == "nt":
+        if is_windows():
             if not os.path.exists(f"{path}/{dic}"):
 
                 os.makedirs(f"{path}/{dic}")
@@ -1186,7 +1191,7 @@ def bd_to_xlsx_route():
 
             # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
             new_file = name
-            if os.name == "nt":
+            if is_windows():
                 file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
             else:
                 file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
@@ -1294,17 +1299,20 @@ def handle_reload():
 
 
 @socketio.on("pause")
-def handle_pause(cancel=False):
+def handle_pause(cancel: bool = False) -> None:
     """Rota responsável por pausar a pesquisa"""
     global session_data
     session_data_.software_reload = True
 
+    scraper = session_data_.scraper
+
     if cancel != False:
-        # Cancela
         session_data["cancel"] = True
-        session_data["scrap"].pause(True)
+        if scraper is not None:
+            scraper.pause(True)
     else:
-        session_data["scrap"].pause()
+        if scraper is not None:
+            scraper.pause()
         session_data["pause"] = True
 
 
@@ -1357,7 +1365,7 @@ def set_path(config_path):
 
 @socketio.on("exit")
 def exit_program():
-    os._exit(1)
+    sys.exit(0)
 
 
 # Inicia pesquisa
@@ -1458,8 +1466,8 @@ def handle_search(search_info):
             }
         )
 
+    session_data_.scraper = scrap
     global session_data
-    session_data["scrap"] = scrap
     session_data["search_id"] = search_id
     session_data["cancel"] = False
     session_data["pause"] = False
@@ -1467,10 +1475,9 @@ def handle_search(search_info):
 
     try:
 
-        is_chrome_installed_ = scrap.run()
+        result = scrap.run()
 
-        if not is_chrome_installed_:
-
+        if not result:
             emit(
                 "captcha",
                 {"type": "chrome", "installed": False},
@@ -1561,62 +1568,26 @@ def run_app():
 
     config_name = "ACCB.cfg"
     url = "http://127.0.0.1:5000"
-    global chrome_installed
 
     is_in_bundle = getattr(sys, "frozen", False)
 
+    debug_enabled = bool(__file__)
+    if debug_enabled:
+        os.environ["WDM_LOCAL"] = "1"
+    else:
+        os.environ["WDM_LOG_LEVEL"] = "0"
+
+    if is_port_in_use(5000):
+        webbrowser.open(url)
+    else:
+        webbrowser.open(url)
+        socketio.run(app, debug=debug_enabled)
+
     # Determina se a aplicação está rodando por um bundle feito pelo pyinstaller (exe) ou command line
-    if is_in_bundle:
-        application_path = os.path.dirname(sys.executable)
-        config_path = os.path.join(application_path, config_name)
-        # windows
-        if is_windows():
-            if not is_port_in_use(5000):
-                os.environ["WDM_LOCAL"] = "1"
-                chrome_installed = str(is_chrome_installed())
-                webbrowser.open(url)
-                # eventlet.wsgi.server(
-                #     eventlet.listen(("127.0.0.1", 5000)), app
-                # )
-                socketio.run(app)
-            else:
-                webbrowser.open(url)
-        else:
-            if not is_port_in_use(5000):
-                os.environ["WDM_LOCAL"] = "1"
-                os.environ["WDM_LOG_LEVEL"] = "0"
 
-                chrome_installed = str(is_chrome_installed())
-                webbrowser.open(url)
-                # eventlet.wsgi.server(
-                #     eventlet.listen(("127.0.0.1", 5000)), app
-                # )
-                socketio.run(app)
-            else:
-                webbrowser.open(url)
-
-    elif __file__:
-        # DEV
-        if is_windows():
-            if not is_port_in_use(5000):
-                os.environ["WDM_LOCAL"] = "1"
-                chrome_installed = str(is_chrome_installed())
-                webbrowser.open(url)
-
-                socketio.run(app)
-            else:
-                webbrowser.open(url)
-        else:
-            if not is_port_in_use(5000):
-                os.environ["WDM_LOCAL"] = "1"
-                # os.environ['WDM_LOG_LEVEL'] = '0'
-
-                chrome_installed = str(is_chrome_installed())
-                webbrowser.open(url)
-
-                socketio.run(app, debug=True)
-            else:
-                webbrowser.open(url)
+    # if is_in_bundle:
+    # application_path = os.path.dirname(sys.executable)
+    # config_path = os.path.join(application_path, config_name)
 
 
 if __name__ == "__main__":
