@@ -1,7 +1,10 @@
 import sys, os
 from time import strftime, asctime
-from typing import Iterable
+from typing import Iterable, Optional
 import traceback
+
+import tkinter
+from tkinter import filedialog, messagebox
 
 LOG_FILE = sys.stderr
 # LOG_FILE = open("error.log", "w+", encoding="latin-1")
@@ -30,3 +33,14 @@ def log_error(err):
 
 def is_windows() -> bool:
     return os.name == "nt"
+
+def show_warning(title: str, message: str) -> None:
+    root = tkinter.Tk()
+    root.attributes("-topmost", True)
+    root.withdraw()
+    messagebox.showwarning(title, message, icon="warning", parent=root)
+    root.destroy()
+
+def ask_user_directory() -> Optional[str]:
+    result = filedialog.askdirectory()
+    return result if result != () else None

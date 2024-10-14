@@ -27,24 +27,19 @@ from openpyxl.styles import Border, Side, Alignment
 from tabulate import tabulate
 from dataclasses import dataclass
 from typing import Optional
-
-# from webdriver_manager.chrome import ChromeDriverManager
-from tkinter import filedialog
-import tkinter as tk
-
-# from webdriver_manager.core.driver_cache import DriverCacheManager
 import logging
 
-import scraper
-from scraper import Scraper
-from accb.utils import log, log_error, is_windows
+# from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.core.driver_cache import DriverCacheManager
+
+from scraper import Scraper, ScraperOptions
+from accb.utils import log, log_error, is_windows, ask_user_directory
 from accb.web_driver import is_chrome_installed
 
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
 # os.environ["WDM_LOG_LEVEL"] = "0"
-
 
 @dataclass
 class SessionData:
@@ -763,21 +758,18 @@ def set_path():
     try:
         global path
 
-        result = filedialog.askdirectory()
-        if result == ():
-            return {
-                "success": False,
-                "message": "Ocorreu um erro durante a configuração de caminho padrão.",
-            }
-        path = result
+        dir = ask_user_directory()
+        if dir is None:
+            raise Exception("No directory selected")
 
+        path = dir
         return {
             "success": True,
             "message": "Caminho configurado com sucesso.",
             "path": path,
         }
 
-    except:
+    except Exception:
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
@@ -1333,21 +1325,19 @@ def handle_cancel():
 def on_connect():
     """Quando algum cliente conecta"""
     session_data_.connected_count += 1
-    log(f"New connection; total: {session_data_.connected_count}")
+    log(f"Nova conexão; total: {session_data_.connected_count}")
 
 
 @socketio.on("disconnect")
 def on_disconnect():
     """Rota contas os clientes desconectados."""
     session_data_.connected_count -= 1
-    log(f"Connection closed; total: {session_data_.connected_count}")
+    log(f"Conexão fechada; total: {session_data_.connected_count}")
 
     if session_data_.connected_count <= 0:
         if not session_data_.software_reload:
             log(f"Todos os clientes desconectaram; fechando o programa")
-            sys.exit(
-                0
-            )  # TODO: verificar se isso tá funcionando bem. Porque antes tava usando `os._exit(0)`
+            os._exit(0) # forçar a fechar o programa
 
         log(
             f"Último cliente desconectou, mas `software_reload` está ativado; aguardando nova conexão"
@@ -1365,7 +1355,7 @@ def set_path(config_path):
 
 @socketio.on("exit")
 def exit_program():
-    sys.exit(0)
+    os._exit(0)
 
 
 # Inicia pesquisa
@@ -1409,7 +1399,7 @@ def handle_search(search_info):
                 broadcast=True,
             )
 
-            opts = scraper.ScraperOptions(
+            opts = ScraperOptions(
                 locals=estab_data,
                 city=city,
                 locals_name=estab_names,
@@ -1420,7 +1410,7 @@ def handle_search(search_info):
                 duration=duration,
                 progress_value=progress_value,
             )
-            scrap = scraper.Scraper(opts)
+            scrap = Scraper(opts)
 
     else:
 
@@ -1440,7 +1430,7 @@ def handle_search(search_info):
 
         progress_value = 100 / len(product)
 
-        opts = scraper.ScraperOptions(
+        opts = ScraperOptions(
             locals=estab_data,
             city=city,
             locals_name=estab_names,
@@ -1451,7 +1441,7 @@ def handle_search(search_info):
             duration=0,
             progress_value=progress_value,
         )
-        scrap = scraper.Scraper(opts)
+        scrap = Scraper(opts)
 
         db.db_save_backup(
             {

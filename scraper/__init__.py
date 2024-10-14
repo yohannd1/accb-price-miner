@@ -10,10 +10,6 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from tkinter import messagebox
-from tkinter import *
-import tkinter as tk
-
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -22,7 +18,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver import Chrome
 
 from accb.web_driver import open_chrome_driver
-from accb.utils import log
+from accb.utils import log, show_warning
 from database import Database
 
 import webbrowser
@@ -275,21 +271,12 @@ class Scraper:
             broadcast=True,
         )
 
-        win = tk.Tk()
-        win.attributes("-topmost", True)
-        win.withdraw()
-
-        result = messagebox.showwarning(
-            "CAPTCHA",
-            "Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay",
-            icon="warning",
+        show_warning(
+            title="CAPTCHA",
+            message="Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay",
         )
 
-        win.destroy()
-
-        if result:
-
-            self.driver.back()
+        self.driver.back()
 
     def captcha(self):
         """Trata por erro de rede e inicia um loop para conferir se o usuário resolveu o captcha."""
