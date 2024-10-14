@@ -24,10 +24,8 @@ from datetime import date
 import datetime
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
-from tabulate import tabulate
 from dataclasses import dataclass
 from typing import Optional
-import logging
 
 # from webdriver_manager.chrome import ChromeDriverManager
 # from webdriver_manager.core.driver_cache import DriverCacheManager
@@ -84,11 +82,6 @@ def get_time(start):
     return {"minutes": minutes, "seconds": seconds, "hours": hours}
 
 
-def print_tab(df):
-    """Printa um set de dados iteráveis de forma organizada e tabulada no console."""
-    print(tabulate(df, headers="keys", tablefmt="psql"))
-
-
 def is_port_in_use(port):
     """Confere se uma dada porta port está em uso pelo sistema."""
     import socket
@@ -96,58 +89,28 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
 
-
-def process_exists(process_name):
-    """Confere se um processo existe no sistema (windows)."""
-
-    try:
-        from subprocess import DEVNULL
-    except ImportError:
-        DEVNULL = os.open(os.devnull, os.O_RDWR)
-
-    call = "TASKLIST", "/FI", "imagename eq %s" % process_name
-    # use buildin check_output right away
-    output = subprocess.check_output(call, stdin=DEVNULL, stderr=DEVNULL).decode(
-        "latin-1"
-    )
-    # check in last line for process name
-    last_line = output.strip().split("\r\n")[-1]
-
-    # because Fail message could be translated
-
-    try:
-        is_app_name = last_line.lower().startswith(process_name.lower())
-        instances = int(last_line.strip().split()[3])
-        return not (is_app_name and instances <= 3)
-        """ app_name = Nome do programa em questão. """
-        """ instances = numero de processos com esse numero, no caso 1 deles é o cleaner do pyinstaller, o 2 é o nosso programa e o 3 é a instancia do driver chamado para conferir se o driver está instalado ou quando o driver é executado."""
-    except:
-        return False
-
-
 def xlsx_to_bd(db, city_name):
     """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
     df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
     duration = get_time(time.time())
     search_id = db.db_save_search(1, city_name, duration["minutes"])
 
-    for index, row in df.iterrows():
+    for _index, row in df.iterrows():
 
         name, local, keyword, adress, price = row
         # print(name, local, keyword, adress, price)
 
         try:
-            db.db_save_search_item(
-                {
-                    "search_id": search_id,
-                    "web_name": local,
-                    "adress": adress,
-                    "product_name": name,
-                    "price": price,
-                    "keyword": keyword,
-                }
-            )
-        except:
+            info = {
+                "search_id": search_id,
+                "web_name": local,
+                "adress": adress,
+                "product_name": name,
+                "price": price,
+                "keyword": keyword,
+            }
+            db.db_save_search_item(info)
+        except Exception:
             pass
 
     return search_id
@@ -155,7 +118,6 @@ def xlsx_to_bd(db, city_name):
 
 def bd_to_xlsx(db, search_id, estab_data, city):
     """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]"""
-    global path
 
     today = date.today()
     # day = today.strftime("%d-%m-%Y")
@@ -226,28 +188,24 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 
         workbook = writer.book["Pesquisa"]
         worksheet = workbook
-        for cell in worksheet["B"]:
 
+        for cell in worksheet["B"]:
             cell.border = border
             cell.alignment = Alignment(horizontal="center")
 
         for cell in worksheet["C"]:
-
             cell.border = border
             cell.alignment = Alignment(horizontal="center")
 
         for cell in worksheet["D"]:
-
             cell.border = border
             cell.alignment = Alignment(horizontal="center")
 
         for cell in worksheet["E"]:
-
             cell.border = border
             cell.alignment = Alignment(horizontal="center")
 
         for cell in worksheet["F"]:
-
             cell.border = border
             cell.alignment = Alignment(horizontal="center")
 
@@ -267,7 +225,7 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 
 
 @app.route("/")
-def home():
+def route_home():
     """Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação"""
 
     db = database.Database()
@@ -288,7 +246,6 @@ def home():
         backup_info = db.db_get_backup(search_id)
         # log_error(backup_info[0])
         if len(backup_info) != 0:
-
             (
                 active,
                 city,
@@ -309,7 +266,7 @@ def home():
 
     day = str(date.today()).split("-")[1]
     search_info = db.db_run_query(
-        "SELECT *  FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
+        "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
             day
         )
     )
@@ -365,7 +322,7 @@ def home():
 
 
 @app.route("/insert_product")
-def insert_product():
+def route_insert_product():
     """Rota de inserção de produtos no banco de dados."""
     db = database.Database()
     product_name = request.args.get("product_name")
@@ -394,7 +351,7 @@ def insert_product():
 
 
 @app.route("/remove_product")
-def remove_product():
+def route_remove_product():
     """Rota de remoção de produtos no banco de dados."""
 
     db = database.Database()
@@ -406,11 +363,7 @@ def remove_product():
             "message": "O produto {} foi removido com sucesso".format(product_name),
         }
 
-    except sqlite3.Error as er:
-
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
+    except sqlite3.Error:
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
@@ -421,7 +374,7 @@ def remove_product():
 
 
 @app.route("/select_product")
-def select_product():
+def route_select_product():
     """Rota de seleção de produtos."""
 
     db = database.Database()
@@ -431,7 +384,7 @@ def select_product():
 
 
 @app.route("/select_search_data")
-def select_search_data():
+def route_select_search_data():
     """Rota de seleção de pesquisas no banco de dados."""
 
     search_id = request.args.get("search_id")
@@ -451,19 +404,19 @@ def select_search_data():
 
 
 @app.route("/select_search_info")
-def select_search_info():
+def route_select_search_info():
     """Rota de seleção de informação das pesquisas no banco de dados."""
     db = database.Database()
     month = request.args.get("month")
     search_data = ""
     try:
         year = request.args.get("year")
-    except:
+    except Exception:
         year = ""
 
     try:
         # print(f"month {month}")
-        if year == None:
+        if year is None:
             month = "0" + month if int(month) < 10 else month
             search_data = db.db_run_query(
                 "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%-{}-%' ORDER BY city_name ASC".format(
@@ -488,7 +441,7 @@ def select_search_info():
 
 
 @app.route("/update_product")
-def update_product():
+def route_update_product():
     """Rota de atualização de produtos no banco de dados."""
     global session_data
     db = database.Database()
@@ -526,7 +479,7 @@ def update_product():
 
 
 @app.route("/select_estab")
-def select_estab():
+def route_select_estab():
     """Rota de seleção de estabelecimentos no banco de dados."""
 
     db = database.Database()
@@ -537,7 +490,7 @@ def select_estab():
 
 
 @app.route("/remove_estab")
-def remove_estab():
+def route_remove_estab():
     """Rota de remoção de estabelecimentos no banco de dados."""
     db = database.Database()
     estab_name = request.args.get("estab_name")
@@ -565,7 +518,7 @@ def remove_estab():
 
 
 @app.route("/update_estab")
-def update_estab():
+def route_update_estab():
     """Rota de atualização de estabelecimentos no banco de dados."""
     db = database.Database()
     city_name = request.args.get("city_name")
@@ -609,7 +562,7 @@ def update_estab():
 
 
 @app.route("/insert_estab")
-def insert_estab():
+def route_insert_estab():
     """Rota de inserção de estabelecimentos no banco de dados."""
 
     db = database.Database()
@@ -652,7 +605,7 @@ def insert_estab():
 
 
 @app.route("/select_city")
-def select_city():
+def route_select_city():
     """Rota de seleção de cidades no banco de dados."""
 
     db = database.Database()
@@ -661,7 +614,7 @@ def select_city():
 
 
 @app.route("/insert_city")
-def insert_city():
+def route_insert_city():
     """Rota de inserção de cidades no banco de dados."""
     global session_data
     db = database.Database()
@@ -691,7 +644,7 @@ def insert_city():
 
 
 @app.route("/update_city")
-def update_city():
+def route_update_city():
     """Rota de atualização de cidades no banco de dados."""
 
     global session_data
@@ -723,7 +676,7 @@ def update_city():
 
 
 @app.route("/delete_city")
-def delete_city():
+def route_delete_city():
     """Rota de deleção de cidades no banco de dados."""
 
     global session_data
@@ -754,15 +707,15 @@ def delete_city():
 
 
 @app.route("/set_path")
-def set_path():
+def route_set_path():
     try:
         global path
 
-        dir = ask_user_directory()
-        if dir is None:
+        directory = ask_user_directory()
+        if directory is None:
             raise Exception("No directory selected")
 
-        path = dir
+        path = directory
         return {
             "success": True,
             "message": "Caminho configurado com sucesso.",
@@ -783,7 +736,7 @@ def set_path():
 
 
 @app.route("/delete_search")
-def delete_search():
+def route_delete_search():
     """Rota de deleção de pesquisa no banco de dados."""
     global session_data
     try:
@@ -805,7 +758,7 @@ def delete_search():
 
 
 @app.route("/export_database")
-def export_database():
+def route_export_database():
     """Rota responsável por exportar os dados do banco"""
     try:
         db = database.Database()
@@ -830,7 +783,7 @@ def export_database():
 
 
 @app.route("/import_database", methods=["POST"])
-def import_database():
+def route_import_database():
     """Rota responsável por importar os dados do banco"""
     global session_data
     try:
@@ -978,8 +931,7 @@ def bd_to_xlsx_all(city, search_id, db):
 
 
 @app.route("/open_folder")
-def open_explorer():
-
+def route_open_explorer():
     try:
         custom_path = request.args.get("path")
         custom_path = custom_path.replace("/", "\\")
@@ -993,7 +945,7 @@ def open_explorer():
 
 
 @app.route("/clean_search")
-def clean_search():
+def route_clean_search():
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
     generate = request.args.get("generate")
     global session_data
@@ -1139,7 +1091,7 @@ def clean_search():
 
 
 @app.route("/generate_file")
-def bd_to_xlsx_route():
+def route_bd_to_xlsx():
     """Rota geradora de coleção de dados das pesquisas em excel."""
     db = database.Database()
     global path
@@ -1153,7 +1105,7 @@ def bd_to_xlsx_route():
         day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
         dic = "{} {}".format(city, day)
 
-        # ? Criar função pra formatar todos os estabelecimentos não cadastrados e retornar uma coleção formatada deles bd_to_xlsx_all
+        # TODO; Criar função pra formatar todos os estabelecimentos não cadastrados e retornar uma coleção formatada deles bd_to_xlsx_all
 
         if format_type == "all":
             dic = bd_to_xlsx_all(city, search_id, db)
@@ -1284,14 +1236,14 @@ def bd_to_xlsx_route():
 
 # SocketIO
 @socketio.on("reload")
-def handle_reload():
+def on_reload():
     """Rota responsável por controlar a variavel de reload."""
     global session_data
     session_data_.software_reload = True
 
 
 @socketio.on("pause")
-def handle_pause(cancel: bool = False) -> None:
+def on_pause(cancel: bool = False) -> None:
     """Rota responsável por pausar a pesquisa"""
     global session_data
     session_data_.software_reload = True
@@ -1309,7 +1261,7 @@ def handle_pause(cancel: bool = False) -> None:
 
 
 @socketio.on("cancel")
-def handle_cancel():
+def on_cancel():
     """Rota cancelar por pausar a pesquisa"""
 
     global session_data
@@ -1340,13 +1292,13 @@ def on_disconnect():
             os._exit(0) # forçar a fechar o programa
 
         log(
-            f"Último cliente desconectou, mas `software_reload` está ativado; aguardando nova conexão"
+            "Último cliente desconectou, mas `software_reload` está ativado; aguardando nova conexão"
         )
         session_data_.software_reload = False
 
 
 @socketio.on("set_path")
-def set_path(config_path):
+def on_set_path(config_path):
     global path
     path = config_path["path"]
     if not os.path.exists(path):
@@ -1354,13 +1306,13 @@ def set_path(config_path):
 
 
 @socketio.on("exit")
-def exit_program():
+def on_exit():
     os._exit(0)
 
 
 # Inicia pesquisa
 @socketio.on("search")
-def handle_search(search_info):
+def on_search(search_info):
     """Rota responsável por iniciar a pesquisa."""
 
     db = database.Database()
@@ -1544,16 +1496,16 @@ def utility_processor():
     def json_stringfy(var):
         return json.dumps(var)
 
-    return dict(
-        enumerate=enumerate,
-        decode=decode,
-        len=len,
-        replace=replace,
-        json_stringfy=json_stringfy,
-    )
+    return {
+        "enumerate": enumerate,
+        "decode": decode,
+        "len": len,
+        "replace": replace,
+        "json_stringfy": json_stringfy,
+    }
 
 
-def run_app():
+def run_app() -> None:
     """Inicia o programa com as configurações da plataforma atual, windows ou linux."""
 
     config_name = "ACCB.cfg"

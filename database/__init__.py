@@ -16,7 +16,7 @@ class Database:
 
     conn = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Inicia a conexão com o banco de dados."""
         self.conn = self.db_connection()
 
