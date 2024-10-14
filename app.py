@@ -236,7 +236,7 @@ def route_home():
         )
     )
 
-    product_len = db.db_run_query("SELECT product_name FROM product")
+    product_names = db.db_run_query("SELECT product_name FROM product")
     search = False
     progress_value = 0
     active = "0.0"
@@ -261,8 +261,8 @@ def route_home():
                 search = True
 
     except:
-        if not len(product_len) == 0:
-            progress_value = 100 / len(product_len)
+        if not len(product_names) == 0:
+            progress_value = 100 / len(product_names)
 
     day = str(date.today()).split("-")[1]
     search_info = db.db_run_query(
@@ -287,6 +287,13 @@ def route_home():
         "home.html" if 0 >= session_data_.connected_count <= 2 else "notallowed.html"
     )
 
+    if not is_chrome_installed():
+        initial_message = "Instale uma versão qualquer do Google Chrome para realizar uma pesquisa."
+    elif len(product_names) == 0:
+        initial_message = "Cadastre pelo menos um produto para realizar uma pesquisa"
+    else:
+        initial_message = "Selecione um município para prosseguir com a pesquisa"
+
     month = [
         "Janeiro",
         "Fevereiro",
@@ -303,6 +310,7 @@ def route_home():
     ]
     return render_template(
         template,
+        initial_message=initial_message,
         data=city,
         search=search,
         product="Iniciando Pesquisa",
@@ -310,7 +318,7 @@ def route_home():
         estab_names=estab_names,
         products=product,
         active=active,
-        product_len=len(product_len),
+        product_len=len(product_names),
         search_info=search_info,
         progress_value=math.floor(progress_value),
         month=month,
@@ -329,7 +337,6 @@ def route_insert_product():
     keywords = request.args.get("keywords")
 
     try:
-
         db.db_save_product({"product_name": product_name, "keywords": keywords})
         return {
             "success": True,
@@ -1288,7 +1295,9 @@ def on_disconnect():
 
     if session_data_.connected_count <= 0:
         if not session_data_.software_reload:
-            log(f"Todos os clientes desconectaram; fechando o programa")
+            log(f"Todos os clientes desconectaram; aguardando...")
+            # TODO: implementar aguardar-para-fechar
+            log(f"Ninguém mais se conectou - fechando o programa")
             os._exit(0) # forçar a fechar o programa
 
         log(

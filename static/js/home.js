@@ -1,3 +1,5 @@
+import Cookies from "./cookie.min.mjs";
+
 let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
 let CANCEL_CAPTCHA = false;
@@ -6,7 +8,6 @@ let WIDTH = 0;
 
 var i = 0;
 function move(val) {
-
 	if (val == undefined)
 		val = 0.0
 	val.toFixed(2);
@@ -204,9 +205,7 @@ const custom_select = () => {
  * Cria um input customizado select na página de pesquisa para os meses.
  */
 const custom_select_date = () => {
-
 	$('#month-picker').each(function () {
-
 		// Cache the number of options
 		var $this = $(this),
 			numberOfOptions = $(this).children('option').length;
@@ -690,8 +689,6 @@ const validate_form = (info, edit = false) => {
 // DOCUMENT.READY
 
 $(document).ready(function () {
-
-
 	/**
 	 * Confirma se temos permissão para exibir notificações no sistema.
 	 * @param  {boolean} Notification.permission==="granted"
@@ -1606,7 +1603,6 @@ $(document).ready(function () {
 
 		var odd = true;
 		$("#list-search table tr").each(function (index) {
-
 			if (index != 0) {
 				var found = false;
 
@@ -1660,7 +1656,6 @@ $(document).ready(function () {
 
 	// Abre o modal para gerar a coleção de arquivos para uma pesquisa existente (aba de pesquisas).
 	$("#open-search-file").on("click", (e) => {
-
 		e.preventDefault();
 		e.stopPropagation();
 		$(".estab").remove();
@@ -1676,7 +1671,6 @@ $(document).ready(function () {
 		// console.log();
 
 		$.get("/select_estab", { city: city_name }, (response) => {
-
 			response = JSON.parse(response);
 			if (response.length == 0) {
 
@@ -1684,10 +1678,7 @@ $(document).ready(function () {
 				alert("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração e tente novamente.");
 
 				$("#generate-file").addClass("disabled");
-
 			} else {
-
-
 				$("#generate-file").addClass("enabled");
 				response.map((value, index) => {
 					$("#file-list").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="F${index}" >${value[1]}</a>`).hide().fadeIn(200 * index))
@@ -1698,12 +1689,8 @@ $(document).ready(function () {
 				$("#search-file").modal({
 					fadeDuration: 200,
 				});
-
 			}
-
 		});
-
-
 	});
 
 	// Limpa todas as pesquisas da aplicação
@@ -1789,9 +1776,7 @@ $(document).ready(function () {
 			var names = [];
 
 			estabs.each(function (estab) {
-
 				names.push($(this).attr("value"));
-
 			});
 
 			// console.table(form_data);
@@ -1817,11 +1802,8 @@ $(document).ready(function () {
 				} else {
 					Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
 				}
-
 			});
-
 		}
-
 	});
 
 	$("#file_format").on("change", function () {
@@ -1836,7 +1818,6 @@ $(document).ready(function () {
 
 	// Remove uma pesquisa.
 	$("#remove-search").on("click", () => {
-
 		var search_id = $("#search-select").val();
 		var search_info = $("#search-select  option:selected").html();
 
@@ -1846,23 +1827,17 @@ $(document).ready(function () {
 		}
 
 		if (window.confirm(`Realmente deseja remover a pesquisa ${search_info}`)) {
-
 			$.get("/delete_search", { search_id: search_id }, (response) => {
-
 				if (response["status"] == "success") {
-
 					alert(response["message"]);
 					Materialize.toast(response["message"], 2000, 'rounded');
 					window.location = window.location.origin + "#pesquisa";
 					window.location.reload(true);
-
 				} else {
 					Materialize.toast(response["message"], 2000, 'rounded');
 				}
-
 			});
 		}
-
 	});
 
 	// Botão responsável por exportar as configurações da aplicação.
@@ -1870,32 +1845,23 @@ $(document).ready(function () {
 		e.preventDefault();
 
 		if (window.confirm(`Realmente deseja exportar todos os dados atuais ?`)) {
-
 			$.get("/export_database", (response) => {
-
 				if (response["status"] == "success") {
-
 					Materialize.toast(response["message"], 8000, 'rounded');
-
 				} else {
 					Materialize.toast(response["message"], 8000, 'rounded');
 				}
-
 			});
 		}
-
 	});
 
 	// Botão responsável por abrir o popup de importação de configuração da aplicação.
 	$("#import").on("click", (e) => {
-
 		$("#import_file").click();
-
 	});
 
 	// Listener para o input de importação de configuração.
 	$("#import_file").on("change", function (e) {
-
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -1926,8 +1892,113 @@ $(document).ready(function () {
 				}
 			},
 		});
-
 	});
+});
 
+function copyToClipboard(value) {
+    navigator.clipboard.writeText(value);
+    Materialize.toast("Texto copiado para área de transferências.", 2000, "rounded");
+}
+
+$(document).ready(() => {
+    const hjs_data = document.querySelector("#home-js-data");
+    const active = hjs_data.getAttribute("data-active");
+    const progress_value = hjs_data.getAttribute("data-progress-value");
+    const search = hjs_data.getAttribute("data-search") === "True";
+    const is_chrome_installed = hjs_data.getAttribute("data-is-chrome-installed") === "True";
+
+    const socket = io();
+
+    socket.on("connect", () => {
+        console.log(socket.id);
+    });
+
+    socket.connect("http://127.0.0.1:5000/");
+
+    const search_loaded = () => {
+        if (search || !is_chrome_installed)
+            return;
+
+        console.log("***"); // FIXME
+        if (confirm("Uma pesquisa foi encontrada em progresso, deseja retomá-la?")) {
+            $("#backup-button").addClass("disable");
+            $("#config_path").addClass("disable");
+            $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
+            socket.emit("search", { names: "", city: "", backup: 1});
+
+            var width = active.split(".")[0];
+            var elem = document.getElementById("progress_bar");
+            width = width * progress_value;
+            width = width.toFixed(2);
+            elem.style.width = width.toString() + "%";
+            elem.innerHTML = width.toString() + "%";
+
+            $("#main-navigation").tabs("select", "progress");
+            $("#main-navigation  a").addClass("disabled");
+        }
+    }
+
+    if (Cookies.get("warning") === undefined) {
+        $("#warning").modal({});
+        Cookies.set("warning", "seen", {expires: 1});
+    } else {
+        search_loaded();
+    }
+
+    if (Cookies.get("path") === undefined) {
+        alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+
+        $.get("/set_path", (response) => {
+            if (response.path != "") {
+                alert(response.message);
+                Cookies.set("path", response.path, { expires: 10 });
+            }
+        });
+    } else {
+        socket.emit("set_path", { path : Cookies.get("path") });
+    }
+
+    if (!is_chrome_installed)
+        alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
+
+    if (search == "True")
+        $("body").on("click", "#backup-button", function (e) {
+            search_loaded();
+        });
+
+    $("#config_path").on("click", (e) => {
+        e.preventDefault();
+        alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+        $.get("/set_path", (response) => {
+            if (response.path != "") {
+                alert(response.message);
+                Cookies.set("path", response["path"], {expires: 10});
+            }
+        });
+    });
+
+    socket.on("set_path", function(){
+        alert("O antigo diretório foi deletado! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+
+        $.get("/set_path", (response) => {
+            if (response.path != "") {
+                alert(response.message);
+                Cookies.set("path", response.path, { expires: 10 });
+            }
+        });
+    });
+
+    $("#close_app").on("click", () => {
+        if (window.confirm("Deseja realmente fechar o programa?")) {
+            socket.emit("exit");
+            window.close();
+        }
+    });
+
+    $("#open_folder").on("click", () => {
+        const path = Cookies.get("path");
+        if (path)
+            $.get("/open_folder", { "path": path }, () => {});
+    });
 });
 
