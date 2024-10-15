@@ -20,18 +20,19 @@ import database
 import traceback
 import pandas as pd
 import webbrowser
-from datetime import date
-import datetime
+from datetime import date, datetime
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
 from dataclasses import dataclass
 from typing import Optional
+from pathlib import Path
 
 # from webdriver_manager.chrome import ChromeDriverManager
 # from webdriver_manager.core.driver_cache import DriverCacheManager
 
 from scraper import Scraper, ScraperOptions
 from accb.utils import log, log_error, is_windows, ask_user_directory
+from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
 
 app = Flask(__name__)
@@ -43,42 +44,45 @@ socketio = SocketIO(app, manage_session=False, async_mode="threading")
 class SessionData:
     """Dados utilizados ao longo do programa"""
 
-    software_reload: bool = False
-    """Controle de reload do programa."""
-    # TODO: como assim? -- pelo que entendi isso previne que o programa feche quando a página precisar ser recarregada
+    wait_reload: bool = False
+    """Se o servidor deve esperar uma nova conexão (a página conetada está recarregando)."""
 
     connected_count: int = 0
     """Conta a quantidade de clientes conectados"""
 
-    chrome_installed: bool = False
-    """Indica se o Google Chrome está instalado."""
-
     scraper: Optional[Scraper] = None
     """Instância do Scraper utilizado para pesquisar."""
 
-    # TODO: adicionar o resto -- "cancel", "pause", "search_id", "modified"
+    cancel: bool = False
+    # TODO: explicação
 
+    pause: bool = False
+    # TODO: explicação
 
-# TODO: renomear para... session?
-session_data_ = SessionData(
-    chrome_installed=is_chrome_installed(),
-)
+    search_id: str = ""
+    # TODO: explicação
 
-session_data = {}
-"""Armazenamento de sessão"""
+    modified: bool = False
+    # TODO: explicação
+    # FIXME: isso é usado?
+
+session = SessionData()
 
 path = None
 """Variável de caminho padrão para gerar coleção excel."""
 
 
-def get_time(start):
-    """Calcula o tempo de execução dado um tempo inicial e retorna o tempo em minutos horas e segundos."""
+def get_time_hms(start_time: float) -> dict:
+    """Calcula o tempo passado desde `start_time`, retornando-o em horas, minutos e segundos."""
     end = time.time()
-    temp = end - start
+    temp = end - start_time
+
     hours = temp // 3600
-    temp = temp - 3600 * hours
+    temp = temp % 3600
+
     minutes = temp // 60
-    seconds = temp - 60 * minutes
+    seconds = temp % 60
+
     return {"minutes": minutes, "seconds": seconds, "hours": hours}
 
 
@@ -92,7 +96,7 @@ def is_port_in_use(port):
 def xlsx_to_bd(db, city_name):
     """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
     df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
-    duration = get_time(time.time())
+    duration = get_time_hms(time.time()) # FIXME: ... tempo desde agora?
     search_id = db.db_save_search(1, city_name, duration["minutes"])
 
     for _index, row in df.iterrows():
@@ -115,25 +119,18 @@ def xlsx_to_bd(db, city_name):
 
     return search_id
 
+def get_time_filename() -> str:
+    return datetime.now().strftime("[%d-%m] [%Hh %Mm]")
 
 def bd_to_xlsx(db, search_id, estab_data, city):
     """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]"""
 
-    today = date.today()
-    # day = today.strftime("%d-%m-%Y")
-    day = datetime.datetime.now()
-    day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
-    dic = "{} {}".format(city, day)
+    dic = f"{get_time_filename()} {city}"
 
     folder_name = dic
 
-    if is_windows():
-        if not os.path.exists(f"{path}/{dic}"):
-
-            os.makedirs(f"{path}/{dic}")
-    else:
-        if not os.path.exists(f"{path}/{dic}"):
-            os.makedirs(f"{path}/{dic}")
+    final = Path(f"{path}/{dic}")
+    final.mkdir(parents=True, exist_ok=True)
 
     for city, name, adress, web_name in estab_data:
         # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
@@ -278,12 +275,12 @@ def route_home():
     estab_names = db.db_get_estab()
     product = db.db_get_product()
 
-    # print("CONNECTED {}".format(session_data_.connected_count))
+    # print("CONNECTED {}".format(session.connected_count))
     # Se tiver mais que uma pagina aberta, renderiza o notallowed.html,
     # por algum motivo o flask com socketio chama a função de conexão 2x então
     # acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2
     template = (
-        "home.html" if 0 >= session_data_.connected_count <= 2 else "notallowed.html"
+        "home.html" if 0 >= session.connected_count <= 2 else "notallowed.html"
     )
 
     if not is_chrome_installed():
@@ -293,20 +290,6 @@ def route_home():
     else:
         initial_message = "Selecione um município para prosseguir com a pesquisa"
 
-    month = [
-        "Janeiro",
-        "Fevereiro",
-        "Março",
-        "Abril",
-        "Maio",
-        "Junho",
-        "Julho",
-        "Agosto",
-        "Setembro",
-        "Outubro",
-        "Novembro",
-        "Dezembro",
-    ]
     return render_template(
         template,
         initial_message=initial_message,
@@ -320,10 +303,10 @@ def route_home():
         product_len=len(product_names),
         search_info=search_info,
         progress_value=math.floor(progress_value),
-        month=month,
+        month=MONTHS_PT_BR,
         active_month=day,
         active_year=str(date.today()).split("-")[0],
-        chrome_installed=str(session_data_.chrome_installed),
+        chrome_installed=str(is_chrome_installed()),
         years=search_years,
     )
 
@@ -449,7 +432,6 @@ def route_select_search_info():
 @app.route("/update_product")
 def route_update_product():
     """Rota de atualização de produtos no banco de dados."""
-    global session_data
     db = database.Database()
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
@@ -464,7 +446,7 @@ def route_update_product():
                 "primary_key": primary_key,
             }
         )
-        session_data_.software_reload = True
+        session.wait_reload = True
         return {
             "success": True,
             "message": "O produto {} foi atualizado com sucesso".format(primary_key),
@@ -622,14 +604,13 @@ def route_select_city():
 @app.route("/insert_city")
 def route_insert_city():
     """Rota de inserção de cidades no banco de dados."""
-    global session_data
     db = database.Database()
     city_name = request.args.get("city_name")
 
     try:
 
         db.db_save_city(city_name)
-        session_data_.software_reload = True
+        session.wait_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi adicionado com sucesso".format(city_name),
@@ -653,7 +634,6 @@ def route_insert_city():
 def route_update_city():
     """Rota de atualização de cidades no banco de dados."""
 
-    global session_data
     db = database.Database()
     city_name = request.args.get("city_name")
     primary_key = request.args.get("primary_key")
@@ -661,7 +641,7 @@ def route_update_city():
     try:
 
         db.db_update_city({"city_name": city_name, "primary_key": primary_key})
-        session_data_.software_reload = True
+        session.wait_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi editada com sucesso".format(city_name),
@@ -685,14 +665,13 @@ def route_update_city():
 def route_delete_city():
     """Rota de deleção de cidades no banco de dados."""
 
-    global session_data
     db = database.Database()
     city_name = request.args.get("city_name")
 
     try:
 
         db.db_delete("city", "city_name", city_name)
-        session_data_.software_reload = True
+        session.wait_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi deletada com sucesso".format(city_name),
@@ -744,14 +723,13 @@ def route_set_path():
 @app.route("/delete_search")
 def route_delete_search():
     """Rota de deleção de pesquisa no banco de dados."""
-    global session_data
     try:
 
         db = database.Database()
         search_id = request.args.get("search_id")
 
         db.db_delete("search", "id", search_id)
-        session_data_.software_reload = True
+        session.wait_reload = True
         return {"status": "success", "message": "Pesquisa deletada com sucesso."}
 
     except:
@@ -791,13 +769,12 @@ def route_export_database():
 @app.route("/import_database", methods=["POST"])
 def route_import_database():
     """Rota responsável por importar os dados do banco"""
-    global session_data
     try:
         db = database.Database()
         file = request.files["file"]
         db.import_database(file)
 
-        session_data_.software_reload = True
+        session.wait_reload = True
         return {
             "status": "success",
             "message": "Dados importados com sucesso.",
@@ -831,9 +808,7 @@ def bd_to_xlsx_all(city, search_id, db):
     if not os.path.exists(f"{path}/Todos/"):
         os.makedirs(f"{path}/Todos")
 
-    day = datetime.datetime.now()
-    day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
-    dic = "{} {}".format(city, day)
+    dic = f"{get_time_filename()} {city}"
 
     folder_name = dic
 
@@ -954,7 +929,6 @@ def route_open_explorer():
 def route_clean_search():
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
     generate = request.args.get("generate")
-    global session_data
     db = database.Database()
     global path
     generate = True if generate == "false" else False
@@ -1107,9 +1081,8 @@ def route_bd_to_xlsx():
         format_type = request.args.get("format")
         city = request.args.get("city_name")
         search_id = request.args.get("search_id")
-        day = datetime.datetime.now()
-        day = "[{}-{}] [{}h {}m]".format(day.day, day.month, day.hour, day.minute)
-        dic = "{} {}".format(city, day)
+
+        dic = f"{get_time_filename()} {city}"
 
         # TODO; Criar função pra formatar todos os estabelecimentos não cadastrados e retornar uma coleção formatada deles bd_to_xlsx_all
 
@@ -1243,66 +1216,61 @@ def route_bd_to_xlsx():
 # SocketIO
 @socketio.on("reload")
 def on_reload():
-    """Rota responsável por controlar a variavel de reload."""
-    global session_data
-    session_data_.software_reload = True
+    session.wait_reload = True
 
 
 @socketio.on("pause")
 def on_pause(cancel: bool = False) -> None:
     """Rota responsável por pausar a pesquisa"""
-    global session_data
-    session_data_.software_reload = True
+    session.wait_reload = True
 
-    scraper = session_data_.scraper
+    scraper = session.scraper
 
     if cancel != False:
-        session_data["cancel"] = True
+        session.cancel = True
         if scraper is not None:
             scraper.pause(True)
     else:
         if scraper is not None:
             scraper.pause()
-        session_data["pause"] = True
+        session.pause = True
 
 
 @socketio.on("cancel")
 def on_cancel():
     """Rota cancelar por pausar a pesquisa"""
 
-    global session_data
-    session_data_.software_reload = True
-    # log_error([session_data])
+    session.wait_reload = True
 
     db = database.Database()
-    query = "DELETE FROM search WHERE id = {}".format(session_data["search_id"])
+    query = "DELETE FROM search WHERE id = {}".format(session.search_id)
     db.db_run_query(query)
 
 
 @socketio.on("connect")
 def on_connect():
     """Quando algum cliente conecta"""
-    session_data_.connected_count += 1
-    log(f"Nova conexão; total: {session_data_.connected_count}")
+    session.connected_count += 1
+    log(f"Nova conexão; total: {session.connected_count}")
 
 
 @socketio.on("disconnect")
 def on_disconnect():
     """Rota contas os clientes desconectados."""
-    session_data_.connected_count -= 1
-    log(f"Conexão fechada; total: {session_data_.connected_count}")
+    session.connected_count -= 1
+    log(f"Conexão fechada; total: {session.connected_count}")
 
-    if session_data_.connected_count <= 0:
-        if not session_data_.software_reload:
+    if session.connected_count <= 0:
+        if not session.wait_reload:
             log(f"Todos os clientes desconectaram; aguardando...")
             # TODO: implementar aguardar-para-fechar
             log(f"Ninguém mais se conectou - fechando o programa")
             os._exit(0) # forçar a fechar o programa
 
         log(
-            "Último cliente desconectou, mas `software_reload` está ativado; aguardando nova conexão"
+            "Último cliente desconectou, mas `wait_reload` está ativado; aguardando nova conexão"
         )
-        session_data_.software_reload = False
+        session.wait_reload = False
 
 
 @socketio.on("set_path")
@@ -1416,12 +1384,11 @@ def on_search(search_info):
             }
         )
 
-    session_data_.scraper = scrap
-    global session_data
-    session_data["search_id"] = search_id
-    session_data["cancel"] = False
-    session_data["pause"] = False
-    session_data["modified"] = True
+    session.scraper = scrap
+    session.search_id = search_id
+    session.cancel = False
+    session.pause = False
+    session.modified = True
 
     try:
 
@@ -1433,10 +1400,10 @@ def on_search(search_info):
                 {"type": "chrome", "installed": False},
                 broadcast=True,
             )
-            session_data["cancel"] = True
-            session_data["pause"] = True
+            session.cancel = True
+            session.pause = True
 
-        if not session_data["cancel"] and not session_data["pause"]:
+        if not session.cancel and not session.pause:
 
             emit(
                 "captcha",
@@ -1448,7 +1415,7 @@ def on_search(search_info):
                 {"type": "progress", "done": 1},
                 broadcast=True,
             )
-            session_data_.software_reload = True
+            session.wait_reload = True
             # search_id = xlsx_to_bd(db, search_info["city"])
 
             # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
@@ -1457,6 +1424,8 @@ def on_search(search_info):
     except Exception:
 
         try:
+            if "error" not in search_info:
+                search_info["error"] = 0
             search_info["error"] += 1
             if search_info["error"] > 3:
                 emit(
@@ -1488,7 +1457,7 @@ def on_search(search_info):
                 broadcast=True,
             )
 
-            handle_search(search_info)
+            on_search(search_info)
 
 
 @app.context_processor
