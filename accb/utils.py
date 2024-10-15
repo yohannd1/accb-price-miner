@@ -1,5 +1,5 @@
 import sys, os
-from time import strftime, asctime
+from time import strftime, asctime, time
 from typing import Iterable, Optional
 import traceback
 
@@ -44,3 +44,16 @@ def show_warning(title: str, message: str) -> None:
 def ask_user_directory() -> Optional[str]:
     result = filedialog.askdirectory()
     return result if result != () else None
+
+def get_time_hms(start_time_sec: float) -> dict:
+    """Calcula o tempo passado desde `start_time_sec`, retornando-o em horas, minutos e segundos."""
+    end = time()
+    temp = end - start_time_sec
+
+    hours = temp // 3600
+    temp = temp % 3600
+
+    minutes = temp // 60
+    seconds = temp % 60
+
+    return {"minutes": minutes, "seconds": seconds, "hours": hours}

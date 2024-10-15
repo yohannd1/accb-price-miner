@@ -31,9 +31,11 @@ from pathlib import Path
 # from webdriver_manager.core.driver_cache import DriverCacheManager
 
 from scraper import Scraper, ScraperOptions
-from accb.utils import log, log_error, is_windows, ask_user_directory
+from accb.utils import log, log_error, is_windows, ask_user_directory, get_time_hms, show_warning
 from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
+
+show_warning("ACCB", "Carregando. Por favor aguarde...") # FIXME: isso aqui é blocking! pensar em uma maneira melhor de fazer isso...
 
 app = Flask(__name__)
 Material(app)
@@ -70,21 +72,6 @@ session = SessionData()
 
 path = None
 """Variável de caminho padrão para gerar coleção excel."""
-
-
-def get_time_hms(start_time: float) -> dict:
-    """Calcula o tempo passado desde `start_time`, retornando-o em horas, minutos e segundos."""
-    end = time.time()
-    temp = end - start_time
-
-    hours = temp // 3600
-    temp = temp % 3600
-
-    minutes = temp // 60
-    seconds = temp % 60
-
-    return {"minutes": minutes, "seconds": seconds, "hours": hours}
-
 
 def is_port_in_use(port):
     """Confere se uma dada porta port está em uso pelo sistema."""
@@ -701,6 +688,8 @@ def route_set_path():
             raise Exception("No directory selected")
 
         path = directory
+        Path(path).mkdir(exist_ok=True)
+
         return {
             "success": True,
             "message": "Caminho configurado com sucesso.",

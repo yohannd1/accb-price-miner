@@ -2,13 +2,16 @@
 
 import re
 import time
-import os
+import os, sys
 import json
-import sys
 import urllib.request
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from typing import Any, Optional
+import time
+import webbrowser
+
+from flask_socketio import SocketIO, send, emit
 
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -18,17 +21,13 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver import Chrome
 
 from accb.web_driver import open_chrome_driver
-from accb.utils import log, show_warning
+from accb.utils import log, show_warning, get_time_hms
 from database import Database
-
-import webbrowser
-from flask_socketio import SocketIO, send, emit
-import time
-
 
 @dataclass
 class ScraperOptions:
     """Armazena informações que instruem a pesquisa feita pelo Scraper."""
+
     # TODO: colocar tipos para os campos aqui
 
     # TODO: renomear isso
@@ -62,6 +61,10 @@ class ScraperOptions:
     """Valor de soma da barra de pesquisa, caso seja adicionado um novo produto é necessário manter os dados da pesquisa anterior."""
     # TODO: essa descrição tá estranha
 
+
+class ScraperError(Exception): ...
+
+
 class Scraper:
     """Realiza o scraping na página do Preço da Hora Bahia."""
 
@@ -89,27 +92,6 @@ class Scraper:
 
         self.start_time = time.time()
         """Valor do tempo no inicio da pesquisa."""
-
-    def get_time(self, start):
-        """Calcula o tempo de execução dado um tempo inicial e retorna o tempo em minutos horas e segundos."""
-
-        end = time.time()
-        temp = end - start
-        # log(temp)
-        hours = temp // 3600
-        temp = temp - 3600 * hours
-        minutes = temp // 60
-        seconds = temp - 60 * minutes
-        return {"minutes": minutes + (60 * hours), "seconds": seconds, "hours": hours}
-
-    def log_progress(self, progress):
-
-        """Função para debugar o processo de coleta, imprime no arquivo progress.log o progresso desejado da pesquisa."""
-        with open("progress.log", "w+") as outfile:
-
-            outfile.write("Date : {} \n".format(time.asctime()))
-            for index, line in enumerate(progress):
-                outfile.write("Index {} : {}\n".format(index, line))
 
     def check_connection(self, url: str = "https://www.example.org/") -> bool:
         """Confere a conexão com a URL desejada."""
@@ -175,9 +157,7 @@ class Scraper:
             return
 
     def get_data(self, product: str, keyword: str):
-        """
-        Filtra os dados da janela atual aberta do navegador e os salva no banco de dados.
-        """
+        """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
 
         assert self.driver is not None
         elements = self.driver.page_source
@@ -192,11 +172,17 @@ class Scraper:
         # search_item["search_id"], search_item["city_name"], search_item["estab_name"], search_item["web_name"], search_item["adress"], search_item["price"])
         for item in soup.findAll(True, {"class": "flex-item2"}):
             product_name = adjust_and_clean(item.find("strong").text)
-            product_address = adjust_and_clean(item.find(attrs={"data-original-title": "Endereço"}).parent.text)
-            product_local = adjust_and_clean(item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text)
+            product_address = adjust_and_clean(
+                item.find(attrs={"data-original-title": "Endereço"}).parent.text
+            )
+            product_local = adjust_and_clean(
+                item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text
+            )
             product_price = item.find(text=re.compile(r" R\$ \d+(,\d{1,2})")).lstrip()
 
-            log(f"Produto encontrado - endereço: {product_address}; estab.: {product_local}; preço: {product_price}; nome: {product_name};")
+            log(
+                f"Produto encontrado - endereço: {product_address}; estab.: {product_local}; preço: {product_price}; nome: {product_name};"
+            )
 
             try:
                 if not self.stop:
@@ -219,7 +205,6 @@ class Scraper:
                             str(product_price),
                         ]
                     )
-                    # self.log_progress(item)
             except Exception:
                 # TODO: handle exception
                 pass
@@ -233,30 +218,18 @@ class Scraper:
                 broadcast=True,
             )
 
-    def check_captcha(self, request=0):
+    def check_captcha(self, request: int = 0) -> bool:
         """Função que confere se o captcha foi resolvido com sucesso pelo usuário."""
-        excpt = True
 
         try:
-
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "flash"))
             )
-
-        except:
-
-            # log("Captcha desativado")
+        except Exception:
             time.sleep(1)
-            excpt = False
             return False
 
-        finally:
-
-            if excpt:
-
-                # log("Captcha ativado")
-
-                return True
+        return True
 
     # REDO
     def pop_up(self):
@@ -283,23 +256,19 @@ class Scraper:
 
         # Se eu tenho conexão o captcha foi ativado, se não, é erro de rede.
 
+        log("~~ CAPTCHA") # FIXME: remove(breakpoint)
+
         if self.check_connection():
-
             while True:
-
                 if self.check_captcha(1):
-
                     webbrowser.open(self.url)
                     self.pop_up()
-
                 else:
-
                     # log("CAPTCHA FALSE")
                     return
         else:
-
             self.exit_thread(True)
-            raise ValueError("Sem conexão com a rede!")
+            raise ScraperError("Sem conexão com a rede!")
 
     def run(self):
         """Realiza a pesquisa na plataforma do Preço da Hora Bahia."""
@@ -321,15 +290,11 @@ class Scraper:
         )
 
         try:
-
             WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.ID, "informe-sefaz-error"))
             )
-
-            driver.find_element(By.ID,"informe-sefaz-error").click()
-
+            driver.find_element(By.ID, "informe-sefaz-error").click()
         except Exception:
-
             # log("Pop Up Error")
             pass
 
@@ -350,51 +315,46 @@ class Scraper:
 
         # Botão que abre o modal referente a localização
         try:
-
             WebDriverWait(driver, 4 * times).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "location-box"))
             )
-
         except Exception:
-
             self.captcha()
             time.sleep(1)
-
         finally:
-
-            driver.find_element(By.CLASS_NAME,"location-box").click()
+            driver.find_element(By.CLASS_NAME, "location-box").click()
             time.sleep(2 * times)
 
         # Botão que abre a opção de inserir o CEP
         try:
-
             WebDriverWait(driver, 2 * times).until(
                 EC.presence_of_element_located((By.ID, "add-center"))
             )
-
         except Exception:
-
             self.captcha()
             time.sleep(1)
-
         finally:
-
-            driver.find_element(By.ID,"add-center").click()
+            driver.find_element(By.ID, "add-center").click()
             time.sleep(2 * times)
 
         # Envia o MUNICIPIO desejado para o input
 
-        driver.find_element(By.CLASS_NAME,"sbar-municipio").send_keys(self.options.city)
+        driver.find_element(By.CLASS_NAME, "sbar-municipio").send_keys(
+            self.options.city
+        )
         time.sleep(1)
 
         # Pressiona o botão que realiza a pesquisa por MUNICIPIO
-        driver.find_element(By.CLASS_NAME,"set-mun").click()
+        driver.find_element(By.CLASS_NAME, "set-mun").click()
 
         time.sleep(1)
-        driver.find_element(By.ID,"aplicar").click()
+        driver.find_element(By.ID, "aplicar").click()
 
         time.sleep(2 * times)
-        for index, (product, keywords) in enumerate(self.options.product_info[self.index :]):
+        for index, (product, keywords) in enumerate(
+            self.options.product_info[self.index :]
+        ):
+            log(f"Começando pesquisa do produto {product}")
 
             if not self.stop:
                 emit(
@@ -408,45 +368,40 @@ class Scraper:
                 )
 
             for index_k, keyword in enumerate(keywords.split(",")[self.index_k :]):
-
                 if self.stop:
-
                     self.exit = True
                     self.exit_thread()
                     return True
 
-                else:
+                log(f"Pesquisando keyword {keyword}")
 
-                    active = "{}.{}".format(index + self.index, index_k + self.index_k)
-                    duration = self.get_time(self.start_time)
-                    duration = duration["minutes"] + self.options.duration
+                active = "{}.{}".format(index + self.index, index_k + self.index_k)
+                duration = get_time_hms(self.start_time)["minutes"] + self.options.duration
 
-                    # self.log_progress(
-                    #     [
-                    #         active,
-                    #         duration,
-                    #         self.options.progress_value,
-                    #         self.options.product_info[self.index :],
-                    #         product,
-                    #         keywords,
-                    #     ]
-                    # )
+                log("~~ BEFORE BACKUP") # FIXME: remove(breakpoint)
 
-                    self.db.db_update_backup(
-                        {
-                            "active": active,
-                            "city": self.options.city,
-                            "done": 0,
-                            "estab_info": json.dumps(
-                                {"names": self.options.locals_name, "info": self.options.locals}
-                            ),
-                            "product_info": json.dumps(self.options.product_info),
-                            "search_id": self.options.id,
-                            "duration": duration,
-                        }
-                    )
+                self.db.db_update_backup(
+                    {
+                        "active": active,
+                        "city": self.options.city,
+                        "done": 0,
+                        "estab_info": json.dumps(
+                            {
+                                "names": self.options.locals_name,
+                                "info": self.options.locals,
+                            }
+                        ),
+                        "product_info": json.dumps(self.options.product_info),
+                        "search_id": self.options.id,
+                        "duration": duration,
+                    }
+                )
+
+                log("~~ AFTER BACKUP") # FIXME: remove(breakpoint)
 
                 time.sleep(1.5 * times)
+
+                log("~~ WILL GET PRODUCT BAR") # FIXME: remove(breakpoint)
 
                 # Barra de pesquisa superior (produtos)
                 try:
@@ -461,79 +416,81 @@ class Scraper:
 
                 finally:
 
-                    search = driver.find_element(By.ID,"top-sbar")
+                    search = driver.find_element(By.ID, "top-sbar")
+
+                log("~~ 1") # FIXME: remove(breakpoint)
 
                 for w in keyword:
 
                     search.send_keys(w)
                     time.sleep(0.25)
 
+                log("~~ 2") # FIXME: remove(breakpoint)
+
                 # Realiza a pesquisa (pressiona enter)
                 search.send_keys(Keys.ENTER)
+
+                log("~~ 3") # FIXME: remove(breakpoint)
 
                 time.sleep(3 * times)
                 driver.page_source.encode("utf-8")
 
-                if self.stop:
+                log("~~ 4") # FIXME: remove(breakpoint)
 
+                if self.stop:
                     self.exit = True
                     self.exit_thread()
 
                     return True
-                # Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados
-                try:
 
+                # Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados
+
+                log("~~ 5") # FIXME: remove(breakpoint)
+
+                try:
                     WebDriverWait(driver, 4 * times).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "flex-item2"))
                     )
-
-                except:
-
+                except Exception:
                     self.captcha()
                     time.sleep(times)
 
                 finally:
-
+                    log("~~ 5.1") # FIXME: remove(breakpoint)
                     flag = 0
                     while True:
-
                         if self.stop:
-
                             self.exit = True
                             self.exit_thread()
                             return True
 
                         try:
-
+                            log("~~ 5.2") # FIXME: remove(breakpoint)
                             WebDriverWait(driver, 2 * times).until(
                                 EC.presence_of_element_located((By.ID, "updateResults"))
                             )
                             time.sleep(2 * times)
-                            driver.find_element(By.ID,"updateResults").click()
+                            driver.find_element(By.ID, "updateResults").click()
                             flag = flag + 1
 
                             if flag == 3:
-
                                 break
-
-                        except:
-
+                            log("~~ 5.4") # FIXME: remove(breakpoint)
+                        except Exception:
                             if not self.check_captcha(0):
-
                                 # log("Quantidade máxima de paginas abertas.")
                                 break
-
                             else:
-
                                 self.captcha()
 
                     if self.stop:
-
                         self.exit = True
                         self.exit_thread()
                         return True
 
                     self.get_data(product, keyword)
+
+                log("~~ 6") # FIXME: remove(breakpoint)
 
             if not self.stop:
                 log(f"Progress: {self.options.progress_value}")
@@ -547,16 +504,25 @@ class Scraper:
                     broadcast=True,
                 )
 
-        if self.stop:
+            log("~~ 7") # FIXME: remove(breakpoint)
 
+        if self.stop:
             self.exit = True
             self.exit_thread()
             return
 
-        duration = self.get_time(self.start_time)
+        log("~~ 8") # FIXME: remove(breakpoint)
+
+        duration = get_time_hms(self.start_time)
         self.db.db_update_search(
-            {"id": self.options.id, "done": 1, "duration": duration["minutes"] + self.options.duration}
+            {
+                "id": self.options.id,
+                "done": 1,
+                "duration": duration["minutes"] + self.options.duration,
+            }
         )
+
+        log("~~ 9") # FIXME: remove(breakpoint)
 
         self.db.db_update_backup(
             {
