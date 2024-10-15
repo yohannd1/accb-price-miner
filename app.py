@@ -216,13 +216,12 @@ def bd_to_xlsx(db, search_id, estab_data, city):
                 try:
                     if len(str(cell.value)) > max_length:
                         max_length = len(str(cell.value))
-                except:
+                except Exception:
                     pass
             adjusted_width = (max_length + 2) * 1.2
             worksheet.column_dimensions[column].width = adjusted_width
 
         writer.save()
-
 
 @app.route("/")
 def route_home():
@@ -1515,7 +1514,7 @@ def utility_processor():
 
 
 def run_app() -> None:
-    """Inicia o programa com as configurações da plataforma atual, windows ou linux."""
+    """Inicia o programa com as configurações da plataforma atual, Windows ou Linux."""
 
     config_name = "ACCB.cfg"
     url = "http://127.0.0.1:5000"

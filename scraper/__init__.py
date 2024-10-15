@@ -302,10 +302,7 @@ class Scraper:
             raise ValueError("Sem conexão com a rede!")
 
     def run(self):
-        """
-        Realiza a pesquisa na plataforma do Preço da Hora Bahia.
-
-        """
+        """Realiza a pesquisa na plataforma do Preço da Hora Bahia."""
 
         URL = "https://precodahora.ba.gov.br/produtos"
 
@@ -314,7 +311,7 @@ class Scraper:
         try:
             driver = self.driver = open_chrome_driver()
             driver.get(URL)
-        except:
+        except Exception:
             return False
 
         emit(
@@ -331,7 +328,7 @@ class Scraper:
 
             driver.find_element(By.ID,"informe-sefaz-error").click()
 
-        except:
+        except Exception:
 
             # log("Pop Up Error")
             pass
@@ -358,7 +355,7 @@ class Scraper:
                 EC.presence_of_element_located((By.CLASS_NAME, "location-box"))
             )
 
-        except:
+        except Exception:
 
             self.captcha()
             time.sleep(1)
@@ -375,7 +372,7 @@ class Scraper:
                 EC.presence_of_element_located((By.ID, "add-center"))
             )
 
-        except:
+        except Exception:
 
             self.captcha()
             time.sleep(1)

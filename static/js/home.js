@@ -16,8 +16,7 @@ function move(val) {
 	WIDTH += val;
 	try {
 		WIDTH = WIDTH.toFixed(2);
-	}
-	catch (e) {
+	} catch (e) {
 		// Error
 	}
 	var floor = Math.floor(WIDTH);
@@ -55,24 +54,16 @@ function filter_search(month) {
 	// 	return;
 	// }
 
-
 	$.get("/select_search_info", { month: month }, (response) => {
-
 		if (response.success) {
-
 			var data = JSON.parse(response.data);
-			// console.log(month);
 			if (data.length != 0) {
-
 				$("#search-loader").fadeIn(500);
 				$(".tr-item").remove();
 
 				$("#search-select option").remove();
 				data.map((value) => {
-
-					// console.log(value);
 					$("#search-select").append(`<option city=${value[2]} value=${value[1]}>${value[2]} ${value[3]}</option>`);
-
 				});
 
 				$("#search-select").parent().find(".styledSelect").remove();
@@ -80,7 +71,6 @@ function filter_search(month) {
 				list_search(data[0][0]);
 				custom_select_search();
 				return true;
-
 			} else {
 				Materialize.toast("Nenhuma pesquisa cadastrada para esse mês.", 2000, 'rounded');
 				return false;
@@ -274,18 +264,14 @@ const custom_select_date = () => {
 			$styledSelect.removeClass('active');
 			$list.hide();
 		});
-
 	});
-
 }
 
 /**
  * Cria um input customizado select na página de pesquisa para as pesquisas.
  */
 const custom_select_search = () => {
-
 	$('#pesquisa #search-select').each(function () {
-
 		// Cache the number of options
 		var $this = $(this),
 			numberOfOptions = $(this).children('option').length;
@@ -346,9 +332,7 @@ const custom_select_search = () => {
 			$styledSelect.removeClass('active');
 			$list.hide();
 		});
-
 	});
-
 }
 
 // Listagem de cidades
@@ -502,7 +486,6 @@ const list_product = () => {
  * @param  {Array(string)} cities
  */
 const get_modal_content = (estab_name, cities) => {
-
 	$('#edit-modal .modal-content').remove();
 	var filtered_estab = ESTAB_DATA.filter((item, index) => {
 		if (item[1] === estab_name)
@@ -556,7 +539,6 @@ const get_modal_content = (estab_name, cities) => {
 		// fadeDuration: 200,
 	});
 	$('select').formSelect();
-
 }
 
 // Conteudo do modal dinamico - Produto
@@ -1193,10 +1175,8 @@ $(document).ready(function () {
 		}
 
 		$.get("/select_city", (response) => {
-
 			let estab_name = $(event.currentTarget).attr('value');
 			get_modal_content(estab_name, JSON.parse(response));
-
 		});
 
 	});
@@ -1895,10 +1875,10 @@ $(document).ready(function () {
 	});
 });
 
-function copyToClipboard(value) {
+const copyToClipboard = (value) => {
     navigator.clipboard.writeText(value);
     Materialize.toast("Texto copiado para área de transferências.", 2000, "rounded");
-}
+};
 
 $(document).ready(() => {
     const hjs_data = document.querySelector("#home-js-data");
@@ -1910,16 +1890,13 @@ $(document).ready(() => {
     const socket = io();
 
     socket.on("connect", () => {
-        console.log(socket.id);
+        console.log(`Conectado - id do socket: ${socket.id}`);
     });
 
-    socket.connect("http://127.0.0.1:5000/");
-
-    const search_loaded = () => {
+    const searchLoaded = () => {
         if (search || !is_chrome_installed)
             return;
 
-        console.log("***"); // FIXME
         if (confirm("Uma pesquisa foi encontrada em progresso, deseja retomá-la?")) {
             $("#backup-button").addClass("disable");
             $("#config_path").addClass("disable");
@@ -1942,7 +1919,7 @@ $(document).ready(() => {
         $("#warning").modal({});
         Cookies.set("warning", "seen", {expires: 1});
     } else {
-        search_loaded();
+        searchLoaded();
     }
 
     if (Cookies.get("path") === undefined) {
@@ -1961,10 +1938,21 @@ $(document).ready(() => {
     if (!is_chrome_installed)
         alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
 
-    if (search == "True")
-        $("body").on("click", "#backup-button", function (e) {
-            search_loaded();
+    if (search)
+        $("body").on("click", "#backup-button", (_) => searchLoaded());
+
+    socket.on("set_path", () => {
+        alert("O antigo diretório foi deletado! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+
+        $.get("/set_path", (response) => {
+            if (response.path != "") {
+                alert(response.message);
+                Cookies.set("path", response.path, { expires: 10 });
+            }
         });
+    });
+
+    socket.connect("http://127.0.0.1:5000/");
 
     $("#config_path").on("click", (e) => {
         e.preventDefault();
@@ -1973,17 +1961,6 @@ $(document).ready(() => {
             if (response.path != "") {
                 alert(response.message);
                 Cookies.set("path", response["path"], {expires: 10});
-            }
-        });
-    });
-
-    socket.on("set_path", function(){
-        alert("O antigo diretório foi deletado! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-
-        $.get("/set_path", (response) => {
-            if (response.path != "") {
-                alert(response.message);
-                Cookies.set("path", response.path, { expires: 10 });
             }
         });
     });
@@ -2001,4 +1978,3 @@ $(document).ready(() => {
             $.get("/open_folder", { "path": path }, () => {});
     });
 });
-
