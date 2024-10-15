@@ -1,0 +1,41 @@
+{% extends "material/base.html" %}
+
+{% macro img(src,alt) %}
+  <img src="{{ url_for('static', filename='img/' + src) }}" alt="{{ alt }}"/>
+{% endmacro %}
+
+{% block title %}
+  ACCB
+{% endblock %}
+
+{% block metas %}
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+{% endblock %}
+
+{% macro use_style_local(name) %}
+  <link
+    rel="stylesheet"
+    type="text/css"
+    href="{{ url_for('static', filename='styles/' + name) }}"
+  />
+{% endmacro %}
+
+{% macro use_style_remote(name) %}
+  <link rel="stylesheet" type="text/css" href="{{ name }}"/>
+{% endmacro %}
+
+{% block styles %}
+  <link rel="icon" href="{{ url_for('static', filename='icon/cart.svg') }}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700&family=Spectral:ital,wght@1,400;1,600;1,800&display=swap" rel="stylesheet">
+  {{ use_style_local("materialize.css") }}
+  {{ use_style_local("home.css") }}
+  {{ use_style_local("modal.css") }}
+  {{ use_style_remote("https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css") }}
+  {{ use_style_remote("http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/base/jquery-ui.css") }}
+{% endblock %}

@@ -1,566 +1,536 @@
-{% extends "material/base.html" %}
-  <head>
-    {% block head %}
-      <meta charset="UTF-8" />
-      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com">
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700&family=Spectral:ital,wght@1,400;1,600;1,800&display=swap" rel="stylesheet">
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="{{ url_for('static',filename='styles/materialize.css') }}"
-      />
-      <link
-        rel="stylesheet"
-        href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"
-      />
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="{{ url_for('static',filename='styles/home.css') }}"
-      />
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="{{ url_for('static',filename='styles/modal.css') }}"
-      />
-      <link rel="stylesheet" type="text/css" media="screen" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/base/jquery-ui.css">
+{% extends "base.html" %}
 
-      <link rel="icon" href="{{ url_for('static',filename='icon/cart.svg') }}">
-      <title>PH - Coleta Semi-Automática</title>
-    {% endblock %}
-  </head>
-  {% block content %}
-    <city value={{city}} />
-    <search value="false" />
-    <header>
-      <div id="top-menu">
-        <div class="top-logo">
-          <img
-            src="{{ url_for('static',filename='img/uesc_brasão.png') }}"
-            alt="Uesc Logo"
-          />
-          <img
-            src="{{ url_for('static',filename='img/accb.png') }}"
-            alt="ACCB Logo"
-          />
-          <img
-            src="{{ url_for('static',filename='img/proex.png') }}"
-            alt="ACCB Logo"
-          />
-        </div>
-        <div style="margin-top: 2em;">
+{% block title %}
+  PH - Coleta Semi-Automática
+{% endblock %}
 
-          {% if search %}
+{% block scripts %}
+  {{ super() }}
+  <script type="module" src="{{ url_for('static', filename='js/cookie.min.mjs') }}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+  <script type='text/javascript' src="{{ url_for('static', filename='js/materialize.js') }}"></script>
+  <script type='text/javascript' src="{{ url_for('static', filename='js/modal.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/home.js') }}"></script>
+
+  <div hidden id="home-js-data"
+      data-search="{{ search }}"
+      data-active="{{ active }}"
+      data-progress-value="{{ progress_value }}"
+      data-is-chrome-installed="{{ chrome_installed }}"
+      >
+  </div>
+{% endblock %}
+
+{% macro img(src,alt) %}
+  <img src="{{ url_for('static', filename='img/' + src) }}" alt="{{ alt }}"/>
+{% endmacro %}
+
+{% macro sobre_programa() %}
+  Esta aplicação objetivou modernizar o processo de coleta de preços dos
+  produtos que compõem a cesta básica do projeto de extensão intitulado
+  Acompanhamento do Custo da Cesta Básica (ACCB). Para isso foram desenvolvidas
+  duas ferramentas uma delas sendo esta ferramenta. Esta aplicação desktop
+  automatiza a pesquisa na plataforma Preço da Hora – Bahia
+  (precodahora.ba.gov.br) que disponibiliza os preços de produtos em diversos
+  estabelecimentos da Bahia. Esta aplicação desktop atualmente disponível
+  somente para o sistema operacional Windows, com alguns testes realizados na
+  plataforma Linux, formata os dados coletados no processo de scraping no
+  referido site e devolve uma coleção de arquivos em excel contendo informações
+  de preços de produtos de interesse em diferentes formatação e agrupamento de
+  dados para facilitar o entendimento geral dos dados coletados. Essa
+  ferramenta pode ser utilizada por outras instituições da Bahia, bastando
+  apenas alterar o arquivo de configuração do programa
+{% endmacro %}
+
+{% block content %}
+  <city value="{{city}}"/>
+  <search value="false"/>
+  <header>
+    <div id="top-menu">
+      <div class="top-logo">
+        {{ img("uesc_brasão.png", "Logo da UESC") }}
+        {{ img("accb.png", "Logo do ACCB") }}
+        {{ img("proex.png", "Logo da PROEX") }}
+      </div>
+
+      <div style="margin-top: 2em;">
+        {% if search %}
           <a style="background: #fea621 !important; margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
-          {% else %}
+        {% else %}
           <a  style="margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
-          {% endif %}
-          <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
-          <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
-          <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder" ><i class="fa fa-folder"></i></a>
-          <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app" ><i class="fa fa-close"></i></a>
-        </div>
+        {% endif %}
+
+        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
+        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder" ><i class="fa fa-folder"></i></a>
+        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app" ><i class="fa fa-close"></i></a>
       </div>
-      <div>
-        <p class="title"><i class="fa fa-shopping-cart"> </i> Preço da Hora Bahia - Coleta Semi-Automática </p>
-        <ul id="main-navigation" class="tabs" style="width: fit-content;">
-          <li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
-          <li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
-            Estabelecimentos</a></li>
-          <li class="tab col s3"><a class="disable  " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
-          <li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
-            Configurar</a></li>
-          <li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
-            Produtos</a></li>
-          <li class="tab col s3"></i><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar Pesquisas"> <i class="fa fa-database"> </i>
-            Pesquisas</a></li>
-          <!-- SOBRE -->
-          <li class="tab col s3"></i><a href="#about" id="sobre" class="tooltipped" data-position="left" data-tooltip="Sobre o Programa"> <i class="fa fa-info-circle"> </i>
-            Sobre</a></li>
-        </ul>
-      </div>
-    </header>
-    <main class="main-content row z-depth-5">
-      <div id="pesquisar" class="tab">
-          <div class="tab-content" style="display: flex; flex-direction:column; justify-content: center; align-items: center;">
-            <h5>{{ initial_message }}</h5>
-            <div class="select-wrapper-main" style="flex-direction: colunm;">
-              {% if chrome_installed == 'False' %}
-                <a class="select-item city z-depth-2" >Indisponível</a>
-              {% elif len(city) == 0 %}
-                  <a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
-              {% else %}
-                {% if product_len == 0 %}
-                  {% for city in data %}
-                    <a class="select-item city z-depth-2 disable"" value="{{city[0]}}" id="{{replace(city[0], ' ')}}" >{{decode(city[0])}}</a>
-                  {% endfor %}
-                {% else %}
-                  {% for city in data %}
-                    <a class="select-item city z-depth-2" value="{{city[0]}}" id="{{replace(city[0], ' ')}}" >{{decode(city[0])}}</a>
-                  {% endfor %}
-                {% endif %}
-              {% endif %}
-            </div>
+    </div>
+    <div>
+      <p class="title"><i class="fa fa-shopping-cart"> </i> Preço da Hora Bahia - Coleta Semi-Automática </p>
+      <ul id="main-navigation" class="tabs" style="width: fit-content;">
+        <li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
+        <li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
+          Estabelecimentos</a></li>
+        <li class="tab col s3"><a class="disable  " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
+        <li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
+          Configurar</a></li>
+        <li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
+          Produtos</a></li>
+        <li class="tab col s3"></i><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar Pesquisas"> <i class="fa fa-database"> </i>
+          Pesquisas</a></li>
+        <!-- SOBRE -->
+        <li class="tab col s3"></i><a href="#about" id="sobre" class="tooltipped" data-position="left" data-tooltip="Sobre o Programa"> <i class="fa fa-info-circle"> </i>
+          Sobre</a></li>
+      </ul>
+    </div>
+  </header>
+  <main class="main-content row z-depth-5">
+    <div id="pesquisar" class="tab">
+        <div class="tab-content" style="display: flex; flex-direction:column; justify-content: center; align-items: center;">
+          <h5>{{ initial_message }}</h5>
+          <div class="select-wrapper-main" style="flex-direction: colunm;">
             {% if chrome_installed == 'False' %}
-              <button id="select" class="disable  btn-large" style="background-color: gray !important;">Indisponível</button>
+              <a class="select-item city z-depth-2" >Indisponível</a>
             {% elif len(city) == 0 %}
-              <button id="select" class="disable  btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
-            {% elif product_len == 0 %}
-              <button id="select" class="disable  btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
+                <a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
             {% else %}
-              <button id="select" class="btn-large">Selecionar Estabelecimentos</button>
+              {% if product_len == 0 %}
+                {% for city in data %}
+                  <a class="select-item city z-depth-2 disable"" value="{{city[0]}}" id="{{replace(city[0], ' ')}}" >{{decode(city[0])}}</a>
+                {% endfor %}
+              {% else %}
+                {% for city in data %}
+                  <a class="select-item city z-depth-2" value="{{city[0]}}" id="{{replace(city[0], ' ')}}" >{{decode(city[0])}}</a>
+                {% endfor %}
+              {% endif %}
             {% endif %}
           </div>
-      </div>
-      <div id="listagem" class="col s12 tab">
-        <h5>Selecione pelo menos um estabelecimento para prosseguir</h5>
-        <div class="tab-content-listagem">
-          <div class="select_wrapper col s12">
-            <i class="fa fa-spinner fa-pulse" id="loader"></i>
-          </div>
-          <div class="button-menu">
-            <button id="back" class=" btn-large">Voltar</button>
-            <button id="select-all" class=" btn-large">Selecionar Todos</button>
-            <button id="start" class=" btn-large">Iniciar Pesquisa</button>
-          </div>
+          {% if chrome_installed == 'False' %}
+            <button id="select" class="disable  btn-large" style="background-color: gray !important;">Indisponível</button>
+          {% elif len(city) == 0 %}
+            <button id="select" class="disable  btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
+          {% elif product_len == 0 %}
+            <button id="select" class="disable  btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
+          {% else %}
+            <button id="select" class="btn-large">Selecionar Estabelecimentos</button>
+          {% endif %}
+        </div>
+    </div>
+    <div id="listagem" class="col s12 tab">
+      <h5>Selecione pelo menos um estabelecimento para prosseguir</h5>
+      <div class="tab-content-listagem">
+        <div class="select_wrapper col s12">
+          <i class="fa fa-spinner fa-pulse" id="loader"></i>
+        </div>
+        <div class="button-menu">
+          <button id="back" class=" btn-large">Voltar</button>
+          <button id="select-all" class=" btn-large">Selecionar Todos</button>
+          <button id="start" class=" btn-large">Iniciar Pesquisa</button>
         </div>
       </div>
-      <div id="progress" class="col s12 tab">
-        <div class="tab-content" style="top: -50%">
-          <h5>Iniciando Pesquisa</h5>
-          <div id="progress_container">
-            <div id="progress_bar">0%</div>
-          </div>
-          <div id="progress_scroll" style="">
-            <div id="progress_log">
-            </div>
-          </div>
-          <div class="button-menu">
-            <button id="pause" class=" btn-large">Parar Pesquisa</button>
-            <button id="cancel" class=" btn-large">Cancelar Pesquisa</button>
+    </div>
+    <div id="progress" class="col s12 tab">
+      <div class="tab-content" style="top: -50%">
+        <h5>Iniciando Pesquisa</h5>
+        <div id="progress_container">
+          <div id="progress_bar">0%</div>
+        </div>
+        <div id="progress_scroll" style="">
+          <div id="progress_log">
           </div>
         </div>
-        <div class="row center pause-overlay">
-          <i class="fa fa-spinner fa-pulse" id="pause-loader"></i>
+        <div class="button-menu">
+          <button id="pause" class=" btn-large">Parar Pesquisa</button>
+          <button id="cancel" class=" btn-large">Cancelar Pesquisa</button>
         </div>
       </div>
-      <div id="configurar" class="col s12 tab" >
-        <div class="config-menu">
-          <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Cidade" >
-            <select id="city-select" class="browser-default" >
-              {% for city in data %}
-                <option value="{{decode(city[0])}}">{{decode(city[0])}}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large  primary_color tooltipped"  data-position="left" data-tooltip="Adicionar Cidade"><i class="fa fa-plus"></i>
-          </a>
-          <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Editar Cidade" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i>
-          </a>
-          <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Remover Cidade" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i>
-          </a>
-          <a id="export" class="primary_color left  btn-large">Exportar</a>
-          <a id="import" class="primary_color left  btn-large">
-            Importar
-          </a>
-          <div style="width: 0; height: 0; overflow: hidden;">
-            <input id="import_file" type="file"/>
-          </div>
+      <div class="row center pause-overlay">
+        <i class="fa fa-spinner fa-pulse" id="pause-loader"></i>
+      </div>
+    </div>
+    <div id="configurar" class="col s12 tab" >
+      <div class="config-menu">
+        <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Cidade" >
+          <select id="city-select" class="browser-default" >
+            {% for city in data %}
+              <option value="{{decode(city[0])}}">{{decode(city[0])}}</option>
+            {% endfor %}
+          </select>
         </div>
-        <div class="tab-content-config">
-          <div class="config-title">
-            <h5>Listagem de Estabelecimentos</h5>
-            <a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Estabelecimento" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
+        <a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large  primary_color tooltipped"  data-position="left" data-tooltip="Adicionar Cidade"><i class="fa fa-plus"></i>
+        </a>
+        <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Editar Cidade" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i>
+        </a>
+        <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Remover Cidade" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i>
+        </a>
+        <a id="export" class="primary_color left  btn-large">Exportar</a>
+        <a id="import" class="primary_color left  btn-large">
+          Importar
+        </a>
+        <div style="width: 0; height: 0; overflow: hidden;">
+          <input id="import_file" type="file"/>
+        </div>
+      </div>
+      <div class="tab-content-config">
+        <div class="config-title">
+          <h5>Listagem de Estabelecimentos</h5>
+          <a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Estabelecimento" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
+        </div>
+        <div id="list-config">
+          <div style="display: none;" class="z-depth-3 estab-config-result" id="no-result" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal" rel="modal:open">
+            <p>Nenhum estabelecimento cadastrado, pressione para adicionar.</p>
+            </a>
           </div>
-          <div id="list-config">
-            <div style="display: none;" class="z-depth-3 estab-config-result" id="no-result" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal" rel="modal:open">
-              <p>Nenhum estabelecimento cadastrado, pressione para adicionar.</p>
-              </a>
-            </div>
 
-          </div>
         </div>
       </div>
-      <div id="produtos" class="col s12 tab" >
-        <div class="tab-content-config">
-          <div class="config-title">
-            <h5>Listagem de Produtos</h5>
-            <a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
-          </div>
-          <div id="list-product">
+    </div>
+    <div id="produtos" class="col s12 tab" >
+      <div class="tab-content-config">
+        <div class="config-title">
+          <h5>Listagem de Produtos</h5>
+          <a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
+        </div>
+        <div id="list-product">
 
-            <div style="display: none;" class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;">
-              <a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
-              <p>Nenhum produto cadastrado, pressione para adicionar.</p>
-              </a>
-            </div>
+          <div style="display: none;" class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;">
+            <a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
+            <p>Nenhum produto cadastrado, pressione para adicionar.</p>
+            </a>
           </div>
         </div>
       </div>
-      <div id="pesquisa" class="col s12 tab" >
-        <div class="tab-content-search">
-          <div class="config-title" style="margin: 0;">
-            <div>
-              <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa" >
-                <select id="search-select" class="browser-default">
-                  {% if len(search_info) == 0 %}
-                    <option value="null">Nenhuma Pesquisa</option>
+    </div>
+    <div id="pesquisa" class="col s12 tab" >
+      <div class="tab-content-search">
+        <div class="config-title" style="margin: 0;">
+          <div>
+            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa" >
+              <select id="search-select" class="browser-default">
+                {% if len(search_info) == 0 %}
+                  <option value="null">Nenhuma Pesquisa</option>
+                {% endif %}
+                {% for search in search_info %}
+                  <option city="{{search[2]}}" value="{{search[0]}}">{{search[2]}} {{search[3]}}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês" >
+              <select id="month-picker" class="browser-default">
+                {% for index,mont in enumerate(month) %}
+                  {% if index + 1 == active_month %}
+                    <option selected value="{{index}}">{{mont}}</option>
+                  {% else %}
+                    <option value="{{index}}">{{mont}}</option>
                   {% endif %}
-                  {% for search in search_info %}
-                    <option city="{{search[2]}}" value="{{search[0]}}">{{search[2]}} {{search[3]}}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês" >
-                <select id="month-picker" class="browser-default">
-                  {% for index,mont in enumerate(month) %}
-                    {% if index + 1 == active_month %}
-                      <option selected value="{{index}}">{{mont}}</option>
-                    {% else %}
-                      <option value="{{index}}">{{mont}}</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <!-- <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Ano" >
-                <select id="year-picker" class="browser-default">
-                  {% for index,year in enumerate(years) %}
-                    {% if year == active_year %}
-                      <option selected value="{{year[0]}}">{{year[0]}}</option>
-                    {% else %}
-                      <option value="{{year[0]}}">{{year[0]}}</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </div> -->
+                {% endfor %}
+              </select>
             </div>
-            <!-- <a style="margin-left: 10px; margin-right: 10px;" id="month-picker" type="text" class="btn-floating btn-large primary_color"><i class="fa fa-calendar"></i></a> -->
-            <div>
-              <a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
-              <a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
-              <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped"  id="clean-search" data-position="left" data-tooltip="Limpar Pesquisas"><i class="fa fa-trash"></i></a>
-            </div>
-          </div>
-          <h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
-          <div class="input-field search_div">
-            <input placeholder="Nome do Estabelecimento : dalnordes .." class="browser-default z-depth-2" id="search_bar">
-            <a class="round btn-floating btn-large  primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
-          </div>
-          <div id="list-search">
-              <table class="centered striped">
-                <thead>
-                <tr style="position:sticky; top: -3%; color: #fff;" class="primary_color">
-                  <th>Estabelecimento</th>
-                  <th>Endereço</th>
-                  <th>Palavra Chave</th>
-                  <th>Produto</th>
-                  <th>Preço</th>
-                </tr>
-                </thead>
-                <tbody id="search-tbody">
-                  <tr class="no-result" style="display: none;">
-                    <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                    <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                    <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                    <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                    <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                  </tr>
-                </tbody>
-              </table>
-              <i class="fa fa-spinner fa-pulse" id="search-loader"></i>
-            </div>
-          </div>
-          <span class="left duration" >Tempo de duração da pesquisa : NaN  </span>
-      </div>
-      <div id="about" class="col s12 tab" >
-        <div class="tab-content-config row center" style="padding-bottom: 5%;">
-          <div id="doc" class="row tab" style="margin: 1em 0;">
-          <div class="config-title">
-            <h5>Colaboradores</h5>
-          </div>
-            <div class="col s12 m12 center about-item">
-              <div class="about-container">
-                <div class="about-profile z-depth-5">
-                  <img src="{{ url_for('static',filename='img/okay.jpg') }}" />
-                  <div>
-                    <div>
-
-                        <a target="_blank" href="https://linkedin.com/in/samuel-vasconcelos-b196001ba/"><img src="{{ url_for('static',filename='img/linkedin.svg') }}" />Samuel Mendonça Vasconcelos</a>
-                    </div>
-                    <div>
-
-                        <a href="https://github.com/smvasconcelos" target="_blank"><img src="{{ url_for('static',filename='img/github.svg') }}" /> github.com/smvasconcelos</a>
-                    </div>
-                  </div>
-                </div>
-                <div class="about-profile z-depth-5">
-                  <img style="height: 100px !important;" src="{{ url_for('static',filename='img/marta.jpg') }}" />
-                  <div>
-                    <div>
-
-                        <a target="_blank" href="http://lattes.cnpq.br/0053869533760582"><img src="{{ url_for('static',filename='img/lattes.svg') }}" />Marta Magda Dornelles</a>
-                    </div>
-                    <div>
-                        <a onclick="copyToClipboard('mmbertoldi@uesc.br')"><img src="{{ url_for('static',filename='img/gmail.svg') }}" />mmbertoldi@uesc.br</a>
-                    </div>
-                  </div>
-                </div>
-                <div class="about-profile z-depth-5">
-                  <img src="{{ url_for('static',filename='img/monica.gif') }}" />
-                  <div>
-                    <div>
-
-                        <a href="http://lattes.cnpq.br/6157255488660799"><img src="{{ url_for('static',filename='img/lattes.svg') }}" />Mônica de Moura Pires</a>
-                    </div>
-                    <div>
-
-                        <a onclick="copyToClipboard('mpires@uesc.br')"><img src="{{ url_for('static',filename='img/gmail.svg') }}" />mpires@uesc.br</a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div id="doc2" class="row tab" style="margin: 1em 0; position: relative;">
-            <div class="config-title">
-              <h5>Sobre o programa</h5>
-            </div>
-            <div class="about-program">
-              <!-- <img src="{{ url_for('static',filename='img/calab.png') }}" /> -->
-              <p>
-                Esta aplicação objetivou modernizar o processo de coleta de preços dos produtos
-                que compõem a cesta básica do projeto de extensão intitulado Acompanhamento do
-                Custo da Cesta Básica (ACCB). Para isso foram desenvolvidas duas ferramentas uma delas sendo esta ferramenta.
-                Esta aplicação desktop automatiza a pesquisa na plataforma Preço da
-                Hora – Bahia (precodahora.ba.gov.br) que disponibiliza os preços de produtos em
-                diversos estabelecimentos da Bahia. Esta aplicação desktop atualmente disponível
-                somente para o sistema operacional Windows, com alguns testes realizados na
-                plataforma Linux, formata os dados coletados no processo de scraping no referido site
-                e devolve uma coleção de arquivos em excel contendo informações de preços de
-                produtos de interesse em diferentes formatação e agrupamento de dados para facilitar o
-                entendimento geral dos dados coletados. Essa ferramenta pode ser utilizada por outras
-                instituições da Bahia, bastando apenas alterar o arquivo de configuração do programa
-            </div>
-          </div>
-          <ul id="sec-navigation" class="tabs" style="width: 100%;">
-            <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>  Colaboradores </a></li>
-            <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i> O programa</a></li>
-          </ul>
-      </div>
-    </main>
-
-    <!-- MODAL DINAMICO PARA EDIÇÃO DE ESTAB -->
-
-    <div id="edit-modal"  style="min-height: 450px" class="modal">
-      <a href="#" rel="modal:close" />
-    </div>
-
-    <!-- MODAL DINAMICO PARA EDIÇÃO DE PRODUTO -->
-
-    <div style="height: 45%;  min-height: 350px;"id="edit-modal-product" class="modal">
-      <a href="#" rel="modal:close" />
-    </div>
-
-    <!-- MODAL ADICIONANDO PRODUTO -->
-    <div style="height: 45%; min-height: 350px;" id="add-modal-product" class="modal">
-      <div class="modal-content">
-        <div>
-          <h5 class="modal-title">Adicionar Produto</h5>
-        </div>
-          <div>
-            <div style="margin: 20px 0;">
-              <div class="input-field col s12">
-                <input placeholder="" id="product_name" type="text" >
-                <label class="active" for="product_name">Produto</label>
-              </div>
-              <div class="input-field col s12">
-                <input  placeholder="Palavras Chave" id="keywords" type="text" >
-                <label class="active" for="">Palavras Chave</label>
-              </div>
-            </div>
-          </div>
-          <div class="modal-menu" style="position: relative;">
-            <button  class="cancel primary_color btn-large" href="#add-modal-product" rel="modal:close">Cancelar</button>
-            <button id="save-add-product" class="primary_color btn-large">Adicionar Produto</button>
-          </div>
-      </div>
-    </div>
-
-    <!-- MODAL ADICIONANDO ESTAB -->
-    <div id="add-modal" style="min-height: 450px;" class="modal">
-      <div class="modal-content">
-        <div>
-          <h5 class="modal-title">Adicionar Estabelecimento</h5>
-        </div>
-          <div>
-            <div style="margin: 20px 0;">
-              <div class="input-field col s6">
-                <select id="city_name-save" style="color: black !important;">
-                  {% for city in data %}
-                    <option value="{{city[0]}}" >{{decode(city[0])}}</option>
-                  {% endfor %}
-                </select>
-                <label>Cidade</label>
-              </div>
-              <div class="input-field col s6">
-                <input placeholder="Estabelecimento" id="estab_name-save" type="text" >
-                <label class="active" for="estab_name-save">Estabelecimento</label>
-              </div>
-              <div class="input-field col s6">
-                <input  placeholder="Nome na Plataforma" id="web_name-save" type="text" >
-                <label class="active" for="web_name-save">Nome na Plataforma</label>
-              </div>
-              <div class="input-field col s6">
-                <input placeholder="Endereço" id="adress-save" type="text" >
-                <label class="active" for="adress-save">Endereço</label>
-              </div>
-            </div>
-          </div>
-          <div class="modal-menu">
-            <button  class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
-            <button id="save-add" class="primary_color btn-large">Adicionar Estabelecimento</button>
-          </div>
-      </div>
-    </div>
-
-    <!-- MODAL DELETANDO CIDADE -->
-    <div id="delete-city" class="modal" style="height: 40%;">
-      <div class="modal-content">
-        <div>
-          <h5 class="modal-title">Deletar Cidade</h5>
-        </div>
-          <div>
-            <div style="margin: 20px 0;">
-              <div class="input-field col s12">
-                <select id="city-delete-select" style="color: black !important;">
-                  {% for city in data %}
-                    <option value="{{city[0]}}" >{{decode(city[0])}}</option>
-                  {% endfor %}
-                </select>
-                <label>Cidade</label>
-              </div>
-          </div>
-        </div>
-        <div class="modal-menu">
-          <button  class="cancel primary_color btn-large" href="#delete-city" rel="modal:close">Cancelar</button>
-          <button id="save-delete-city" class="primary_color btn-large">Deletar Cidade</button>
-        </div>
-    </div>
-    <!-- MODAL EDITANDO CIDADE -->
-    <div id="edit-city" class="modal" style="height: 40%; min-height: 350px;">
-      <div class="modal-content">
-        <div>
-          <h5 class="modal-title">Editar Cidade</h5>
-        </div>
-          <div>
-            <div style="margin: 20px 0;">
-              <div class="input-field col s6">
-                <select id="city-edit-select" style="color: black !important;">
-                  {% for city in data %}
-                    <option value="{{city[0]}}" >{{decode(city[0])}}</option>
-                  {% endfor %}
-                </select>
-                <label>Cidade</label>
-              </div>
-              <div class="input-field col s6">
-                <input placeholder="Cidade" id="city-edit" type="text" >
-                <label class="active" for="city-edit">Novo Nome</label>
-              </div>
-          </div>
-        </div>
-        <div class="modal-menu">
-          <button  class="cancel primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
-          <button id="save-edit-city" class="primary_color btn-large">Salvar Alterações</button>
-        </div>
-    </div>
-
-    <!-- MODAL ADICIONANDO CIDADE -->
-    <div style="height: 40%;" id="add-city-modal" class="modal">
-      <div class="modal-content">
-        <div>
-          <h5 class="modal-title">Adicionar Cidade</h5>
-        </div>
-          <div>
-            <div style="margin: 20px 0;">
-              <div class="input-field col s12">
-                <input placeholder="Cidade" id="save-city" type="text" >
-                <label class="active" for="save-city">Cidade</label>
-              </div>
-            </div>
-          </div>
-          <div class="modal-menu">
-            <button  class="cancel primary_color btn-large" href="#add-city-modal" rel="modal:close">Cancelar</button>
-            <button id="add-city" class="primary_color btn-large">Adicionar Cidade</button>
-          </div>
-      </div>
-    </div>
-
-    <!-- MODAL DE WARNINGS -->
-    <div id="warning" class="modal">
-      <div class="modal-content" style="height: 100%">
-        <div>
-          <h5 class="modal-title"  style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Dicas para utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
-        </div>
-        <ul class="browser-default">
-          <li>Atualizar a página do programa manualmente irá fechar o programa.</li>
-          <li>Todo o progresso de uma pesquisa é salvo durante a mesma, ou seja, em caso de erro ou perda de internet, é possível retomar uma pesquisa através de um popup que aparece quando o programa é aberto.</li>
-          <li>A quantidade de estabelecimentos cadastrados não influênciam no tempo da pesquisa em si, os arquivos são gerados separadamentes para diminuir o custo de tempo consumido. Em contrapartida cada palavra chave aumenta em media 2-4 minutos no tempo total da pesquisa.</li>
-          <li>É possível pesquisar por qualquer campo da tabela de pesquisas disponível na janela de pesquisas.</li>
-          <li>Evite o máximo atualizar a página manualmente ou fecha-la durante uma pesquisa para minimizar a probabilidade de erro causado durante uma pesquisa.</li>
-          <li>Só é possível abrir uma aba do programa por vez, caso seja aberto uma outra janela você encontrará um aviso o notificando para voltar para a janela principal.</li>
-          <li>Todos os endereços dos estabelecimentos devem ser cadastrados da forma mais identica possível aos valores encontrados no  Preço da Hora - Bahia para máximizar as chances de uma filtragem correta.</li>
-          <li>Antes de cadastrar uma cidade, confira no site do preço da hora como o nome do município aparece, isso pode ser feito nos filtros de pesquisa em : Alterar Localização > (popup) Usar centro do município > Insira o nome do município desejado. </li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- MODAL DE OPÇÃO DE ARQUIVOS - PESQUISA -->
-    <div id="search-file" class="modal">
-      <div class="modal-content">
-        <div>
-          <h5 class="modal-title">Selecione pelo menos um estabelecimento para prosseguir</h5>
-        </div>
-        <div style="margin-top: 1.8em;">
-          <div class="input-field col s12">
-            <select id="file_format" style="color: black !important;">
-                <option value="default" >Padrão (Estabelecimentos cadastrados)</option>
-                <option value="all" >Todos (Estabelecimentos não cadastrados)</option>
-            </select>
-            <label style="left: 0;">Formatação</label>
-          </div>
-          <div id="file-list" style="max-height: 250px;overflow: auto; width: 100%;display: inline-flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px; align-items: center;">
-            <!-- <div class="select_wrapper col s12">
-              <i class="fa fa-spinner fa-pulse" id="loader"></i>
+            <!-- <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Ano" >
+              <select id="year-picker" class="browser-default">
+                {% for index,year in enumerate(years) %}
+                  {% if year == active_year %}
+                    <option selected value="{{year[0]}}">{{year[0]}}</option>
+                  {% else %}
+                    <option value="{{year[0]}}">{{year[0]}}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
             </div> -->
           </div>
-          <div class="modal-menu" style="position: relative;">
-            <button class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
-            <button id="select-all-file" class=" btn-large primary_color">Selecionar Todos</button>
-            <button id="generate-file" class="primary_color btn-large">Gerar Arquivos</button>
+          <!-- <a style="margin-left: 10px; margin-right: 10px;" id="month-picker" type="text" class="btn-floating btn-large primary_color"><i class="fa fa-calendar"></i></a> -->
+          <div>
+            <a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
+            <a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
+            <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped"  id="clean-search" data-position="left" data-tooltip="Limpar Pesquisas"><i class="fa fa-trash"></i></a>
           </div>
+        </div>
+        <h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
+        <div class="input-field search_div">
+          <input placeholder="Nome do Estabelecimento : dalnordes .." class="browser-default z-depth-2" id="search_bar">
+          <a class="round btn-floating btn-large  primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
+        </div>
+        <div id="list-search">
+            <table class="centered striped">
+              <thead>
+              <tr style="position:sticky; top: -3%; color: #fff;" class="primary_color">
+                <th>Estabelecimento</th>
+                <th>Endereço</th>
+                <th>Palavra Chave</th>
+                <th>Produto</th>
+                <th>Preço</th>
+              </tr>
+              </thead>
+              <tbody id="search-tbody">
+                <tr class="no-result" style="display: none;">
+                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                </tr>
+              </tbody>
+            </table>
+            <i class="fa fa-spinner fa-pulse" id="search-loader"></i>
+          </div>
+        </div>
+        <span class="left duration" >Tempo de duração da pesquisa : NaN  </span>
+    </div>
+    <div id="about" class="col s12 tab" >
+      <div class="tab-content-config row center" style="padding-bottom: 5%;">
+        <div id="doc" class="row tab" style="margin: 1em 0;">
+        <div class="config-title">
+          <h5>Colaboradores</h5>
+        </div>
+          <div class="col s12 m12 center about-item">
+            <div class="about-container">
+              <div class="about-profile z-depth-5">
+                <img src="{{ url_for('static', filename='img/okay.jpg') }}" />
+                <div>
+                  <div>
+
+                      <a target="_blank" href="https://linkedin.com/in/samuel-vasconcelos-b196001ba/"><img src="{{ url_for('static', filename='img/linkedin.svg') }}" />Samuel Mendonça Vasconcelos</a>
+                  </div>
+                  <div>
+
+                      <a href="https://github.com/smvasconcelos" target="_blank"><img src="{{ url_for('static', filename='img/github.svg') }}" /> github.com/smvasconcelos</a>
+                  </div>
+                </div>
+              </div>
+              <div class="about-profile z-depth-5">
+                <img style="height: 100px !important;" src="{{ url_for('static', filename='img/marta.jpg') }}" />
+                <div>
+                  <div>
+
+                      <a target="_blank" href="http://lattes.cnpq.br/0053869533760582"><img src="{{ url_for('static', filename='img/lattes.svg') }}" />Marta Magda Dornelles</a>
+                  </div>
+                  <div>
+                      <a onclick="copyToClipboard('mmbertoldi@uesc.br')"><img src="{{ url_for('static', filename='img/gmail.svg') }}" />mmbertoldi@uesc.br</a>
+                  </div>
+                </div>
+              </div>
+              <div class="about-profile z-depth-5">
+                <img src="{{ url_for('static', filename='img/monica.gif') }}" />
+                <div>
+                  <div>
+
+                      <a href="http://lattes.cnpq.br/6157255488660799"><img src="{{ url_for('static', filename='img/lattes.svg') }}" />Mônica de Moura Pires</a>
+                  </div>
+                  <div>
+
+                      <a onclick="copyToClipboard('mpires@uesc.br')"><img src="{{ url_for('static', filename='img/gmail.svg') }}" />mpires@uesc.br</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="doc2" class="row tab" style="margin: 1em 0; position: relative;">
+          <div class="config-title">
+            <h5>Sobre o programa</h5>
+          </div>
+          <div class="about-program">
+            <p>{{ sobre_programa() }}</p>
+          </div>
+        </div>
+        <ul id="sec-navigation" class="tabs" style="width: 100%;">
+          <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>  Colaboradores </a></li>
+          <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i> O programa</a></li>
+        </ul>
+    </div>
+  </main>
+
+  <!-- MODAL DINAMICO PARA EDIÇÃO DE ESTAB -->
+
+  <div id="edit-modal"  style="min-height: 450px" class="modal">
+    <a href="#" rel="modal:close" />
+  </div>
+
+  <!-- MODAL DINAMICO PARA EDIÇÃO DE PRODUTO -->
+
+  <div style="height: 45%;  min-height: 350px;"id="edit-modal-product" class="modal">
+    <a href="#" rel="modal:close" />
+  </div>
+
+  <!-- MODAL ADICIONANDO PRODUTO -->
+  <div style="height: 45%; min-height: 350px;" id="add-modal-product" class="modal">
+    <div class="modal-content">
+      <div>
+        <h5 class="modal-title">Adicionar Produto</h5>
+      </div>
+        <div>
+          <div style="margin: 20px 0;">
+            <div class="input-field col s12">
+              <input placeholder="" id="product_name" type="text" >
+              <label class="active" for="product_name">Produto</label>
+            </div>
+            <div class="input-field col s12">
+              <input  placeholder="Palavras Chave" id="keywords" type="text" >
+              <label class="active" for="">Palavras Chave</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-menu" style="position: relative;">
+          <button  class="cancel primary_color btn-large" href="#add-modal-product" rel="modal:close">Cancelar</button>
+          <button id="save-add-product" class="primary_color btn-large">Adicionar Produto</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL ADICIONANDO ESTAB -->
+  <div id="add-modal" style="min-height: 450px;" class="modal">
+    <div class="modal-content">
+      <div>
+        <h5 class="modal-title">Adicionar Estabelecimento</h5>
+      </div>
+        <div>
+          <div style="margin: 20px 0;">
+            <div class="input-field col s6">
+              <select id="city_name-save" style="color: black !important;">
+                {% for city in data %}
+                  <option value="{{city[0]}}" >{{decode(city[0])}}</option>
+                {% endfor %}
+              </select>
+              <label>Cidade</label>
+            </div>
+            <div class="input-field col s6">
+              <input placeholder="Estabelecimento" id="estab_name-save" type="text" >
+              <label class="active" for="estab_name-save">Estabelecimento</label>
+            </div>
+            <div class="input-field col s6">
+              <input  placeholder="Nome na Plataforma" id="web_name-save" type="text" >
+              <label class="active" for="web_name-save">Nome na Plataforma</label>
+            </div>
+            <div class="input-field col s6">
+              <input placeholder="Endereço" id="adress-save" type="text" >
+              <label class="active" for="adress-save">Endereço</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-menu">
+          <button  class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
+          <button id="save-add" class="primary_color btn-large">Adicionar Estabelecimento</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL DELETANDO CIDADE -->
+  <div id="delete-city" class="modal" style="height: 40%;">
+    <div class="modal-content">
+      <div>
+        <h5 class="modal-title">Deletar Cidade</h5>
+      </div>
+        <div>
+          <div style="margin: 20px 0;">
+            <div class="input-field col s12">
+              <select id="city-delete-select" style="color: black !important;">
+                {% for city in data %}
+                  <option value="{{city[0]}}" >{{decode(city[0])}}</option>
+                {% endfor %}
+              </select>
+              <label>Cidade</label>
+            </div>
+        </div>
+      </div>
+      <div class="modal-menu">
+        <button  class="cancel primary_color btn-large" href="#delete-city" rel="modal:close">Cancelar</button>
+        <button id="save-delete-city" class="primary_color btn-large">Deletar Cidade</button>
+      </div>
+  </div>
+  <!-- MODAL EDITANDO CIDADE -->
+  <div id="edit-city" class="modal" style="height: 40%; min-height: 350px;">
+    <div class="modal-content">
+      <div>
+        <h5 class="modal-title">Editar Cidade</h5>
+      </div>
+        <div>
+          <div style="margin: 20px 0;">
+            <div class="input-field col s6">
+              <select id="city-edit-select" style="color: black !important;">
+                {% for city in data %}
+                  <option value="{{city[0]}}" >{{decode(city[0])}}</option>
+                {% endfor %}
+              </select>
+              <label>Cidade</label>
+            </div>
+            <div class="input-field col s6">
+              <input placeholder="Cidade" id="city-edit" type="text" >
+              <label class="active" for="city-edit">Novo Nome</label>
+            </div>
+        </div>
+      </div>
+      <div class="modal-menu">
+        <button  class="cancel primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
+        <button id="save-edit-city" class="primary_color btn-large">Salvar Alterações</button>
+      </div>
+  </div>
+
+  <!-- MODAL ADICIONANDO CIDADE -->
+  <div style="height: 40%;" id="add-city-modal" class="modal">
+    <div class="modal-content">
+      <div>
+        <h5 class="modal-title">Adicionar Cidade</h5>
+      </div>
+        <div>
+          <div style="margin: 20px 0;">
+            <div class="input-field col s12">
+              <input placeholder="Cidade" id="save-city" type="text" >
+              <label class="active" for="save-city">Cidade</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-menu">
+          <button  class="cancel primary_color btn-large" href="#add-city-modal" rel="modal:close">Cancelar</button>
+          <button id="add-city" class="primary_color btn-large">Adicionar Cidade</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE WARNINGS -->
+  <div id="warning" class="modal">
+    <div class="modal-content" style="height: 100%">
+      <div>
+        <h5 class="modal-title"  style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Dicas para utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
+      </div>
+      <ul class="browser-default">
+        <li>Atualizar a página do programa manualmente irá fechar o programa.</li>
+        <li>Todo o progresso de uma pesquisa é salvo durante a mesma, ou seja, em caso de erro ou perda de internet, é possível retomar uma pesquisa através de um popup que aparece quando o programa é aberto.</li>
+        <li>A quantidade de estabelecimentos cadastrados não influênciam no tempo da pesquisa em si, os arquivos são gerados separadamentes para diminuir o custo de tempo consumido. Em contrapartida cada palavra chave aumenta em media 2-4 minutos no tempo total da pesquisa.</li>
+        <li>É possível pesquisar por qualquer campo da tabela de pesquisas disponível na janela de pesquisas.</li>
+        <li>Evite o máximo atualizar a página manualmente ou fecha-la durante uma pesquisa para minimizar a probabilidade de erro causado durante uma pesquisa.</li>
+        <li>Só é possível abrir uma aba do programa por vez, caso seja aberto uma outra janela você encontrará um aviso o notificando para voltar para a janela principal.</li>
+        <li>Todos os endereços dos estabelecimentos devem ser cadastrados da forma mais identica possível aos valores encontrados no  Preço da Hora - Bahia para máximizar as chances de uma filtragem correta.</li>
+        <li>Antes de cadastrar uma cidade, confira no site do preço da hora como o nome do município aparece, isso pode ser feito nos filtros de pesquisa em : Alterar Localização &gt; (popup) Usar centro do município &gt; Insira o nome do município desejado. </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- MODAL DE OPÇÃO DE ARQUIVOS - PESQUISA -->
+  <div id="search-file" class="modal">
+    <div class="modal-content">
+      <div>
+        <h5 class="modal-title">Selecione pelo menos um estabelecimento para prosseguir</h5>
+      </div>
+      <div style="margin-top: 1.8em;">
+        <div class="input-field col s12">
+          <select id="file_format" style="color: black !important;">
+              <option value="default" >Padrão (Estabelecimentos cadastrados)</option>
+              <option value="all" >Todos (Estabelecimentos não cadastrados)</option>
+          </select>
+          <label style="left: 0;">Formatação</label>
+        </div>
+        <div id="file-list" style="max-height: 250px;overflow: auto; width: 100%;display: inline-flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px; align-items: center;">
+          <!-- <div class="select_wrapper col s12">
+            <i class="fa fa-spinner fa-pulse" id="loader"></i>
+          </div> -->
+        </div>
+        <div class="modal-menu" style="position: relative;">
+          <button class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
+          <button id="select-all-file" class=" btn-large primary_color">Selecionar Todos</button>
+          <button id="generate-file" class="primary_color btn-large">Gerar Arquivos</button>
         </div>
       </div>
     </div>
-
-
-  {% endblock %}
-
-  {% block scripts %}
-    {{super()}}
-    <script type="module" src="{{url_for('static', filename='js/cookie.min.mjs')}}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-    <script type='text/javascript' src="{{url_for('static', filename='js/materialize.js')}}"></script>
-    <script type='text/javascript' src="{{url_for('static', filename='js/modal.js')}}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/home.js') }}"></script>
-
-    <div hidden id="home-js-data"
-        data-search="{{ search }}"
-        data-active="{{ active }}"
-        data-progress-value="{{ progress_value }}"
-        data-is-chrome-installed="{{ chrome_installed }}"
-        >
-    </div>
-  {% endblock %}
+  </div>
+{% endblock %}
