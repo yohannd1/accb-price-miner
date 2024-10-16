@@ -16,62 +16,53 @@ import json
 import sqlite3
 import sys
 import os
-import database
 import traceback
 import pandas as pd
 import webbrowser
 from datetime import date, datetime
 import subprocess
 from openpyxl.styles import Border, Side, Alignment
-from dataclasses import dataclass
 from typing import Optional
 from pathlib import Path
+from threading import Thread
 
 # from webdriver_manager.chrome import ChromeDriverManager
 # from webdriver_manager.core.driver_cache import DriverCacheManager
 
-from scraper import Scraper, ScraperOptions
-from accb.utils import log, log_error, is_windows, ask_user_directory, get_time_hms, show_warning
+from accb.scraper import Scraper, ScraperOptions
+from accb.utils import (
+    log,
+    log_error,
+    is_windows,
+    ask_user_directory,
+    get_time_hms,
+    show_warning,
+)
+from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
+from accb.database import DatabaseManager
 
-show_warning("ACCB", "Carregando. Por favor aguarde...") # FIXME: isso aqui é blocking! pensar em uma maneira melhor de fazer isso...
+
+def parallel() -> None:
+    show_warning("ACCB", "Carregando. Por favor aguarde...")
+
+
+# começar isso no fundo
+Thread(target=parallel).start()
 
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
 # os.environ["WDM_LOG_LEVEL"] = "0"
 
-@dataclass
-class SessionData:
-    """Dados utilizados ao longo do programa"""
-
-    wait_reload: bool = False
-    """Se o servidor deve esperar uma nova conexão (a página conetada está recarregando)."""
-
-    connected_count: int = 0
-    """Conta a quantidade de clientes conectados"""
-
-    scraper: Optional[Scraper] = None
-    """Instância do Scraper utilizado para pesquisar."""
-
-    cancel: bool = False
-    # TODO: explicação
-
-    pause: bool = False
-    # TODO: explicação
-
-    search_id: str = ""
-    # TODO: explicação
-
-    modified: bool = False
-    # TODO: explicação
-    # FIXME: isso é usado?
-
-session = SessionData()
+state = State(
+    db_manager=DatabaseManager(),
+)
 
 path = None
 """Variável de caminho padrão para gerar coleção excel."""
+
 
 def is_port_in_use(port):
     """Confere se uma dada porta port está em uso pelo sistema."""
@@ -80,10 +71,11 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
 
+
 def xlsx_to_bd(db, city_name):
     """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
     df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
-    duration = get_time_hms(time.time()) # FIXME: ... tempo desde agora?
+    duration = get_time_hms(time.time())  # FIXME: ... tempo desde agora?
     search_id = db.db_save_search(1, city_name, duration["minutes"])
 
     for _index, row in df.iterrows():
@@ -106,8 +98,10 @@ def xlsx_to_bd(db, city_name):
 
     return search_id
 
+
 def get_time_filename() -> str:
     return datetime.now().strftime("[%d-%m] [%Hh %Mm]")
+
 
 def bd_to_xlsx(db, search_id, estab_data, city):
     """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]"""
@@ -207,11 +201,12 @@ def bd_to_xlsx(db, search_id, estab_data, city):
 
         writer.save()
 
+
 @app.route("/")
 def route_home():
     """Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação"""
 
-    db = database.Database()
+    db = state.db_manager
 
     search_id = db.db_run_query(
         "SELECT id FROM search WHERE done = 0 AND search_date = '{}' ORDER BY city_name ASC".format(
@@ -262,16 +257,16 @@ def route_home():
     estab_names = db.db_get_estab()
     product = db.db_get_product()
 
-    # print("CONNECTED {}".format(session.connected_count))
+    # print("CONNECTED {}".format(state.connected_count))
     # Se tiver mais que uma pagina aberta, renderiza o notallowed.html,
     # por algum motivo o flask com socketio chama a função de conexão 2x então
     # acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2
-    template = (
-        "home.html" if 0 >= session.connected_count <= 2 else "notallowed.html"
-    )
+    template = "home.html" if 0 >= state.connected_count <= 2 else "notallowed.html"
 
     if not is_chrome_installed():
-        initial_message = "Instale uma versão qualquer do Google Chrome para realizar uma pesquisa."
+        initial_message = (
+            "Instale uma versão qualquer do Google Chrome para realizar uma pesquisa."
+        )
     elif len(product_names) == 0:
         initial_message = "Cadastre pelo menos um produto para realizar uma pesquisa"
     else:
@@ -301,7 +296,7 @@ def route_home():
 @app.route("/insert_product")
 def route_insert_product():
     """Rota de inserção de produtos no banco de dados."""
-    db = database.Database()
+    db = state.db_manager
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
 
@@ -330,7 +325,7 @@ def route_insert_product():
 def route_remove_product():
     """Rota de remoção de produtos no banco de dados."""
 
-    db = database.Database()
+    db = state.db_manager
     product_name = request.args.get("product_name")
     try:
         db.db_delete("product", "product_name", product_name)
@@ -353,7 +348,7 @@ def route_remove_product():
 def route_select_product():
     """Rota de seleção de produtos."""
 
-    db = database.Database()
+    db = state.db_manager
     products = db.db_get_product()
 
     return json.dumps([product for product in products])
@@ -367,7 +362,7 @@ def route_select_search_data():
     city_name = request.args.get("city_name")
     # print(search_id)
 
-    db = database.Database()
+    db = state.db_manager
     search_data = db.db_run_query(
         "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = {} AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC".format(
             search_id
@@ -382,7 +377,7 @@ def route_select_search_data():
 @app.route("/select_search_info")
 def route_select_search_info():
     """Rota de seleção de informação das pesquisas no banco de dados."""
-    db = database.Database()
+    db = state.db_manager
     month = request.args.get("month")
     search_data = ""
     try:
@@ -407,7 +402,6 @@ def route_select_search_info():
         return {"success": True, "data": json.dumps(search_data)}
 
     except sqlite3.Error as er:
-
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
@@ -419,7 +413,7 @@ def route_select_search_info():
 @app.route("/update_product")
 def route_update_product():
     """Rota de atualização de produtos no banco de dados."""
-    db = database.Database()
+    db = state.db_manager
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
     primary_key = request.args.get("primary_key")
@@ -433,7 +427,7 @@ def route_update_product():
                 "primary_key": primary_key,
             }
         )
-        session.wait_reload = True
+        state.wait_reload = True
         return {
             "success": True,
             "message": "O produto {} foi atualizado com sucesso".format(primary_key),
@@ -457,7 +451,7 @@ def route_update_product():
 def route_select_estab():
     """Rota de seleção de estabelecimentos no banco de dados."""
 
-    db = database.Database()
+    db = state.db_manager
     city = request.args.get("city")
     g.estab = db.db_get_estab()
     g.estab_list = [estab for estab in g.estab if estab[0] == city]
@@ -467,7 +461,7 @@ def route_select_estab():
 @app.route("/remove_estab")
 def route_remove_estab():
     """Rota de remoção de estabelecimentos no banco de dados."""
-    db = database.Database()
+    db = state.db_manager
     estab_name = request.args.get("estab_name")
     try:
         db.db_delete("estab", "estab_name", estab_name)
@@ -495,7 +489,7 @@ def route_remove_estab():
 @app.route("/update_estab")
 def route_update_estab():
     """Rota de atualização de estabelecimentos no banco de dados."""
-    db = database.Database()
+    db = state.db_manager
     city_name = request.args.get("city_name")
     estab_name = request.args.get("estab_name")
     primary_key = request.args.get("primary_key")
@@ -540,7 +534,7 @@ def route_update_estab():
 def route_insert_estab():
     """Rota de inserção de estabelecimentos no banco de dados."""
 
-    db = database.Database()
+    db = state.db_manager
     city_name = request.args.get("city_name")
     estab_name = request.args.get("estab_name")
     web_name = request.args.get("web_name")
@@ -583,7 +577,7 @@ def route_insert_estab():
 def route_select_city():
     """Rota de seleção de cidades no banco de dados."""
 
-    db = database.Database()
+    db = state.db_manager
     g.cities = db.db_get_city()
     return json.dumps(g.cities)
 
@@ -591,13 +585,13 @@ def route_select_city():
 @app.route("/insert_city")
 def route_insert_city():
     """Rota de inserção de cidades no banco de dados."""
-    db = database.Database()
+    db = state.db_manager
     city_name = request.args.get("city_name")
 
     try:
 
         db.db_save_city(city_name)
-        session.wait_reload = True
+        state.wait_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi adicionado com sucesso".format(city_name),
@@ -621,14 +615,14 @@ def route_insert_city():
 def route_update_city():
     """Rota de atualização de cidades no banco de dados."""
 
-    db = database.Database()
+    db = state.db_manager
     city_name = request.args.get("city_name")
     primary_key = request.args.get("primary_key")
 
     try:
 
         db.db_update_city({"city_name": city_name, "primary_key": primary_key})
-        session.wait_reload = True
+        state.wait_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi editada com sucesso".format(city_name),
@@ -652,13 +646,13 @@ def route_update_city():
 def route_delete_city():
     """Rota de deleção de cidades no banco de dados."""
 
-    db = database.Database()
+    db = state.db_manager
     city_name = request.args.get("city_name")
 
     try:
 
         db.db_delete("city", "city_name", city_name)
-        session.wait_reload = True
+        state.wait_reload = True
         return {
             "success": True,
             "message": "A cidade {} foi deletada com sucesso".format(city_name),
@@ -714,11 +708,11 @@ def route_delete_search():
     """Rota de deleção de pesquisa no banco de dados."""
     try:
 
-        db = database.Database()
+        db = state.db_manager
         search_id = request.args.get("search_id")
 
         db.db_delete("search", "id", search_id)
-        session.wait_reload = True
+        state.wait_reload = True
         return {"status": "success", "message": "Pesquisa deletada com sucesso."}
 
     except:
@@ -734,7 +728,7 @@ def route_delete_search():
 def route_export_database():
     """Rota responsável por exportar os dados do banco"""
     try:
-        db = database.Database()
+        db = state.db_manager
         tables = ["city", "estab", "product"]
         with open("importar.sql", "w+") as f:
             for table in tables:
@@ -759,11 +753,11 @@ def route_export_database():
 def route_import_database():
     """Rota responsável por importar os dados do banco"""
     try:
-        db = database.Database()
+        db = state.db_manager
         file = request.files["file"]
         db.import_database(file)
 
-        session.wait_reload = True
+        state.wait_reload = True
         return {
             "status": "success",
             "message": "Dados importados com sucesso.",
@@ -918,7 +912,7 @@ def route_open_explorer():
 def route_clean_search():
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
     generate = request.args.get("generate")
-    db = database.Database()
+    db = state.db_manager
     global path
     generate = True if generate == "false" else False
     if not generate:
@@ -1062,7 +1056,7 @@ def route_clean_search():
 @app.route("/generate_file")
 def route_bd_to_xlsx():
     """Rota geradora de coleção de dados das pesquisas em excel."""
-    db = database.Database()
+    db = state.db_manager
     global path
 
     try:
@@ -1205,61 +1199,61 @@ def route_bd_to_xlsx():
 # SocketIO
 @socketio.on("reload")
 def on_reload():
-    session.wait_reload = True
+    state.wait_reload = True
 
 
 @socketio.on("pause")
 def on_pause(cancel: bool = False) -> None:
     """Rota responsável por pausar a pesquisa"""
-    session.wait_reload = True
+    state.wait_reload = True
 
-    scraper = session.scraper
+    scraper = state.scraper
 
     if cancel != False:
-        session.cancel = True
+        state.cancel = True
         if scraper is not None:
             scraper.pause(True)
     else:
         if scraper is not None:
             scraper.pause()
-        session.pause = True
+        state.pause = True
 
 
 @socketio.on("cancel")
 def on_cancel():
     """Rota cancelar por pausar a pesquisa"""
 
-    session.wait_reload = True
+    state.wait_reload = True
 
-    db = database.Database()
-    query = "DELETE FROM search WHERE id = {}".format(session.search_id)
+    db = state.db_manager
+    query = "DELETE FROM search WHERE id = {}".format(state.search_id)
     db.db_run_query(query)
 
 
 @socketio.on("connect")
 def on_connect():
     """Quando algum cliente conecta"""
-    session.connected_count += 1
-    log(f"Nova conexão; total: {session.connected_count}")
+    state.connected_count += 1
+    log(f"Nova conexão; total: {state.connected_count}")
 
 
 @socketio.on("disconnect")
 def on_disconnect():
     """Rota contas os clientes desconectados."""
-    session.connected_count -= 1
-    log(f"Conexão fechada; total: {session.connected_count}")
+    state.connected_count -= 1
+    log(f"Conexão fechada; total: {state.connected_count}")
 
-    if session.connected_count <= 0:
-        if not session.wait_reload:
+    if state.connected_count <= 0:
+        if not state.wait_reload:
             log(f"Todos os clientes desconectaram; aguardando...")
             # TODO: implementar aguardar-para-fechar
             log(f"Ninguém mais se conectou - fechando o programa")
-            os._exit(0) # forçar a fechar o programa
+            os._exit(0)  # forçar a fechar o programa
 
         log(
             "Último cliente desconectou, mas `wait_reload` está ativado; aguardando nova conexão"
         )
-        session.wait_reload = False
+        state.wait_reload = False
 
 
 @socketio.on("set_path")
@@ -1280,7 +1274,7 @@ def on_exit():
 def on_search(search_info):
     """Rota responsável por iniciar a pesquisa."""
 
-    db = database.Database()
+    db = state.db_manager
 
     search = db.db_run_query(
         "SELECT id FROM search WHERE done = 0 AND search_date = '{}' ORDER BY city_name ASC".format(
@@ -1358,7 +1352,7 @@ def on_search(search_info):
             duration=0,
             progress_value=progress_value,
         )
-        scrap = Scraper(opts)
+        scrap = Scraper(opts, state)
 
         db.db_save_backup(
             {
@@ -1373,11 +1367,11 @@ def on_search(search_info):
             }
         )
 
-    session.scraper = scrap
-    session.search_id = search_id
-    session.cancel = False
-    session.pause = False
-    session.modified = True
+    state.scraper = scrap
+    state.search_id = search_id
+    state.cancel = False
+    state.pause = False
+    state.modified = True
 
     try:
 
@@ -1389,10 +1383,10 @@ def on_search(search_info):
                 {"type": "chrome", "installed": False},
                 broadcast=True,
             )
-            session.cancel = True
-            session.pause = True
+            state.cancel = True
+            state.pause = True
 
-        if not session.cancel and not session.pause:
+        if not state.cancel and not state.pause:
 
             emit(
                 "captcha",
@@ -1404,7 +1398,7 @@ def on_search(search_info):
                 {"type": "progress", "done": 1},
                 broadcast=True,
             )
-            session.wait_reload = True
+            state.wait_reload = True
             # search_id = xlsx_to_bd(db, search_info["city"])
 
             # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.

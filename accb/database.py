@@ -17,6 +17,7 @@ from typing import Any
 
 from accb.utils import log
 
+
 class DatabaseConnection:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._closed: bool = False
@@ -36,7 +37,7 @@ class DatabaseConnection:
         self._cursor.close()
 
         if has_errored:
-            log(f"Revertendo mudanças ao banco de dados (erro de conexão)")
+            log(f"Ocorreu um erro - revertendo mudanças ao banco de dados")
             self._conn.rollback()
         else:
             self._conn.commit()
@@ -51,7 +52,8 @@ class DatabaseConnection:
     def __del__(self) -> None:
         self._close(has_errored=False)
 
-class Database: # TODO: renomear p/ DatabaseManager ou algo assim
+
+class DatabaseManager:
     conn = None
 
     def __init__(self) -> None:
@@ -141,7 +143,6 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         return os.path.join(base_path, path)
 
     def db_start(self):
-
         """Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe."""
         schema = self.resource_path("schema.sql")
         cursor = sqlite3.connect("accb.sqlite").cursor()
@@ -261,7 +262,9 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             # FIXME: SQL injection vulnerability?
             cursor = conn.get_cursor()
-            cursor.execute(""" DELETE FROM {} WHERE {} = "{}" """.format(table, where, value))
+            cursor.execute(
+                """ DELETE FROM {} WHERE {} = "{}" """.format(table, where, value)
+            )
 
     def db_get_city(self):
         """Seleciona uma cidade do banco de dados."""
@@ -280,7 +283,9 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
             query = """SELECT * FROM search ORDER BY id ASC"""
         else:
             # FIXME: SQL injection vulnerability?
-            query = """SELECT * FROM search WHERE {} = '{}' ORDER BY id ASC""".format(where, value)
+            query = """SELECT * FROM search WHERE {} = '{}' ORDER BY id ASC""".format(
+                where, value
+            )
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
@@ -295,7 +300,9 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
             query = "SELECT * FROM search_item ORDER BY search_id ASC"
         else:
             # FIXME: SQL injection vulnerability?
-            query = "SELECT * FROM search_item WHERE search_id = '{}' ORDER BY search_id ASC".format(search_id)
+            query = "SELECT * FROM search_item WHERE search_id = '{}' ORDER BY search_id ASC".format(
+                search_id
+            )
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
@@ -339,13 +346,16 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """ UPDATE estab SET city_name=?, estab_name=?, adress=?, web_name=? WHERE estab_name = ? """
-            cursor.execute(query, (
-                estab["city_name"],
-                estab["estab_name"],
-                estab["adress"],
-                estab["web_name"],
-                estab["primary_key"],
-            ))
+            cursor.execute(
+                query,
+                (
+                    estab["city_name"],
+                    estab["estab_name"],
+                    estab["adress"],
+                    estab["web_name"],
+                    estab["primary_key"],
+                ),
+            )
 
     def db_update_product(self, product):
         """Atualiza produtos do banco de dados."""
@@ -353,9 +363,10 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """ UPDATE product SET product_name=?, keywords=? WHERE product_name = ? """
-            cursor.execute(query, (
-                product["product_name"], product["keywords"], product["primary_key"]
-            ))
+            cursor.execute(
+                query,
+                (product["product_name"], product["keywords"], product["primary_key"]),
+            )
 
     def db_update_city(self, city):
         """Atualiza cidades do banco de dados."""
@@ -363,9 +374,7 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """ UPDATE city SET city_name = ? WHERE city_name = ? """
-            cursor.execute(query, (
-                city["city_name"], city["primary_key"]
-            ))
+            cursor.execute(query, (city["city_name"], city["primary_key"]))
 
     def db_update_backup(self, backup):
         """Atualiza um backup de pesquisa do banco de dados."""
@@ -373,15 +382,18 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """ UPDATE backup SET active = ?, city = ?, done = ?, estab_info = ?, product_info = ?, duration = ? WHERE search_id = ? """
-            cursor.execute(query, (
-                str(backup["active"]),
-                backup["city"],
-                backup["done"],
-                backup["estab_info"],
-                backup["product_info"],
-                backup["duration"],
-                backup["search_id"],
-            ))
+            cursor.execute(
+                query,
+                (
+                    str(backup["active"]),
+                    backup["city"],
+                    backup["done"],
+                    backup["estab_info"],
+                    backup["product_info"],
+                    backup["duration"],
+                    backup["search_id"],
+                ),
+            )
 
     # query
     def db_update_search(self, search):
@@ -390,9 +402,7 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """ UPDATE search SET done = ?, duration = ? WHERE id = ? """
-            cursor.execute(query, (
-                search["done"], search["duration"], search["id"]
-            ))
+            cursor.execute(query, (search["done"], search["duration"], search["id"]))
 
     def db_run_query(self, query: str) -> list[Any]:
         """Roda uma query específica no banco de dados."""
@@ -408,9 +418,9 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """ UPDATE keyword SET keyword = ?, rate = ?, similarity = ? WHERE id = ? """
-            cursor.execute(query, (
-                keyword["keyword"], keyword["rate"], keyword["similarity"]
-            ))
+            cursor.execute(
+                query, (keyword["keyword"], keyword["rate"], keyword["similarity"])
+            )
 
     def db_save_keyword(self, keyword):
         """Salva uma palavra chave no banco de dados."""
@@ -418,4 +428,12 @@ class Database: # TODO: renomear p/ DatabaseManager ou algo assim
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """ INSERT INTO keyword(product_name, keyword, rate, similarity) VALUES(?, ?, ?, ?) """
-            cursor.execute(query, (keyword["product_name"], keyword["keyword"], keyword["rate"], keyword["similarity"]))
+            cursor.execute(
+                query,
+                (
+                    keyword["product_name"],
+                    keyword["keyword"],
+                    keyword["rate"],
+                    keyword["similarity"],
+                ),
+            )

@@ -22,7 +22,8 @@ from selenium.webdriver import Chrome
 
 from accb.web_driver import open_chrome_driver
 from accb.utils import log, show_warning, get_time_hms
-from database import Database
+from accb.state import State
+from accb.database import DatabaseManager
 
 @dataclass
 class ScraperOptions:
@@ -68,18 +69,19 @@ class ScraperError(Exception): ...
 class Scraper:
     """Realiza o scraping na página do Preço da Hora Bahia."""
 
-    def __init__(self, options: ScraperOptions) -> None:
+    def __init__(self, options: ScraperOptions, state: State) -> None:
         self.options = options
+        self.state = state
+        self.db = self.state.db_manager
 
         self.index, self.index_k = [int(x) for x in options.active.split(".")]
         """Index dos produtos e palavras chaves (em caso de reinicialização através de backup);"""
         # TODO: verificar isso e documentar melhor
 
-        self.db = Database()
-        """Instância responsável pela comunicação com o banco de dados."""
-
         self.driver: Optional[Chrome] = None
         """Instância do navegador do selenium."""
+
+        self.url: Optional[str] = None
 
         self.stop = False
         """Variável de controle para parar a execução da pesquisa."""
@@ -256,7 +258,7 @@ class Scraper:
 
         # Se eu tenho conexão o captcha foi ativado, se não, é erro de rede.
 
-        log("~~ CAPTCHA") # FIXME: remove(breakpoint)
+        log("~~ CAPTCHA")  # FIXME: remove(breakpoint)
 
         if self.check_connection():
             while True:
@@ -376,9 +378,11 @@ class Scraper:
                 log(f"Pesquisando keyword {keyword}")
 
                 active = "{}.{}".format(index + self.index, index_k + self.index_k)
-                duration = get_time_hms(self.start_time)["minutes"] + self.options.duration
+                duration = (
+                    get_time_hms(self.start_time)["minutes"] + self.options.duration
+                )
 
-                log("~~ BEFORE BACKUP") # FIXME: remove(breakpoint)
+                log("~~ BEFORE BACKUP")  # FIXME: remove(breakpoint)
 
                 self.db.db_update_backup(
                     {
@@ -397,11 +401,11 @@ class Scraper:
                     }
                 )
 
-                log("~~ AFTER BACKUP") # FIXME: remove(breakpoint)
+                log("~~ AFTER BACKUP")  # FIXME: remove(breakpoint)
 
                 time.sleep(1.5 * times)
 
-                log("~~ WILL GET PRODUCT BAR") # FIXME: remove(breakpoint)
+                log("~~ WILL GET PRODUCT BAR")  # FIXME: remove(breakpoint)
 
                 # Barra de pesquisa superior (produtos)
                 try:
@@ -418,24 +422,24 @@ class Scraper:
 
                     search = driver.find_element(By.ID, "top-sbar")
 
-                log("~~ 1") # FIXME: remove(breakpoint)
+                log("~~ 1")  # FIXME: remove(breakpoint)
 
                 for w in keyword:
 
                     search.send_keys(w)
                     time.sleep(0.25)
 
-                log("~~ 2") # FIXME: remove(breakpoint)
+                log("~~ 2")  # FIXME: remove(breakpoint)
 
                 # Realiza a pesquisa (pressiona enter)
                 search.send_keys(Keys.ENTER)
 
-                log("~~ 3") # FIXME: remove(breakpoint)
+                log("~~ 3")  # FIXME: remove(breakpoint)
 
                 time.sleep(3 * times)
                 driver.page_source.encode("utf-8")
 
-                log("~~ 4") # FIXME: remove(breakpoint)
+                log("~~ 4")  # FIXME: remove(breakpoint)
 
                 if self.stop:
                     self.exit = True
@@ -445,7 +449,7 @@ class Scraper:
 
                 # Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados
 
-                log("~~ 5") # FIXME: remove(breakpoint)
+                log("~~ 5")  # FIXME: remove(breakpoint)
 
                 try:
                     WebDriverWait(driver, 4 * times).until(
@@ -456,7 +460,7 @@ class Scraper:
                     time.sleep(times)
 
                 finally:
-                    log("~~ 5.1") # FIXME: remove(breakpoint)
+                    log("~~ 5.1")  # FIXME: remove(breakpoint)
                     flag = 0
                     while True:
                         if self.stop:
@@ -465,7 +469,7 @@ class Scraper:
                             return True
 
                         try:
-                            log("~~ 5.2") # FIXME: remove(breakpoint)
+                            log("~~ 5.2")  # FIXME: remove(breakpoint)
                             WebDriverWait(driver, 2 * times).until(
                                 EC.presence_of_element_located((By.ID, "updateResults"))
                             )
@@ -475,7 +479,7 @@ class Scraper:
 
                             if flag == 3:
                                 break
-                            log("~~ 5.4") # FIXME: remove(breakpoint)
+                            log("~~ 5.4")  # FIXME: remove(breakpoint)
                         except Exception:
                             if not self.check_captcha(0):
                                 # log("Quantidade máxima de paginas abertas.")
@@ -490,7 +494,7 @@ class Scraper:
 
                     self.get_data(product, keyword)
 
-                log("~~ 6") # FIXME: remove(breakpoint)
+                log("~~ 6")  # FIXME: remove(breakpoint)
 
             if not self.stop:
                 log(f"Progress: {self.options.progress_value}")
@@ -504,14 +508,14 @@ class Scraper:
                     broadcast=True,
                 )
 
-            log("~~ 7") # FIXME: remove(breakpoint)
+            log("~~ 7")  # FIXME: remove(breakpoint)
 
         if self.stop:
             self.exit = True
             self.exit_thread()
             return
 
-        log("~~ 8") # FIXME: remove(breakpoint)
+        log("~~ 8")  # FIXME: remove(breakpoint)
 
         duration = get_time_hms(self.start_time)
         self.db.db_update_search(
@@ -522,7 +526,7 @@ class Scraper:
             }
         )
 
-        log("~~ 9") # FIXME: remove(breakpoint)
+        log("~~ 9")  # FIXME: remove(breakpoint)
 
         self.db.db_update_backup(
             {
