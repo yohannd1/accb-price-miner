@@ -1,30 +1,43 @@
 """Ponto de entrada da aplicação."""
 
+from threading import Thread
+
+
+def before_anything() -> None:
+    from tkinter.messagebox import showwarning
+
+    showwarning("ACCB", "Carregando. Por favor aguarde...")
+
+
+Thread(target=before_anything).start()
+
 # import eventlet
 # eventlet.patcher.monkey_patch(select=True, socket=True)
 # from engineio.async_drivers import gevent
 
 # necessário para evitar bugs com aplicações que rodam tarefas no background.
-from engineio.async_drivers import threading
+# from engineio.async_drivers import threading
 
-from flask import Flask, render_template, request, g
-from flask_material import Material
-from flask_socketio import SocketIO, emit
 import math
 import time
 import json
 import sqlite3
 import sys
 import os
-import traceback
-import pandas as pd
-import webbrowser
 from datetime import date, datetime
+import traceback
+import webbrowser
 import subprocess
-from openpyxl.styles import Border, Side, Alignment
 from typing import Optional
 from pathlib import Path
-from threading import Thread
+
+from flask import Flask, render_template, request, g
+from flask_material import Material
+from flask_socketio import SocketIO, emit
+
+import pandas as pd
+
+from openpyxl.styles import Border, Side, Alignment
 
 # from webdriver_manager.chrome import ChromeDriverManager
 # from webdriver_manager.core.driver_cache import DriverCacheManager
@@ -36,20 +49,11 @@ from accb.utils import (
     is_windows,
     ask_user_directory,
     get_time_hms,
-    show_warning,
 )
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager
-
-
-def parallel() -> None:
-    show_warning("ACCB", "Carregando. Por favor aguarde...")
-
-
-# começar isso no fundo
-Thread(target=parallel).start()
 
 app = Flask(__name__)
 Material(app)
@@ -598,7 +602,6 @@ def route_insert_city():
         }
 
     except sqlite3.Error as er:
-
         # print('SQLite error: %s' % (' '.join(er.args)))
         # print("Exception class is: ", er.__class__)
         # print('SQLite traceback: ')
