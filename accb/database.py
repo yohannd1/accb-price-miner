@@ -54,8 +54,6 @@ class DatabaseConnection:
 
 
 class DatabaseManager:
-    conn = None
-
     def __init__(self) -> None:
         pass
 
@@ -298,15 +296,14 @@ class DatabaseManager:
 
         if search_id is None:
             query = "SELECT * FROM search_item ORDER BY search_id ASC"
+            args = ()
         else:
-            # FIXME: SQL injection vulnerability?
-            query = "SELECT * FROM search_item WHERE search_id = '{}' ORDER BY search_id ASC".format(
-                search_id
-            )
+            query = "SELECT * FROM search_item WHERE search_id = ? ORDER BY search_id ASC"
+            args = (search_id,)
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            res = cursor.execute(query)
+            res = cursor.execute(query, args)
             return res.fetchall()
 
     # query
@@ -315,13 +312,14 @@ class DatabaseManager:
 
         if id is None:
             query = "SELECT * FROM backup"
+            args = ()
         else:
-            # FIXME: SQL injection vulnerability?
-            query = "SELECT * FROM backup WHERE search_id = {}".format(id)
+            query = "SELECT * FROM backup WHERE search_id = ?"
+            args = (id,)
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            res = cursor.execute(query)
+            res = cursor.execute(query, args)
             return res.fetchall()
 
     def db_get_product(self):
