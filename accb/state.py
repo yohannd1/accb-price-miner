@@ -1,12 +1,17 @@
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from accb.database import DatabaseManager
+    from accb.scraper import Scraper
 
 
 @dataclass
 class State:
     """Dados utilizados ao longo do programa"""
 
-    db_manager: Any
+    db_manager: DatabaseManager
 
     wait_reload: bool = False
     """Se o servidor deve esperar uma nova conexão (a página conetada está recarregando)."""
@@ -14,7 +19,7 @@ class State:
     connected_count: int = 0
     """Conta a quantidade de clientes conectados"""
 
-    scraper: Any = None
+    scraper: Optional[Scraper] = None
     """Scraper utilizado para pesquisar."""
 
     cancel: bool = False
@@ -25,7 +30,3 @@ class State:
 
     search_id: str = ""
     # TODO: explicação
-
-    modified: bool = False
-    # TODO: explicação
-    # FIXME: isso é usado?

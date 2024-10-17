@@ -1374,7 +1374,6 @@ def on_search(search_info):
     state.search_id = search_id
     state.cancel = False
     state.pause = False
-    state.modified = True
 
     try:
 
