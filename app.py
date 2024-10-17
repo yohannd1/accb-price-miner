@@ -1,6 +1,6 @@
 """Ponto de entrada da aplicação."""
 
-from threading import Thread
+from threading import Thread, Lock, Timer
 
 
 def before_anything() -> None:
@@ -1233,30 +1233,49 @@ def on_cancel():
     db.db_run_query(query)
 
 
+watchdog_lock = Lock()
+watchdog = None
+
+
 @socketio.on("connect")
 def on_connect():
     """Quando algum cliente conecta"""
+    global watchdog
+
     state.connected_count += 1
     log(f"Nova conexão; total: {state.connected_count}")
+
+    with watchdog_lock:
+        if watchdog is not None:
+            log(f"Cancelando timeout para fechar o programa")
+            watchdog.cancel()
+            watchdog = None
 
 
 @socketio.on("disconnect")
 def on_disconnect():
     """Rota contas os clientes desconectados."""
+    global watchdog
+
     state.connected_count -= 1
     log(f"Conexão fechada; total: {state.connected_count}")
 
-    if state.connected_count <= 0:
-        if not state.wait_reload:
-            log(f"Todos os clientes desconectaram; aguardando...")
-            # TODO: implementar aguardar-para-fechar
-            log(f"Ninguém mais se conectou - fechando o programa")
-            os._exit(0)  # forçar a fechar o programa
+    WATCHDOG_TIMEOUT = 8
 
-        log(
-            "Último cliente desconectou, mas `wait_reload` está ativado; aguardando nova conexão"
-        )
-        state.wait_reload = False
+    def timeout_exit() -> None:
+        log(f"Ninguém mais se conectou - fechando o programa")
+        os._exit(0)  # forçar a fechar o programa
+
+    if state.connected_count <= 0:
+        if state.wait_reload:
+            state.wait_reload = False
+        else:
+            log(
+                f"Todos os clientes desconectaram; esperando uma nova conexão por {WATCHDOG_TIMEOUT} segundos..."
+            )
+            with watchdog_lock:
+                watchdog = Timer(8, timeout_exit)
+                watchdog.start()
 
 
 @socketio.on("set_path")
