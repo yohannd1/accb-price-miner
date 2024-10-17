@@ -5,25 +5,19 @@ let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
 let CANCEL_CAPTCHA = false;
 let EDIT_FORM_DATA = undefined;
-let WIDTH = 0;
 
-var i = 0;
-function move(val) {
-    val = (val === undefined) ? 0.0 : val;
-    val = val.toFixed(2);
+const updateProgressBar = (newValue) => {
+    const pb = document.querySelector("#progress_bar");
+    if (pb == null) {
+        console.log("#progress_bar não encontrada");
+        return;
+    }
 
-	var elem = document.getElementById("progress_bar");
-	WIDTH = parseFloat($("#progress_bar").html().replace("%", ""));
-	WIDTH += val;
-	try {
-		WIDTH = WIDTH.toFixed(2);
-	} catch (e) {
-		// Error
-	}
-	var floor = Math.floor(WIDTH);
-	elem.style.width = floor.toString() + "%";
-	elem.innerHTML = floor.toString() + "%";
-}
+    const encoded = newValue.toFixed(2).toString() + "%";
+    pb.textContent = encoded;
+    pb.style.width = encoded;
+};
+
 /**
  * Retorna um ratio de similaridade entre uma string s1 e s2
  * @param  {string} s1
@@ -657,8 +651,6 @@ const validateForm = (info, edit = false) => {
     return true;
 }
 
-console.log(validateForm);
-
 const requestNotificationPermission = () => {
     if (Notification.permission === "granted" || Notification.permission === "denied")
         return;
@@ -717,10 +709,11 @@ $(document).ready(() => {
 		if (msg['type'] == 'notification') {
             showMessage(msg.message);
 		} else if (msg['type'] == 'progress') {
-
 			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
-			if (msg['value'] != '')
-				move(msg['value']);
+
+			if (msg.value !== undefined)
+				updateProgressBar(parseFloat(msg.value));
+
 			if (msg['done'] == 1) {
 				// console.log("DONE");
 				$("#progress_bar").css("width", "0%");
@@ -867,8 +860,10 @@ $(document).ready(() => {
 			$("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
 		} else if (msg['type'] == 'progress') {
 			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
-			if (msg['value'] != '')
-				move(msg['value']);
+
+			if (msg.value !== undefined)
+				updateProgressBar(parseFloat(msg.value));
+
 			if (msg['done'] == 1) {
 				$("#progress_bar").css("width", "0%");
 				$("#progress_bar").html("0%");
