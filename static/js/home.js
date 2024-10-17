@@ -1,4 +1,5 @@
 import Cookies from "./cookie.min.mjs";
+import { showMessage } from "./misc.mjs";
 
 let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
@@ -8,9 +9,9 @@ let WIDTH = 0;
 
 var i = 0;
 function move(val) {
-	if (val == undefined)
-		val = 0.0
-	val.toFixed(2);
+    val = (val === undefined) ? 0.0 : val;
+    val = val.toFixed(2);
+
 	var elem = document.getElementById("progress_bar");
 	WIDTH = parseFloat($("#progress_bar").html().replace("%", ""));
 	WIDTH += val;
@@ -72,12 +73,12 @@ function filter_search(month) {
 				custom_select_search();
 				return true;
 			} else {
-				Materialize.toast("Nenhuma pesquisa cadastrada para esse mês.", 2000, 'rounded');
+                showMessage("Nenhuma pesquisa cadastrada para esse mês.", { notification: false });
 				return false;
 			}
 
 		} else {
-			Materialize.toast(response.message, 2000, 'rounded');
+            showMessage(response.message, { notification: false });
 			return false;
 		}
 
@@ -172,7 +173,6 @@ const custom_select = () => {
 			$styledSelect.text($(this).text()).removeClass('active');
 			$this.val($(this).attr('rel'));
 			$list.hide();
-			// Materialize.toast($this.val());
 			list_estab($this.val());
 			$('#city_name-save').val($this.val()).change();
 			$('#city-edit-select').val($this.val()).change();
@@ -256,7 +256,6 @@ const custom_select_date = () => {
 			} else {
 				$list.hide();
 			}
-			// Materialize.toast($this.val());
 		});
 
 		// Hides the unordered list when clicking outside of it
@@ -323,7 +322,6 @@ const custom_select_search = () => {
 			$styledSelect.text($(this).text()).removeClass('active');
 			$this.val($(this).attr('rel'));
 			$list.hide();
-			// Materialize.toast($this.val());
 			list_search($this.val());
 		});
 
@@ -639,54 +637,77 @@ const create_product_element = (new_product) => {
 
 }
 
-// Valida formulários para campos vázios
 /**
  * Confirma se todos os dados foram preenchidos em um dado array info.
  * @param  {Array} info
  * @param  {boolean} edit=false
  */
-const validate_form = (info, edit = false) => {
+const validateForm = (info, edit = false) => {
+	if (edit)
+        return null;
 
-	if (!edit) {
-		var validated = info.map((value, index) => {
-			if (value == " " || value == "") {
-				return false;
-			} else {
-				return true;
-			}
-		});
+    const isEmpty = (x) => (x.trim().length == 0);
+    if (info.map(isEmpty).some(x => x)) {
+        showMessage("Preencha todos os campos para realizar esta ação.", {
+            notification: false,
+        });
+        return false;
+    }
 
-		if (validated.some(elem => elem == false)) {
-			Materialize.toast("Preencha todos os campos para realizar esta ação.", 2000, 'rounded');
-			return false
-
-		} else
-			return true
-	} else {
-
-	}
-
+    return true;
 }
 
-// DOCUMENT.READY
+console.log(validateForm);
 
-$(document).ready(function () {
-	/**
-	 * Confirma se temos permissão para exibir notificações no sistema.
-	 * @param  {boolean} Notification.permission==="granted"
-	 */
-	if (Notification.permission === "granted") {
-		//  alert("we have permission");
-		// new Notification("Teste message", {
-		// 	body: "Teste body",
-		// });
+const requestNotificationPermission = () => {
+    if (Notification.permission === "granted" || Notification.permission === "denied")
+        return;
 
-	} else if (Notification.permission !== "denied") {
-		Notification.requestPermission().then(permission => {
-			// console.log(permission);
-		});
-	}
-	var socket = io().connect("http://127.0.0.1:5000/");
+    Notification.requestPermission().then(_ => {});
+};
+
+const copyToClipboard = (value) => {
+    navigator.clipboard.writeText(value);
+    showMessage("Texto copiado para área de transferências.", { notification: false });
+};
+
+$(document).ready(() => {
+    requestNotificationPermission();
+
+    const hjs_data = document.querySelector("#home-js-data");
+    const active = hjs_data.getAttribute("data-active");
+    const progress_value = hjs_data.getAttribute("data-progress-value");
+    const search = hjs_data.getAttribute("data-search") === "True";
+    const is_chrome_installed = hjs_data.getAttribute("data-is-chrome-installed") === "True";
+
+    const socket = io();
+
+    socket.on("connect", () => {
+        console.log(`Conectado - id do socket: ${socket.id}`);
+    });
+
+    const searchLoaded = () => {
+        if (search || !is_chrome_installed)
+            return;
+
+        if (confirm("Uma pesquisa foi encontrada em progresso, deseja retomá-la?")) {
+            $("#backup-button").addClass("disable");
+            $("#config_path").addClass("disable");
+            $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
+            socket.emit("search", { names: "", city: "", backup: 1});
+
+            var width = active.split(".")[0];
+            var elem = document.getElementById("progress_bar");
+            width = width * progress_value;
+            width = width.toFixed(2);
+            elem.style.width = width.toString() + "%";
+            elem.innerHTML = width.toString() + "%";
+
+            $("#main-navigation").tabs("select", "progress");
+            $("#main-navigation  a").addClass("disabled");
+        }
+    }
+
 	/**
 	 * Função responsável por tratar todas as emisões do tipo catpcha vinda do servidor.
 	 * @param  {route} 'captcha'
@@ -694,12 +715,7 @@ $(document).ready(function () {
 	 */
 	socket.on('captcha', (msg) => {
 		if (msg['type'] == 'notification') {
-
-			Materialize.toast(msg['message'], 8000, 'rounded');
-			new Notification("ACCB - Pesquisa Automática", {
-				body: msg['message'],
-			});
-
+            showMessage(msg.message);
 		} else if (msg['type'] == 'progress') {
 
 			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
@@ -722,12 +738,7 @@ $(document).ready(function () {
 			}
 
 		} else if (msg['type'] == 'captcha') {
-
-			Materialize.toast(msg['message'], 8000, 'rounded');
-			new Notification("ACCB - Pesquisa Automática", {
-				body: msg['message'],
-			});
-
+            showMessage(msg.message);
 		} else if (msg['type'] == 'log') {
 
 			var log_data = JSON.parse(msg['data'])
@@ -783,29 +794,18 @@ $(document).ready(function () {
 			alert(msg['message'])
 		}
 	});
+
 	/**
 	 * Função responsável por tratar todas as emisões do tipo catpcha vinda do servidor.
 	 * @param  {route} 'search'
 	 * @param  {json} msg
 	 */
 	socket.on('search', (msg) => {
-
 		if (msg['type'] == 'error') {
-
-			Materialize.toast("Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.", 8000, 'rounded');
-			new Notification("ACCB - Pesquisa Automática", {
-				body: "Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.",
-			});
-
+            showMessage("Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.");
 		} else if (msg['type'] == 'notification') {
-
-			Materialize.toast(msg['message'], 8000, 'rounded');
-			new Notification("ACCB - Pesquisa Automática", {
-				body: msg['message'],
-			});
-
+            showMessage(msg.message);
 		} else if (msg['type'] == 'chrome') {
-
 			$("#progress_bar").css("width", "0%");
 			$("#progress_bar").html("0%");
 			$('ul.tabs').tabs('select', 'pesquisar');
@@ -816,10 +816,7 @@ $(document).ready(function () {
 			$(window).off();
 			alert("Instale uma versão do Google Chrome para prosseguir com a pesquisa.");
 			window.location.reload(true);
-
-
 		} else if (msg['type'] == 'done') {
-
 			$("#progress_bar").css("width", "0%");
 			$("#progress_bar").html("0%");
 			$('ul.tabs').tabs('select', 'pesquisar');
@@ -829,8 +826,6 @@ $(document).ready(function () {
 			$('#main-navigation li a').removeClass("disabled");
 			$(window).off();
 			window.location.reload(true);
-
-
 		} else if (msg['type'] == 'cancel') {
 			$("#progress_bar").css("width", "0%");
 			$("#progress_bar").html("0%");
@@ -847,8 +842,6 @@ $(document).ready(function () {
 			$("#pause-loader").fadeOut(500);
 			socket.emit('reload');
 			window.location.reload(true);
-
-
 		} else if (msg['type'] == 'pause') {
 			$("#progress_bar").css("width", "0%");
 			$("#progress_bar").html("0%");
@@ -864,21 +857,15 @@ $(document).ready(function () {
 			$(".pause-overlay").fadeOut(500);
 			socket.emit('reload');
 			window.location.reload(true);
-
-
 		} else if (msg['type'] == 'log') {
-
 			var log_data = JSON.parse(msg['data'])
 			// console.table(log_data);
 			$("#progress_log").css("height", "fit-content");
 			log_data.map((data) => {
 				$("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
 			});
-
 			$("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
-
 		} else if (msg['type'] == 'progress') {
-
 			$("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
 			if (msg['value'] != '')
 				move(msg['value']);
@@ -894,9 +881,7 @@ $(document).ready(function () {
 				$(".log_item").remove();
 				window.location.reload(true);
 			}
-
 		}
-
 	});
 
 	// Inicia todos os elementos js da aplicação.
@@ -973,11 +958,8 @@ $(document).ready(function () {
 		var city_name = $("#city-delete-select").val();
 
 		if (window.confirm(`Realmente deseja deletar a cidade ${city_name} e todos os estabelecimentos pertencentes permanentemente ?`)) {
-
 			$.get("/delete_city", { city_name: city_name }, (response) => {
-
 				if (response.success) {
-
 					alert(response.message);
 					var modal = $("#delete-city").modal();
 					modal.closeModal();
@@ -988,12 +970,8 @@ $(document).ready(function () {
 				} else {
 					Materialize.toast(response.message, 2000, 'rounded');
 				}
-
 			});
-
 		}
-
-
 	});
 
 	// Salvar edição de cidade
@@ -1003,7 +981,7 @@ $(document).ready(function () {
 		e.preventDefault();
 		var old_name = $("#city-edit-select").val();
 		var new_name = $("#city-edit").val();
-		if (validate_form([old_name, new_name]) && (new_name !== old_name))
+		if (validateForm([old_name, new_name]) && (new_name !== old_name))
 
 			if (window.confirm(`Realmente deseja alterar o nome  da cidade ${old_name} para ${new_name} ?`)) {
 
@@ -1037,7 +1015,7 @@ $(document).ready(function () {
 		var primary_key = $("primary_key_product").attr('value').toUpperCase();
 		var keywords = $("#keywords_edit").val().toUpperCase();
 
-		if (validate_form([product_name, keywords]))
+		if (validateForm([product_name, keywords]))
 
 			if (window.confirm(`Realmente deseja alterar os valores inseridos ?`)) {
 
@@ -1079,7 +1057,7 @@ $(document).ready(function () {
 		e.preventDefault();
 
 		var new_city = $("#save-city").val();
-		if (validate_form([new_city]))
+		if (validateForm([new_city]))
 
 			$.get("/insert_city", { city_name: new_city }, (response) => {
 
@@ -1112,7 +1090,7 @@ $(document).ready(function () {
 		var web_name = $("#web_name-save").val().toUpperCase();
 		var adress = $("#adress-save").val().toUpperCase();
 
-		if (validate_form([city_name, estab_name, web_name, adress]))
+		if (validateForm([city_name, estab_name, web_name, adress]))
 
 			$.get("/insert_estab", { city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
 
@@ -1137,30 +1115,26 @@ $(document).ready(function () {
 	// Adicionar produto
 
 	$("#save-add-product").click(function (e) {
-
 		var product_name = $("#product_name").val().toUpperCase();
 		var keywords = $("#keywords").val().toUpperCase();
 
-		if (validate_form([product_name, keywords]))
+        if (!validateForm([product_name, keywords]))
+            return;
 
-			$.get("/insert_product", { product_name: product_name, keywords: keywords }, (response) => {
-
-				if (response.success) {
-
-					Materialize.toast(response.message, 2000, 'rounded');
-					var modal = $("#add-modal-product").modal();
-					modal.closeModal();
-					$(".jquery-modal").fadeOut(500);
-					// $(".estab-config").remove();
-					// list_estab();
-					PRODUCT_DATA.push([product_name, keywords]);
-					create_product_element(product_name);
-
-				} else {
-					Materialize.toast(response.message, 2000, 'rounded');
-				}
-
-			});
+        $.get("/insert_product", { product_name: product_name, keywords: keywords }, (response) => {
+            if (response.success) {
+                Materialize.toast(response.message, 2000, 'rounded');
+                var modal = $("#add-modal-product").modal();
+                modal.closeModal();
+                $(".jquery-modal").fadeOut(500);
+                // $(".estab-config").remove();
+                // list_estab();
+                PRODUCT_DATA.push([product_name, keywords]);
+                create_product_element(product_name);
+            } else {
+                Materialize.toast(response.message, 2000, 'rounded');
+            }
+        });
 
 	});
 
@@ -1218,7 +1192,7 @@ $(document).ready(function () {
 		var web_name = $("#web_name").val().toUpperCase();
 		var adress = $("#adress").val().toUpperCase();
 
-		if (validate_form([city_name, estab_name, web_name, adress]))
+		if (validateForm([city_name, estab_name, web_name, adress]))
 
 			$.get("/update_estab", { primary_key: primary_key, city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
 
@@ -1688,9 +1662,7 @@ $(document).ready(function () {
 		var generate = window.confirm("Deseja gerar uma coleção de arquivos excel com todas as pesquisas existentes ?");
 
 		$.get("/clean_search", { generate: generate.toString() }, (response) => {
-
 			if (response["status"] == "success") {
-
 				const path = `${response.dic}`;
 
 				if (generate) {
@@ -1703,9 +1675,6 @@ $(document).ready(function () {
 				setInterval(() => {
 					window.location.reload(true);
 				}, 2000);
-				// new Notification("ACCB - Pesquisa Automática", {
-				// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
-				// });
 			} else {
 				Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
 			}
@@ -1722,12 +1691,9 @@ $(document).ready(function () {
 		if (!$('.estab').hasClass("select-item-active") && format_type != "all") {
 			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
 		} else {
-
 			var search_id = $("#search-select").val();
 			if (format_type == "all") {
-
 				$.get("/generate_file", { city_name: city_name, search_id: search_id, format: format_type }, (response) => {
-
 					if (response["status"] == "success") {
 						// console.log(response);
 						const default_path = document.cookie
@@ -1740,16 +1706,11 @@ $(document).ready(function () {
 							$.get("/open_folder", { path: path }, (res) => { });
 						else
 							Materialize.toast(`Arquivos gerados com sucesso no diretório ${default_path}/${response.dic}.`, 15000, 'rounded');
-						// new Notification("ACCB - Pesquisa Automática", {
-						// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
-						// });
 					} else {
 						Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
 					}
-
 				});
-				return
-
+				return;
 			}
 
 			var estabs = $(".select-item-active");
@@ -1775,10 +1736,6 @@ $(document).ready(function () {
 						$.get("/open_folder", { path: path }, (res) => { });
 					else
 						Materialize.toast(`Arquivos gerados com sucesso no diretório ${default_path}/${response.dic}.`, 15000, 'rounded');
-
-					// new Notification("ACCB - Pesquisa Automática", {
-					// 	body: `Arquivos gerados com sucesso no diretório ${response.dic}.`,
-					// });
 				} else {
 					Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
 				}
@@ -1873,47 +1830,6 @@ $(document).ready(function () {
 			},
 		});
 	});
-});
-
-const copyToClipboard = (value) => {
-    navigator.clipboard.writeText(value);
-    Materialize.toast("Texto copiado para área de transferências.", 2000, "rounded");
-};
-
-$(document).ready(() => {
-    const hjs_data = document.querySelector("#home-js-data");
-    const active = hjs_data.getAttribute("data-active");
-    const progress_value = hjs_data.getAttribute("data-progress-value");
-    const search = hjs_data.getAttribute("data-search") === "True";
-    const is_chrome_installed = hjs_data.getAttribute("data-is-chrome-installed") === "True";
-
-    const socket = io();
-
-    socket.on("connect", () => {
-        console.log(`Conectado - id do socket: ${socket.id}`);
-    });
-
-    const searchLoaded = () => {
-        if (search || !is_chrome_installed)
-            return;
-
-        if (confirm("Uma pesquisa foi encontrada em progresso, deseja retomá-la?")) {
-            $("#backup-button").addClass("disable");
-            $("#config_path").addClass("disable");
-            $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
-            socket.emit("search", { names: "", city: "", backup: 1});
-
-            var width = active.split(".")[0];
-            var elem = document.getElementById("progress_bar");
-            width = width * progress_value;
-            width = width.toFixed(2);
-            elem.style.width = width.toString() + "%";
-            elem.innerHTML = width.toString() + "%";
-
-            $("#main-navigation").tabs("select", "progress");
-            $("#main-navigation  a").addClass("disabled");
-        }
-    }
 
     if (Cookies.get("warning") === undefined) {
         $("#warning").modal({});
