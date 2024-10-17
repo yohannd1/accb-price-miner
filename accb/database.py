@@ -402,12 +402,12 @@ class DatabaseManager:
             query = """ UPDATE search SET done = ?, duration = ? WHERE id = ? """
             cursor.execute(query, (search["done"], search["duration"], search["id"]))
 
-    def db_run_query(self, query: str) -> list[Any]:
+    def db_run_query(self, query: str, args: tuple = ()) -> list[Any]:
         """Roda uma query específica no banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            res = cursor.execute(query)
+            res = cursor.execute(query, args)
             return res.fetchall()
 
     def db_update_keyword(self, keyword):

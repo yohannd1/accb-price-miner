@@ -28,7 +28,6 @@ from datetime import date, datetime
 import traceback
 import webbrowser
 import subprocess
-from typing import Optional
 from pathlib import Path
 
 from flask import Flask, render_template, request, g
@@ -123,9 +122,8 @@ def bd_to_xlsx(db, search_id, estab_data, city):
         file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
 
         products = db.db_run_query(
-            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                search_id, web_name
-            )
+            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
+            (search_id, web_name),
         )
 
         # print("QUERY RESULTS:")
@@ -213,9 +211,8 @@ def route_home():
     db = state.db_manager
 
     search_id = db.db_run_query(
-        "SELECT id FROM search WHERE done = 0 AND search_date = '{}' ORDER BY city_name ASC".format(
-            str(date.today())
-        )
+        "SELECT id FROM search WHERE done = 0 AND search_date = ? ORDER BY city_name ASC",
+        (str(date.today()),),
     )
 
     product_names = db.db_run_query("SELECT product_name FROM product")
@@ -248,9 +245,8 @@ def route_home():
 
     day = str(date.today()).split("-")[1]
     search_info = db.db_run_query(
-        "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%%-{}-%%'".format(
-            day
-        )
+        "SELECT * FROM search WHERE done = 1 AND search_date LIKE ?",
+        (f"%%-{day}-%%",),
     )
 
     search_years = db.db_run_query(
@@ -368,9 +364,8 @@ def route_select_search_data():
 
     db = state.db_manager
     search_data = db.db_run_query(
-        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = {} AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC".format(
-            search_id
-        )
+        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = ? AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC",
+        (search_id,),
     )
 
     # print(search_data)
@@ -394,13 +389,13 @@ def route_select_search_info():
         if year is None:
             month = "0" + month if int(month) < 10 else month
             search_data = db.db_run_query(
-                "SELECT * FROM search WHERE done = 1 AND search_date LIKE '%-{}-%' ORDER BY city_name ASC".format(
-                    month
-                )
+                "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
+                (f"%-{month}-%",),
             )
         else:
             search_data = db.db_run_query(
-                f"SELECT * FROM search WHERE done = 1 AND search_date LIKE '{year}%' ORDER BY city_name ASC"
+                "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
+                (f"{year}%",),
             )
         print(f"search_data {search_data}")
         return {"success": True, "data": json.dumps(search_data)}
@@ -777,16 +772,14 @@ def route_import_database():
 
 def bd_to_xlsx_all(city, search_id, db):
 
-    result = db.db_run_query(
-        """
-          SELECT DISTINCT * FROM search_item
-          WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
-          AND search_id={}
-          GROUP BY web_name
-        """.format(
-            search_id
-        )
-    )
+    query = """
+    SELECT DISTINCT * FROM search_item
+    WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
+    AND search_id= ?
+    GROUP BY web_name
+    """
+
+    result = db.db_run_query(query, (search_id,))
 
     # with open("estabs.log", "w+", encoding="latin-1") as outfile:
 
@@ -809,9 +802,8 @@ def bd_to_xlsx_all(city, search_id, db):
         file_path = "{}/Todos/{}/{}.xlsx".format(path, folder_name, new_file)
 
         products = db.db_run_query(
-            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                search_id, web_name
-            )
+            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
+            (search_id, web_name),
         )
 
         # print("QUERY RESULTS:")
@@ -932,7 +924,7 @@ def route_clean_search():
         for city in cities:
 
             estab_data = db.db_run_query(
-                "SELECT * FROM estab WHERE city_name = '{}'".format(city[0])
+                "SELECT * FROM estab WHERE city_name = ?", (city[0],)
             )
             folder_name = f"{path}/Limpeza/{city[0]}"
             new_path = f"{path}/Limpeza/{city[0]}"
@@ -952,15 +944,15 @@ def route_clean_search():
 
                     # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
                     new_file = name
+                    # TODO: what a mess.
                     file_path = "{}/{}/{}.xlsx".format(new_path, search_date, new_file)
                     if not os.path.exists("{}/{}".format(new_path, search_date)):
-
                         os.makedirs("{}/{}".format(new_path, search_date))
 
+                    # TODO: this is a repeated query!
                     products = db.db_run_query(
-                        "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                            id, web_name
-                        )
+                        "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
+                        (id, web_name),
                     )
                     # print("QUERY RESULTS:")
                     df = pd.DataFrame(
@@ -1100,15 +1092,12 @@ def route_bd_to_xlsx():
 
             # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
             new_file = name
-            if is_windows():
-                file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
-            else:
-                file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
+            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
 
+            # TODO: REPEATED QUERY AGAIN
             products = db.db_run_query(
-                "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = {} AND web_name = '{}' ORDER BY price ASC".format(
-                    search_id, web_name
-                )
+                "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
+                (search_id, web_name),
             )
 
             # print("QUERY RESULTS:")
@@ -1223,14 +1212,16 @@ def on_pause(cancel: bool = False) -> None:
 
 
 @socketio.on("cancel")
-def on_cancel():
-    """Rota cancelar por pausar a pesquisa"""
+def on_cancel() -> dict:
+    """Rota responsável por pausar a pesquisa"""
 
     state.wait_reload = True
+    state.db_manager.db_run_query("DELETE FROM search WHERE id = ?", (state.search_id,))
 
-    db = state.db_manager
-    query = "DELETE FROM search WHERE id = {}".format(state.search_id)
-    db.db_run_query(query)
+    return response_ok()
+
+def response_ok() -> dict:
+    return {"status": "success"}
 
 
 watchdog_lock = Lock()
@@ -1299,9 +1290,8 @@ def on_search(search_info):
     db = state.db_manager
 
     search = db.db_run_query(
-        "SELECT id FROM search WHERE done = 0 AND search_date = '{}' ORDER BY city_name ASC".format(
-            str(date.today())
-        )
+        "SELECT id FROM search WHERE done = 0 AND search_date = ? ORDER BY city_name ASC",
+        (str(date.today()),),
     )
 
     search_id = search[0][0] if len(search) != 0 else None
@@ -1348,8 +1338,7 @@ def on_search(search_info):
     else:
 
         if search_info["backup"] == 1 and len(backup_info) != 0:
-            query = "DELETE FROM search WHERE id = {}".format(search_id)
-            db.db_run_query(query)
+            db.db_run_query("DELETE FROM search WHERE id = ?", (search_id,))
         search_id = db.db_save_search(0, search_info["city"], 0)
         active = "0.0"
         city = search_info["city"]
@@ -1446,7 +1435,7 @@ def on_search(search_info):
 
                 return
 
-        except:
+        except Exception:
 
             exc_type, exc_value, exc_tb = sys.exc_info()
             log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
