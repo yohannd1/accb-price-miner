@@ -13,7 +13,7 @@ import os
 from os import path
 import json
 
-from typing import Any
+from typing import Any, Sequence
 
 from accb.utils import log
 
@@ -258,11 +258,9 @@ class DatabaseManager:
         """Deleta um elemento do banco de dados."""
 
         with self.db_connection() as conn:
-            # FIXME: SQL injection vulnerability?
             cursor = conn.get_cursor()
-            cursor.execute(
-                """ DELETE FROM {} WHERE {} = "{}" """.format(table, where, value)
-            )
+            query = self.safe_query_format(""" DELETE FROM {} WHERE {} = ? """, table, where)
+            cursor.execute(query, (value,))
 
     def db_get_city(self):
         """Seleciona uma cidade do banco de dados."""
@@ -274,20 +272,20 @@ class DatabaseManager:
             return cities
 
     # query
-    def db_get_search(self, where=None, value=None):
+    def db_get_search(self, where: str, equals: Any = None) -> list[Any]:
         """Seleciona uma pesquisa do banco de dados."""
 
-        if value is None:
+        args: Sequence
+        if equals is None:
             query = """SELECT * FROM search ORDER BY id ASC"""
+            args = ()
         else:
-            # FIXME: SQL injection vulnerability?
-            query = """SELECT * FROM search WHERE {} = '{}' ORDER BY id ASC""".format(
-                where, value
-            )
+            query = self.safe_query_format(""" SELECT * FROM search WHERE {} = ? ORDER BY id ASC """, where)
+            args = (equals,)
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            res = cursor.execute(query)
+            res = cursor.execute(query, args)
             return res.fetchall()
 
     # query
@@ -435,3 +433,13 @@ class DatabaseManager:
                     keyword["similarity"],
                 ),
             )
+
+    @staticmethod
+    def safe_query_format(fmt: str, *args: str) -> str:
+        patt = re.compile(r"^[a-zA-Z0-9_]+$")
+        for a in args:
+            if patt.match(a) is not None:
+                continue
+            raise ValueError(f"valor não passou o check de argumento seguro para query: {repr(a)}")
+
+        return fmt.format(*args)

@@ -63,6 +63,10 @@ state = State(
     db_manager=DatabaseManager(),
 )
 
+watchdog_lock = Lock()
+watchdog = None
+
+
 path = None
 """Variável de caminho padrão para gerar coleção excel."""
 
@@ -1080,6 +1084,7 @@ def route_bd_to_xlsx():
 
         folder_name = dic
 
+        # TODO: arrumar
         if is_windows():
             if not os.path.exists(f"{path}/{dic}"):
 
@@ -1220,12 +1225,9 @@ def on_cancel() -> dict:
 
     return response_ok()
 
+
 def response_ok() -> dict:
     return {"status": "success"}
-
-
-watchdog_lock = Lock()
-watchdog = None
 
 
 @socketio.on("connect")
