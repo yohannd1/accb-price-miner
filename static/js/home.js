@@ -1053,11 +1053,8 @@ $(document).ready(() => {
 
 		var new_city = $("#save-city").val();
 		if (validateForm([new_city]))
-
 			$.get("/insert_city", { city_name: new_city }, (response) => {
-
 				if (response.success) {
-
 					alert(response.message);
 					var modal = $("#add-city-modal").modal();
 					modal.closeModal();
@@ -1066,7 +1063,6 @@ $(document).ready(() => {
 					$("#city-select").append(element);
 					window.location = window.location.origin + "#configurar";
 					window.location.reload(true);
-
 				} else {
 					Materialize.toast(response.message, 2000, 'rounded');
 				}
@@ -1404,39 +1400,27 @@ $(document).ready(() => {
 	});
 
 	// Remover product
-
 	$('body').on('click', 'a.remove-product', function (e) {
-
 		e.stopPropagation();
 		e.preventDefault();
 		let product_name = $(this).attr('value').toUpperCase();
-		if (window.confirm(`Realmente deseja deletar o produto ${product_name} permanentemente ?`)) {
-			$.get("/remove_product", { product_name: product_name }, (response) => {
 
+		if (window.confirm(`Realmente deseja deletar o produto ${product_name} permanentemente?`)) {
+			$.get("/remove_product", { product_name: product_name }, (response) => {
 				if (response.success) {
 					$(this).parent().parent().remove();
 					Materialize.toast(response.message, 2000, 'rounded');
-					// console.log(response);
 					if ($(".product-config .edit-product").length == 0) {
 						$("#no-result-product").fadeIn(500);
 					}
-					// window.location = window.location.origin + "#produtos";
-					// window.location.reload(true);
-
 				} else {
 					Materialize.toast(response.message, 2000, 'rounded');
-					// console.log(response);
 				}
-
-
 			});
 		}
-
-
 	});
 
 	// Search bar - Search
-
 	$('#search_bar').on("keyup", function (e) {
 		e.preventDefault();
 		e.stopPropagation();
@@ -1444,7 +1428,7 @@ $(document).ready(() => {
 		var value = $('#search_bar').val().toUpperCase();
 
 		if ($("#search-select").val() == "null")
-			return
+			return;
 
 		if (row_len == 0) {
 			return;
@@ -1651,91 +1635,70 @@ $(document).ready(() => {
 			return;
 		}
 
-		if (!window.confirm("Realmente deseja excluir todas as pesquisas salvas ?"))
+		if (!window.confirm("Realmente deseja excluir todas as pesquisas salvas?"))
 			return
 
-		var generate = window.confirm("Deseja gerar uma coleção de arquivos excel com todas as pesquisas existentes ?");
+		var generate = window.confirm("Deseja gerar uma coleção de arquivos excel com todas as pesquisas existentes?");
 
 		$.get("/clean_search", { generate: generate.toString() }, (response) => {
-			if (response["status"] == "success") {
-				const path = `${response.dic}`;
+            if (response.status !== "success") {
+                showMessage("Ocorreu um erro gerando os arquivos, tente novamente.", { notification: false });
+                return;
+            }
 
-				if (generate) {
-					Materialize.toast(`Arquivos gerados com sucesso no diretório ${response.dic}.`, 15000, 'rounded');
-					$.get("/open_folder", { path: path }, (res) => { });
-				}
-				else
-					Materialize.toast(response.message, 15000, 'rounded');
+            showMessage(response.message, { notification: true });
 
-				setInterval(() => {
-					window.location.reload(true);
-				}, 2000);
-			} else {
-				Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
-			}
+            const path = response.path;
+            if (path === undefined)
+                return;
 
+            if (window.confirm(`Deseja abrir o diretório ${path}?`))
+                $.get("/open_folder", { path: path }, _ => {});
+
+            setInterval(() => window.location.reload(true), 2000);
 		});
 	});
 
 	// Realiza a geração de coleção de arquivos para uma pesquisa existente no modal de gerar arquivos (aba de pesquisas).
 	$("#generate-file").on('click', () => {
-
-		var city_name = $("#search-select option:selected").attr("city");
+		const city_name = $("#search-select option:selected").attr("city");
 		const format_type = $("#file_format").val();
 
 		if (!$('.estab').hasClass("select-item-active") && format_type != "all") {
 			Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
-		} else {
-			var search_id = $("#search-select").val();
-			if (format_type == "all") {
-				$.get("/generate_file", { city_name: city_name, search_id: search_id, format: format_type }, (response) => {
-					if (response["status"] == "success") {
-						// console.log(response);
-						const default_path = document.cookie
-							.split('; ')
-							.find(row => row.startsWith('path='))
-							.split('=')[1];
-						$('.estab').removeClass("select-item-active");
-						const path = `${default_path}/${response.dic}`;
-						if (window.confirm(`Deseja abrir o diretório ${path}`))
-							$.get("/open_folder", { path: path }, (res) => { });
-						else
-							Materialize.toast(`Arquivos gerados com sucesso no diretório ${default_path}/${response.dic}.`, 15000, 'rounded');
-					} else {
-						Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
-					}
-				});
-				return;
-			}
-
-			var estabs = $(".select-item-active");
-			var names = [];
-
-			estabs.each(function (estab) {
-				names.push($(this).attr("value"));
-			});
-
-			// console.table(form_data);
-			// socket.emit('search', form_data);
-			$.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id, format: format_type }, (response) => {
-				1
-				if (response["status"] == "success") {
-					// console.log(response);
-					const default_path = document.cookie
-						.split('; ')
-						.find(row => row.startsWith('path='))
-						.split('=')[1];
-					$('.estab').removeClass("select-item-active");
-					const path = `${default_path}/${response.dic}`;
-					if (window.confirm(`Deseja abrir o diretório ${path}`))
-						$.get("/open_folder", { path: path }, (res) => { });
-					else
-						Materialize.toast(`Arquivos gerados com sucesso no diretório ${default_path}/${response.dic}.`, 15000, 'rounded');
-				} else {
-					Materialize.toast(`Ocorreu um erro gerando os arquivos, tente novamente.`, 8000, 'rounded');
-				}
-			});
+            return;
 		}
+
+        const search_id = $("#search-select").val();
+
+        const processResponse = (response) => {
+            if (response.status !== "success") {
+                showMessage("Ocorreu um erro gerando os arquivos, tente novamente.", { notification: false });
+                return;
+            }
+
+            const path = response.path;
+            showMessage(`Arquivos gerados com sucesso no diretório ${path}.`, { notification: true });
+
+            $('.estab').removeClass("select-item-active");
+
+            if (window.confirm(`Deseja abrir o diretório ${path}?`))
+                $.get("/open_folder", { path: path }, _ => {});
+        };
+
+        if (format_type == "all") {
+            $.get("/generate_file", { city_name: city_name, search_id: search_id, format: format_type }, processResponse);
+            return;
+        }
+
+        var estabs = $(".select-item-active");
+        var names = [];
+
+        estabs.each(function (estab) {
+            names.push($(this).attr("value"));
+        });
+
+        $.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id, format: format_type }, processResponse);
 	});
 
 	$("#file_format").on("change", function () {

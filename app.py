@@ -24,17 +24,16 @@ import json
 import sqlite3
 import sys
 import os
-from datetime import date, datetime
+from datetime import date
 import traceback
 import webbrowser
 import subprocess
 from pathlib import Path
+import socket
 
-from flask import Flask, render_template, request, g
+from flask import Flask, render_template, request, g, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
-
-import pandas as pd
 
 from openpyxl.styles import Border, Side, Alignment
 
@@ -48,16 +47,17 @@ from accb.utils import (
     is_windows,
     ask_user_directory,
     get_time_hms,
+    get_time_filename,
 )
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager
+from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
 
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
-# os.environ["WDM_LOG_LEVEL"] = "0"
 
 state = State(
     db_manager=DatabaseManager(),
@@ -73,139 +73,9 @@ path = None
 
 def is_port_in_use(port):
     """Confere se uma dada porta port está em uso pelo sistema."""
-    import socket
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
-
-
-def xlsx_to_bd(db, city_name):
-    """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
-    df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
-    duration = get_time_hms(time.time())  # FIXME: ... tempo desde agora?
-    search_id = db.db_save_search(1, city_name, duration["minutes"])
-
-    for _index, row in df.iterrows():
-
-        name, local, keyword, adress, price = row
-        # print(name, local, keyword, adress, price)
-
-        try:
-            info = {
-                "search_id": search_id,
-                "web_name": local,
-                "adress": adress,
-                "product_name": name,
-                "price": price,
-                "keyword": keyword,
-            }
-            db.db_save_search_item(info)
-        except Exception:
-            pass
-
-    return search_id
-
-
-def get_time_filename() -> str:
-    return datetime.now().strftime("[%d-%m] [%Hh %Mm]")
-
-
-def bd_to_xlsx(db, search_id, estab_data, city):
-    """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]"""
-
-    dic = f"{get_time_filename()} {city}"
-
-    folder_name = dic
-
-    final = Path(f"{path}/{dic}")
-    final.mkdir(parents=True, exist_ok=True)
-
-    for city, name, adress, web_name in estab_data:
-        # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
-        new_file = name
-        file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
-
-        products = db.db_run_query(
-            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
-            (search_id, web_name),
-        )
-
-        # print("QUERY RESULTS:")
-        df = pd.DataFrame(
-            data=products,
-            columns=[
-                "PRODUTO",
-                "ESTABELECIMENTO",
-                "PALAVRA-CHAVE",
-                "ENDEREÇO",
-                "PREÇO",
-            ],
-        )
-
-        # Filtra por endereço
-        pattern = "|".join(adress.upper().split(" "))
-        df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
-
-        # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-        writer = pd.ExcelWriter(file_path, engine="openpyxl")
-
-        df = df.to_excel(
-            writer,
-            sheet_name="Pesquisa",
-            index=False,
-            startrow=0,
-            startcol=1,
-            engine="openpyxl",
-        )
-
-        border = Border(
-            left=Side(border_style="thin", color="FF000000"),
-            right=Side(border_style="thin", color="FF000000"),
-            top=Side(border_style="thin", color="FF000000"),
-            bottom=Side(border_style="thin", color="FF000000"),
-            diagonal=Side(border_style="thin", color="FF000000"),
-            diagonal_direction=0,
-            outline=Side(border_style="thin", color="FF000000"),
-            vertical=Side(border_style="thin", color="FF000000"),
-            horizontal=Side(border_style="thin", color="FF000000"),
-        )
-
-        workbook = writer.book["Pesquisa"]
-        worksheet = workbook
-
-        for cell in worksheet["B"]:
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["C"]:
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["D"]:
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["E"]:
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["F"]:
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for col in worksheet.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except Exception:
-                    pass
-            adjusted_width = (max_length + 2) * 1.2
-            worksheet.column_dimensions[column].width = adjusted_width
-
-        writer.save()
 
 
 @app.route("/")
@@ -239,8 +109,8 @@ def route_home():
                 duration,
                 progress_value,
             ) = backup_info[0]
-            if done == 0:
 
+            if done == 0:
                 search = True
 
     except:
@@ -254,7 +124,7 @@ def route_home():
     )
 
     search_years = db.db_run_query(
-        "SELECT DISTINCT SUBSTR(search_date, '____',5) FROM search WHERE done = 1"
+        "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
     )
 
     city = db.db_get_city()
@@ -300,6 +170,7 @@ def route_home():
 @app.route("/insert_product")
 def route_insert_product():
     """Rota de inserção de produtos no banco de dados."""
+
     db = state.db_manager
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
@@ -325,37 +196,31 @@ def route_insert_product():
         }
 
 
+@app.errorhandler(Exception)
+def all_exception_handler(error):
+    res = {"status": "error", "message": "Erro interno da aplicação"}
+    return Response(status=200, mimetype="application/json", response=json.dumps(res))
+
+
 @app.route("/remove_product")
 def route_remove_product():
     """Rota de remoção de produtos no banco de dados."""
 
-    db = state.db_manager
     product_name = request.args.get("product_name")
-    try:
-        db.db_delete("product", "product_name", product_name)
-        return {
-            "success": True,
-            "message": "O produto {} foi removido com sucesso".format(product_name),
-        }
+    state.db_manager.db_delete("product", "product_name", product_name)
 
-    except sqlite3.Error:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "O produto {} não pode ser removido.".format(product_name),
-        }
+    return {
+        "success": True,
+        "message": f"O produto {product_name} foi removido com sucesso",
+    }
 
 
 @app.route("/select_product")
 def route_select_product():
     """Rota de seleção de produtos."""
 
-    db = state.db_manager
-    products = db.db_get_product()
-
-    return json.dumps([product for product in products])
+    products = state.db_manager.db_get_product()
+    return json.dumps(products)
 
 
 @app.route("/select_search_data")
@@ -364,15 +229,11 @@ def route_select_search_data():
 
     search_id = request.args.get("search_id")
     city_name = request.args.get("city_name")
-    # print(search_id)
 
-    db = state.db_manager
-    search_data = db.db_run_query(
+    search_data = state.db_manager.db_run_query(
         "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = ? AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC",
         (search_id,),
     )
-
-    # print(search_data)
 
     return json.dumps(search_data)
 
@@ -381,15 +242,12 @@ def route_select_search_data():
 def route_select_search_info():
     """Rota de seleção de informação das pesquisas no banco de dados."""
     db = state.db_manager
-    month = request.args.get("month")
     search_data = ""
-    try:
-        year = request.args.get("year")
-    except Exception:
-        year = ""
+
+    month = request.args.get("month")
+    year = request.args.get("year")
 
     try:
-        # print(f"month {month}")
         if year is None:
             month = "0" + month if int(month) < 10 else month
             search_data = db.db_run_query(
@@ -416,14 +274,12 @@ def route_select_search_info():
 @app.route("/update_product")
 def route_update_product():
     """Rota de atualização de produtos no banco de dados."""
-    db = state.db_manager
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
     primary_key = request.args.get("primary_key")
 
     try:
-
-        db.db_update_product(
+        state.db_manager.db_update_product(
             {
                 "product_name": product_name,
                 "keywords": keywords,
@@ -774,125 +630,6 @@ def route_import_database():
         }
 
 
-def bd_to_xlsx_all(city, search_id, db):
-
-    query = """
-    SELECT DISTINCT * FROM search_item
-    WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
-    AND search_id= ?
-    GROUP BY web_name
-    """
-
-    result = db.db_run_query(query, (search_id,))
-
-    # with open("estabs.log", "w+", encoding="latin-1") as outfile:
-
-    #   outfile.write(json.dumps(result, indent=4, sort_keys=True))
-    if not os.path.exists(f"{path}/Todos/"):
-        os.makedirs(f"{path}/Todos")
-
-    dic = f"{get_time_filename()} {city}"
-
-    folder_name = dic
-
-    if not os.path.exists(f"{path}/Todos/{dic}"):
-
-        os.makedirs(f"{path}/Todos/{dic}")
-
-    for id, product, web_name, adress, price, keyword in result:
-
-        # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
-        new_file = web_name
-        file_path = "{}/Todos/{}/{}.xlsx".format(path, folder_name, new_file)
-
-        products = db.db_run_query(
-            "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
-            (search_id, web_name),
-        )
-
-        # print("QUERY RESULTS:")
-        df = pd.DataFrame(
-            data=products,
-            columns=[
-                "PRODUTO",
-                "ESTABELECIMENTO",
-                "PALAVRA-CHAVE",
-                "ENDEREÇO",
-                "PREÇO",
-            ],
-        )
-        # Filtra por endereço
-        pattern = "|".join(adress.upper().split(" "))
-        df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
-
-        # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-        writer = pd.ExcelWriter(file_path, engine="openpyxl")
-
-        df = df.to_excel(
-            writer,
-            sheet_name="Pesquisa",
-            index=False,
-            startrow=0,
-            startcol=1,
-            engine="openpyxl",
-        )
-
-        border = Border(
-            left=Side(border_style="thin", color="FF000000"),
-            right=Side(border_style="thin", color="FF000000"),
-            top=Side(border_style="thin", color="FF000000"),
-            bottom=Side(border_style="thin", color="FF000000"),
-            diagonal=Side(border_style="thin", color="FF000000"),
-            diagonal_direction=0,
-            outline=Side(border_style="thin", color="FF000000"),
-            vertical=Side(border_style="thin", color="FF000000"),
-            horizontal=Side(border_style="thin", color="FF000000"),
-        )
-
-        workbook = writer.book["Pesquisa"]
-        worksheet = workbook
-        for cell in worksheet["B"]:
-
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["C"]:
-
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["D"]:
-
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["E"]:
-
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for cell in worksheet["F"]:
-
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-        for col in worksheet.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = (max_length + 2) * 1.2
-            worksheet.column_dimensions[column].width = adjusted_width
-
-        writer.save()
-
-    return dic
-
-
 @app.route("/open_folder")
 def route_open_explorer():
     try:
@@ -910,282 +647,81 @@ def route_open_explorer():
 @app.route("/clean_search")
 def route_clean_search():
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
-    generate = request.args.get("generate")
-    db = state.db_manager
+
     global path
-    generate = True if generate == "false" else False
-    if not generate:
-        db.db_run_query("DELETE FROM search_item")
-        db.db_run_query("DELETE FROM search")
-        return {"status": "success", "message": "Pesquisas deletadas com sucesso."}
-    try:
+    db = state.db_manager
 
-        cities = db.db_get_city()
-        if not os.path.exists(f"{path}/Limpeza"):
+    generate = request.args.get("generate") == "true"
 
-            os.makedirs(f"{path}/Limpeza")
+    response = {"status": "success"}
 
-        for city in cities:
+    if generate:
+        limpeza_path = Path(path) / "Limpeza"
 
+        for city_name, *_ in db.db_get_city():
             estab_data = db.db_run_query(
-                "SELECT * FROM estab WHERE city_name = ?", (city[0],)
+                "SELECT * FROM estab WHERE city_name = ?", (city_name,)
             )
-            folder_name = f"{path}/Limpeza/{city[0]}"
-            new_path = f"{path}/Limpeza/{city[0]}"
             search_info = db.db_run_query(
                 "SELECT DISTINCT id,search_date FROM search WHERE done = 1"
             )
 
-            if not os.path.exists(new_path):
+            for search_id, search_date in search_info:
+                output_folder = limpeza_path / search_date
+                output_folder.mkdir(parents=True, exist_ok=True)
 
-                os.makedirs(new_path)
+                for _, name, adress, web_name in estab_data:
+                    output_path = output_folder / f"{name}.xlsx"
 
-            for id, search_date in search_info:
-
-                for city, name, adress, web_name in estab_data:
-
-                    # print(id, web_name)
-
-                    # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
-                    new_file = name
-                    # TODO: what a mess.
-                    file_path = "{}/{}/{}.xlsx".format(new_path, search_date, new_file)
-                    if not os.path.exists("{}/{}".format(new_path, search_date)):
-                        os.makedirs("{}/{}".format(new_path, search_date))
-
-                    # TODO: this is a repeated query!
-                    products = db.db_run_query(
-                        "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
-                        (id, web_name),
-                    )
-                    # print("QUERY RESULTS:")
-                    df = pd.DataFrame(
-                        data=products,
-                        columns=[
-                            "PRODUTO",
-                            "ESTABELECIMENTO",
-                            "PALAVRA-CHAVE",
-                            "ENDEREÇO",
-                            "PREÇO",
-                        ],
-                    )
-                    # Filtra por endereço
-                    # pattern = "|".join(adress.upper().split(" "))
-                    # df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
-
-                    # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-                    writer = pd.ExcelWriter(file_path, engine="openpyxl")
-
-                    df = df.to_excel(
-                        writer,
-                        sheet_name="Pesquisa",
-                        index=False,
-                        startrow=0,
-                        startcol=1,
-                        engine="openpyxl",
+                    export_to_xlsx(
+                        db=db,
+                        search_id=search_id,
+                        filter_by_address=False,
+                        output_path=output_path,
+                        web_name=web_name,
+                        adress=adress,
                     )
 
-                    border = Border(
-                        left=Side(border_style="thin", color="FF000000"),
-                        right=Side(border_style="thin", color="FF000000"),
-                        top=Side(border_style="thin", color="FF000000"),
-                        bottom=Side(border_style="thin", color="FF000000"),
-                        diagonal=Side(border_style="thin", color="FF000000"),
-                        diagonal_direction=0,
-                        outline=Side(border_style="thin", color="FF000000"),
-                        vertical=Side(border_style="thin", color="FF000000"),
-                        horizontal=Side(border_style="thin", color="FF000000"),
-                    )
+        response["message"] = (
+            f"Pesquisas deletadas com sucesso. Conteúdo gerado disponível em {limpeza_path}."
+        )
+        response["path"] = str(limpeza_path)
+    else:
+        response["message"] = "Pesquisas deletadas com sucesso."
 
-                    workbook = writer.book["Pesquisa"]
-                    worksheet = workbook
-                    for cell in worksheet["B"]:
+    db.db_run_query("DELETE FROM search_item")
+    db.db_run_query("DELETE FROM search")
 
-                        cell.border = border
-                        cell.alignment = Alignment(horizontal="center")
-
-                    for cell in worksheet["C"]:
-
-                        cell.border = border
-                        cell.alignment = Alignment(horizontal="center")
-
-                    for cell in worksheet["D"]:
-
-                        cell.border = border
-                        cell.alignment = Alignment(horizontal="center")
-
-                    for cell in worksheet["E"]:
-
-                        cell.border = border
-                        cell.alignment = Alignment(horizontal="center")
-
-                    for cell in worksheet["F"]:
-
-                        cell.border = border
-                        cell.alignment = Alignment(horizontal="center")
-
-                    for col in worksheet.columns:
-                        max_length = 0
-                        column = col[0].column_letter
-                        for cell in col:
-                            try:
-                                if len(str(cell.value)) > max_length:
-                                    max_length = len(str(cell.value))
-                            except:
-                                pass
-                        adjusted_width = (max_length + 2) * 1.2
-                        worksheet.column_dimensions[column].width = adjusted_width
-
-                    writer.save()
-
-        db.db_run_query("DELETE FROM search_item")
-        db.db_run_query("DELETE FROM search")
-        return {
-            "status": "success",
-            "dic": f"{path}/Limpeza",
-            "message": "Pesquisas deletadas com sucesso.",
-        }
-
-    except:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-        return {"status": "error"}
+    return response
 
 
 @app.route("/generate_file")
-def route_bd_to_xlsx():
-    """Rota geradora de coleção de dados das pesquisas em excel."""
+def route_generate_file() -> dict:
+    """Gera arquivo(s) excel com os dados das pesquisas."""
+
     db = state.db_manager
     global path
 
     try:
-
         format_type = request.args.get("format")
         city = request.args.get("city_name")
         search_id = request.args.get("search_id")
 
-        dic = f"{get_time_filename()} {city}"
-
-        # TODO; Criar função pra formatar todos os estabelecimentos não cadastrados e retornar uma coleção formatada deles bd_to_xlsx_all
-
         if format_type == "all":
-            dic = bd_to_xlsx_all(city, search_id, db)
-            return {"status": "success", "dic": dic}
+            output_folder = db_to_xlsx_all(city, search_id, db, path)
+            return {"status": "success", "path": str(output_folder)}
 
-        estab_names = json.loads(request.args.get("names"))
+        names = request.args.get("names")
+        assert names is not None
+
+        estab_names = json.loads(names)
         estabs = db.db_get_estab()
         product = db.db_get_product()
 
-        estab_data = [
-            estab for estab in estabs if estab[0] == city and estab[1] in estab_names
-        ]
+        estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
 
-        # day = today.strftime("%d-%m-%Y")
-
-        folder_name = dic
-
-        # TODO: arrumar
-        if is_windows():
-            if not os.path.exists(f"{path}/{dic}"):
-
-                os.makedirs(f"{path}/{dic}")
-        else:
-            if not os.path.exists(f"{path}/{dic}"):
-                os.makedirs(f"{path}/{dic}")
-
-        for city, name, adress, web_name in estab_data:
-
-            # print("Gerando Arquivo ... {}.xlsx , ADDRESS : {}".format(name, adress))
-            new_file = name
-            file_path = "{}/{}/{}.xlsx".format(path, folder_name, new_file)
-
-            # TODO: REPEATED QUERY AGAIN
-            products = db.db_run_query(
-                "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
-                (search_id, web_name),
-            )
-
-            # print("QUERY RESULTS:")
-            df = pd.DataFrame(
-                data=products,
-                columns=[
-                    "PRODUTO",
-                    "ESTABELECIMENTO",
-                    "PALAVRA-CHAVE",
-                    "ENDEREÇO",
-                    "PREÇO",
-                ],
-            )
-            # Filtra por endereço
-            pattern = "|".join(adress.upper().split(" "))
-            df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
-
-            # df = df[df.ENDEREÇO.str.contains(adress.upper())]
-            writer = pd.ExcelWriter(file_path, engine="openpyxl")
-
-            df = df.to_excel(
-                writer,
-                sheet_name="Pesquisa",
-                index=False,
-                startrow=0,
-                startcol=1,
-                engine="openpyxl",
-            )
-
-            border = Border(
-                left=Side(border_style="thin", color="FF000000"),
-                right=Side(border_style="thin", color="FF000000"),
-                top=Side(border_style="thin", color="FF000000"),
-                bottom=Side(border_style="thin", color="FF000000"),
-                diagonal=Side(border_style="thin", color="FF000000"),
-                diagonal_direction=0,
-                outline=Side(border_style="thin", color="FF000000"),
-                vertical=Side(border_style="thin", color="FF000000"),
-                horizontal=Side(border_style="thin", color="FF000000"),
-            )
-
-            workbook = writer.book["Pesquisa"]
-            worksheet = workbook
-            for cell in worksheet["B"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["C"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["D"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["E"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for cell in worksheet["F"]:
-
-                cell.border = border
-                cell.alignment = Alignment(horizontal="center")
-
-            for col in worksheet.columns:
-                max_length = 0
-                column = col[0].column_letter
-                for cell in col:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                adjusted_width = (max_length + 2) * 1.2
-                worksheet.column_dimensions[column].width = adjusted_width
-
-            writer.save()
-
-        return {"status": "success", "dic": dic}
+        output_folder = db_to_xlsx(db, search_id, estab_data, city, path)
+        return {"status": "success", "path": str(output_folder)}
 
     except:
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -1301,7 +837,6 @@ def on_search(search_info):
     backup_info = db.db_get_backup(search_id)
 
     if len(backup_info) != 0 and search_info["backup"] == 1:
-
         (
             active,
             city,
@@ -1335,10 +870,9 @@ def on_search(search_info):
                 duration=duration,
                 progress_value=progress_value,
             )
-            scrap = Scraper(opts)
+            scrap = Scraper(opts, state)
 
     else:
-
         if search_info["backup"] == 1 and len(backup_info) != 0:
             db.db_run_query("DELETE FROM search WHERE id = ?", (search_id,))
         search_id = db.db_save_search(0, search_info["city"], 0)
@@ -1348,9 +882,7 @@ def on_search(search_info):
         estabs = db.db_get_estab()
         product = db.db_get_product()
 
-        estab_data = [
-            estab for estab in estabs if estab[0] == city and estab[1] in estab_names
-        ]
+        estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
 
         progress_value = 100 / len(product)
 
@@ -1386,7 +918,6 @@ def on_search(search_info):
     state.pause = False
 
     try:
-
         result = scrap.run()
 
         if not result:
@@ -1399,7 +930,6 @@ def on_search(search_info):
             state.pause = True
 
         if not state.cancel and not state.pause:
-
             emit(
                 "captcha",
                 {"type": "notification", "message": "Pesquisa concluida."},
@@ -1414,10 +944,9 @@ def on_search(search_info):
             # search_id = xlsx_to_bd(db, search_info["city"])
 
             # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
-            bd_to_xlsx(db, search_id, estab_data, city)
+            db_to_xlsx(db, search_id, estab_data, city, path)
 
     except Exception:
-
         try:
             if "error" not in search_info:
                 search_info["error"] = 0
@@ -1434,11 +963,7 @@ def on_search(search_info):
 
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-                return
-
         except Exception:
-
             exc_type, exc_value, exc_tb = sys.exc_info()
             log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
             search_info["error"] = 1
@@ -1451,7 +976,6 @@ def on_search(search_info):
                 },
                 broadcast=True,
             )
-
             on_search(search_info)
 
 

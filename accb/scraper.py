@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 import time
 import webbrowser
+import traceback
 
 from flask_socketio import SocketIO, send, emit
 
@@ -21,9 +22,10 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver import Chrome
 
 from accb.web_driver import open_chrome_driver
-from accb.utils import log, show_warning, get_time_hms
+from accb.utils import log, log_error, show_warning, get_time_hms
 from accb.state import State
 from accb.database import DatabaseManager
+
 
 @dataclass
 class ScraperOptions:
@@ -208,6 +210,9 @@ class Scraper:
                         ]
                     )
             except Exception:
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
                 # TODO: handle exception
                 pass
         if not self.stop:
@@ -409,23 +414,17 @@ class Scraper:
 
                 # Barra de pesquisa superior (produtos)
                 try:
-
                     WebDriverWait(driver, 3 * times).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "sbar-input"))
                     )
-
                 except:
-
                     self.captcha()
-
                 finally:
-
                     search = driver.find_element(By.ID, "top-sbar")
 
                 log("~~ 1")  # FIXME: remove(breakpoint)
 
                 for w in keyword:
-
                     search.send_keys(w)
                     time.sleep(0.25)
 
@@ -544,4 +543,5 @@ class Scraper:
 
         driver.close()
         driver.quit()
+
         return True

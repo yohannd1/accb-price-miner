@@ -1,8 +1,8 @@
 import sys, os
 from time import strftime, asctime, time
 from typing import Iterable, Optional
+from datetime import datetime
 import traceback
-
 import tkinter
 from tkinter import filedialog, messagebox
 
@@ -64,3 +64,6 @@ def get_time_hms(start_time_sec: float) -> dict:
     seconds = temp % 60
 
     return {"minutes": minutes, "seconds": seconds, "hours": hours}
+
+def get_time_filename() -> str:
+    return datetime.now().strftime("[%d-%m] [%Hh %Mm]")
