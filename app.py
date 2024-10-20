@@ -48,6 +48,7 @@ from accb.utils import (
     ask_user_directory,
     get_time_hms,
     get_time_filename,
+    open_folder,
 )
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
@@ -631,17 +632,10 @@ def route_import_database():
 
 
 @app.route("/open_folder")
-def route_open_explorer():
-    try:
-        custom_path = request.args.get("path")
-        custom_path = custom_path.replace("/", "\\")
-        print(f"explorer {custom_path}")
-        subprocess.Popen(f"explorer {custom_path}")
-        return {"status": "success"}
-    except:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-        return {"status": "error"}
+def route_open_folder() -> dict:
+    path = request.args["path"]
+    open_folder(Path(path))
+    return {"status": "success"}
 
 
 @app.route("/clean_search")

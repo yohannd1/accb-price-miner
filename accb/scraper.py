@@ -62,7 +62,7 @@ class ScraperOptions:
 
     progress_value: Any
     """Valor de soma da barra de pesquisa, caso seja adicionado um novo produto é necessário manter os dados da pesquisa anterior."""
-    # TODO: essa descrição tá estranha
+    # FIXME: deletar isso? não usa mais, eu acho
 
 
 class ScraperError(Exception): ...
@@ -227,6 +227,7 @@ class Scraper:
 
     def check_captcha(self, request: int = 0) -> bool:
         """Função que confere se o captcha foi resolvido com sucesso pelo usuário."""
+        # FIXME: `request` não parece estar sendo usado
 
         try:
             WebDriverWait(self.driver, 5).until(
@@ -238,49 +239,53 @@ class Scraper:
 
         return True
 
-    # REDO
     def pop_up(self):
         """Mostra uma mensagem em pop up para o usuário."""
+
+        message = "Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay."
 
         emit(
             "captcha",
             {
                 "type": "captcha",
-                "message": "Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay.",
+                "message": message,
             },
             broadcast=True,
         )
 
         show_warning(
             title="CAPTCHA",
-            message="Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay",
+            message=message,
         )
 
         self.driver.back()
 
-    def captcha(self):
+    def captcha(self) -> None:
         """Trata por erro de rede e inicia um loop para conferir se o usuário resolveu o captcha."""
+        # TODO: trocar nome da função
 
-        # Se eu tenho conexão o captcha foi ativado, se não, é erro de rede.
-
-        log("~~ CAPTCHA")  # FIXME: remove(breakpoint)
-
-        if self.check_connection():
-            while True:
-                if self.check_captcha(1):
-                    webbrowser.open(self.url)
-                    self.pop_up()
-                else:
-                    # log("CAPTCHA FALSE")
-                    return
-        else:
+        if not self.check_connection():
             self.exit_thread(True)
             raise ScraperError("Sem conexão com a rede!")
 
-    def run(self):
+        log("~~ CAPTCHA")  # FIXME: remove(breakpoint)
+
+        while True:
+            log(f"~~ LOOP CAPTCHA")  # FIXME: remove(breakpoint)
+            if self.check_captcha(1):
+                assert self.url is not None
+                webbrowser.open(self.url)
+                self.pop_up()
+            else:
+                # log("CAPTCHA FALSE")
+                return
+
+    def run(self) -> bool:
         """Realiza a pesquisa na plataforma do Preço da Hora Bahia."""
 
         URL = "https://precodahora.ba.gov.br/produtos"
+
+        log(f"Iniciando pesquisa...")
 
         self.url = URL
         times = 4
@@ -358,9 +363,19 @@ class Scraper:
         driver.find_element(By.ID, "aplicar").click()
 
         time.sleep(2 * times)
+        product_count = len(self.options.product_info)
+
         for index, (product, keywords) in enumerate(
             self.options.product_info[self.index :]
         ):
+            progress_value = 100 * (self.index + index) / product_count
+            log(f"Progress: {progress_value}")
+            emit(
+                "search.updateProgressBar",
+                {"value": progress_value},
+                broadcast=True,
+            )
+
             log(f"Começando pesquisa do produto {product}")
 
             if not self.stop:
@@ -369,7 +384,7 @@ class Scraper:
                     {
                         "type": "progress",
                         "product": product,
-                        "value": 0,
+                        "value": progress_value,
                     },
                     broadcast=True,
                 )
@@ -495,24 +510,28 @@ class Scraper:
 
                 log("~~ 6")  # FIXME: remove(breakpoint)
 
+            log("~~ 6.1")   # FIXME: remove(breakpoint)
+
             if not self.stop:
-                log(f"Progress: {self.options.progress_value}")
+                log("~~ 6.2")   # FIXME: remove(breakpoint)
                 emit(
                     "captcha",
                     {
                         "type": "progress",
                         "product": product,
-                        "value": self.options.progress_value,
+                        "value": progress_value,
                     },
                     broadcast=True,
                 )
 
             log("~~ 7")  # FIXME: remove(breakpoint)
 
+        log("~~ 7.1")  # FIXME: remove(breakpoint)
+
         if self.stop:
             self.exit = True
             self.exit_thread()
-            return
+            return True
 
         log("~~ 8")  # FIXME: remove(breakpoint)
 

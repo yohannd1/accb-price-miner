@@ -5,6 +5,8 @@ from datetime import datetime
 import traceback
 import tkinter
 from tkinter import filedialog, messagebox
+from subprocess import Popen
+from pathlib import Path
 
 LOG_FILE = sys.stderr
 # LOG_FILE = open("error.log", "w+", encoding="latin-1")
@@ -36,7 +38,13 @@ def log_error(err):
 
 
 def is_windows() -> bool:
-    return os.name == "nt"
+    return sys.platform == "win32"
+
+def is_linux() -> bool:
+    return sys.platform.startswith("linux")
+
+def is_macos() -> bool:
+    return sys.platform == "darwin"
 
 
 def show_warning(title: str, message: str) -> None:
@@ -65,5 +73,23 @@ def get_time_hms(start_time_sec: float) -> dict:
 
     return {"minutes": minutes, "seconds": seconds, "hours": hours}
 
+
 def get_time_filename() -> str:
     return datetime.now().strftime("[%d-%m] [%Hh %Mm]")
+
+
+def open_folder(path: Path) -> None:
+    # custom_path = custom_path.replace("/", "\\")
+    # subprocess.Popen(f"explorer {custom_path}")
+
+    if is_windows():
+        # https://docs.python.org/3.6/library/os.html#os.startfile
+        os.startfile(str(path))  # type: ignore
+    elif is_linux():
+        # https://commandmasters.com/commands/xdg-open-linux/
+        Popen(["xdg-open", str(path)])
+    elif is_macos():
+        # https://scriptingosx.com/2017/02/the-macos-open-command/
+        Popen(["open", str(path)])
+    else:
+        raise Exception("unsupported operating system")
