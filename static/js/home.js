@@ -31,32 +31,32 @@ function filter_search(month) {
     // }
 
     $.get("/select_search_info", { month: month }, (response) => {
-        if (response.success) {
-            var data = JSON.parse(response.data);
-            if (data.length != 0) {
-                $("#search-loader").fadeIn(500);
-                $(".tr-item").remove();
-
-                $("#search-select option").remove();
-                data.map((value) => {
-                    $("#search-select").append(`<option city=${value[2]} value=${value[1]}>${value[2]} ${value[3]}</option>`);
-                });
-
-                $("#search-select").parent().find(".styledSelect").remove();
-                $("#search-select").parent().find("ul.options").remove();
-                list_search(data[0][0]);
-                custom_select_search();
-                return true;
-            } else {
-                showMessage("Nenhuma pesquisa cadastrada para esse mês.", { notification: false });
-                return false;
-            }
-
-        } else {
+        if (response.status !== "success") {
             showMessage(response.message, { notification: false });
             return false;
         }
 
+        const data = response.data;
+
+        if (data.length == 0) {
+            showMessage("Nenhuma pesquisa cadastrada para esse mês.", { notification: false });
+            return false;
+        }
+
+        $("#search-loader").fadeIn(500);
+        $(".tr-item").remove();
+
+        $("#search-select option").remove();
+        data.map((value) => {
+            $("#search-select").append(`<option city=${value[2]} value=${value[1]}>${value[2]} ${value[3]}</option>`);
+        });
+
+        $("#search-select").parent().find(".styledSelect").remove();
+        $("#search-select").parent().find("ul.options").remove();
+        list_search(data[0][0]);
+        custom_select_search();
+
+        return true;
     });
 }
 /**
@@ -521,7 +521,6 @@ const get_modal_content = (estab_name, cities) => {
  * @param  {string} product_name
  */
 const get_modal_content_product = (product_name) => {
-
     $('#edit-modal-product .modal-content').remove();
     var filtered_product = PRODUCT_DATA.filter((item, index) => {
         if (item[0] === product_name)
@@ -979,29 +978,24 @@ $(document).ready(() => {
             if (window.confirm(`Realmente deseja alterar o nome  da cidade ${old_name} para ${new_name} ?`)) {
 
                 $.get("/update_city", { city_name: new_name, primary_key: old_name }, (response) => {
-
-                    if (response.success) {
-
-                        alert(response.message);
-                        var modal = $("#edit-city").modal();
-                        modal.closeModal();
-                        $(".jquery-modal").fadeOut(500);
-                        window.location = window.location.origin + "#configurar";
-                        window.location.reload(true);
-
-                    } else {
-                        Materialize.toast(response.message, 2000, 'rounded');
+                    if (response.status !== "success") {
+                        showMessage(`Falha ao mudar o nome da cidade.`, { notification: false });
+                        return;
                     }
 
+                    alert(response.message);
+                    var modal = $("#edit-city").modal();
+                    modal.closeModal();
+                    $(".jquery-modal").fadeOut(500);
+                    window.location = window.location.origin + "#configurar";
+                    window.location.reload(true);
                 });
             }
 
     });
 
     // Salvar edição de produto
-
     $('body').on('click', '#save-edit-product', function (e) {
-
         e.preventDefault();
 
         var product_name = $("#product_name_edit").val().toUpperCase();
@@ -1009,33 +1003,25 @@ $(document).ready(() => {
         var keywords = $("#keywords_edit").val().toUpperCase();
 
         if (validateForm([product_name, keywords]))
-
-            if (window.confirm(`Realmente deseja alterar os valores inseridos ?`)) {
-
+            if (window.confirm(`Realmente deseja alterar os valores inseridos?`)) {
                 $.get("/update_product", { product_name: product_name, keywords: keywords, primary_key: primary_key }, (response) => {
-
-                    if (response.success) {
-
-                        alert(response.message);
-                        var modal = $("#edit-modal-product").modal();
-                        modal.closeModal();
-                        $(".jquery-modal").fadeOut(500);
-                        window.location = window.location.origin + "#configurar";
-                        window.location.reload(true);
-
-                    } else {
-                        Materialize.toast(response.message, 2000, 'rounded');
+                    if (response.status !== "success") {
+                        showMessage(`O produto ${product_name} não pôde ser atualizado.`, { notification: false });
                     }
 
+                    showMessage(response.message, { notification: false });
+                    $("#edit-modal-product").modal().closeModal();
+                    $(".jquery-modal").fadeOut(500);
+                    window.location = window.location.origin + "#produtos";
+                    window.location.reload(true);
+                    // TODO: não reiniciar a janela. é muito desorientador
                 });
             }
 
     });
 
     // Macro para fechar modal
-
     $(".cancel").click(function (e) {
-
         e.preventDefault();
         let id = $(this).attr('href');
         var modal = $(id).modal();
@@ -1111,18 +1097,17 @@ $(document).ready(() => {
             return;
 
         $.get("/insert_product", { product_name: product_name, keywords: keywords }, (response) => {
-            if (response.success) {
-                Materialize.toast(response.message, 2000, 'rounded');
-                var modal = $("#add-modal-product").modal();
-                modal.closeModal();
-                $(".jquery-modal").fadeOut(500);
-                // $(".estab-config").remove();
-                // list_estab();
-                PRODUCT_DATA.push([product_name, keywords]);
-                create_product_element(product_name);
-            } else {
-                Materialize.toast(response.message, 2000, 'rounded');
+            if (response.status !== "success") {
+                showMessage(`O produto ${product_name} não pôde ser inserido`, { notification: false });
+                return;
             }
+
+            showMessage(response.message, { notification: false })
+            var modal = $("#add-modal-product").modal();
+            modal.closeModal();
+            $(".jquery-modal").fadeOut(500);
+            PRODUCT_DATA.push([product_name, keywords]);
+            create_product_element(product_name);
         });
 
     });
@@ -1182,22 +1167,19 @@ $(document).ready(() => {
         var adress = $("#adress").val().toUpperCase();
 
         if (validateForm([city_name, estab_name, web_name, adress]))
-
             $.get("/update_estab", { primary_key: primary_key, city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
-
-                if (response.success) {
-
-                    Materialize.toast(response.message, 2000, 'rounded');
-                    var modal = $("#edit-modal").modal();
-                    modal.closeModal();
-                    $(".jquery-modal").fadeOut(500);
-                    $(".estab-config").remove();
-                    list_estab();
-
-                } else {
-                    Materialize.toast(response.message, 2000, 'rounded');
+                if (response.status !== "success") {
+                    showMessage(`O estabelecimento ${estab_name} não pôde ser atualizado com sucesso.`, { notification: false });
+                    return;
                 }
 
+                showMessage(response.message, { notification: false });
+
+                var modal = $("#edit-modal").modal();
+                modal.closeModal();
+                $(".jquery-modal").fadeOut(500);
+                $(".estab-config").remove();
+                list_estab();
             });
     });
 
@@ -1368,29 +1350,23 @@ $(document).ready(() => {
     // Remover estabelecimento
 
     $('body').on('click', 'a.remove-estab', function (e) {
-
         e.stopPropagation();
         e.preventDefault();
         let estab_name = $(this).attr('value');
-        if (window.confirm(`Realmente deseja deletar o estabelecimento ${estab_name} permanentemente ?`)) {
+
+        if (window.confirm(`Realmente deseja deletar o estabelecimento ${estab_name} permanentemente?`)) {
             $.get("/remove_estab", { estab_name: estab_name }, (response) => {
-
-                if (response.success) {
-                    $(this).parent().parent().remove();
-                    Materialize.toast(response.message, 2000, 'rounded');
-                    // console.log(response);
-                    if ($(".estab-config .edit").length == 0) {
-                        $("#no-result").fadeIn(500);
-                    }
-                    // window.location = window.location.origin + "#configurar";
-                    // window.location.reload(true);
-
-                } else {
-                    Materialize.toast(response.message, 2000, 'rounded');
-                    // console.log(response);
+                if (response.status !== "success") {
+                    showMessage(`O estabelecimento ${estab_name} não pôde ser removido.`, { notification: false });
+                    return;
                 }
 
+                showMessage(response.message, { notification: false });
 
+                $(this).parent().parent().remove();
+                if ($(".estab-config .edit").length == 0) {
+                    $("#no-result").fadeIn(500);
+                }
             });
         }
 
@@ -1712,23 +1688,23 @@ $(document).ready(() => {
     // Remove uma pesquisa.
     $("#remove-search").on("click", () => {
         var search_id = $("#search-select").val();
-        var search_info = $("#search-select  option:selected").html();
+        var search_info = $("#search-select option:selected").html();
 
         if (search_id == "null") {
             alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
             return;
         }
 
-        if (window.confirm(`Realmente deseja remover a pesquisa ${search_info}`)) {
+        if (window.confirm(`Realmente deseja remover a pesquisa ${search_info}?`)) {
             $.get("/delete_search", { search_id: search_id }, (response) => {
-                if (response["status"] == "success") {
-                    alert(response["message"]);
-                    Materialize.toast(response["message"], 2000, 'rounded');
-                    window.location = window.location.origin + "#pesquisa";
-                    window.location.reload(true);
-                } else {
-                    Materialize.toast(response["message"], 2000, 'rounded');
+                if (response.status !== "success") {
+                    showMessage("Ocorreu um erro durante a deleção da pesquisa, mais detalhes no arquivo err.log.", { notification: false });
+                    return;
                 }
+
+                alert(response.message);
+                window.location = window.location.origin + "#pesquisa";
+                window.location.reload(true);
             });
         }
     });
@@ -1737,13 +1713,14 @@ $(document).ready(() => {
     $("#export").on("click", (e) => {
         e.preventDefault();
 
-        if (window.confirm(`Realmente deseja exportar todos os dados atuais ?`)) {
+        if (window.confirm(`Realmente deseja exportar todos os dados atuais?`)) {
             $.get("/export_database", (response) => {
-                if (response["status"] == "success") {
-                    Materialize.toast(response["message"], 8000, 'rounded');
-                } else {
-                    Materialize.toast(response["message"], 8000, 'rounded');
+                if (response.status !== "success") {
+                    alert("Ocorreu um erro durante a exportação dos dados.");
+                    return;
                 }
+
+                showMessage(response.message, { notification: false });
             });
         }
     });
@@ -1760,11 +1737,9 @@ $(document).ready(() => {
 
         var form_data = new FormData();
         var files = $('#import_file')[0].files;
-        console.log({ files });
-        console.log(files[0].name);
         if (!files[0].name.includes(".sql")) {
-            Materialize.toast("Insira um arquivo Importar.sql válido.", 8000, 'rounded');
-            return
+            showMessage("Insira um arquivo .sql válido.", { notification: false });
+            return;
         }
 
         form_data.append('file', files[0]);
@@ -1775,14 +1750,15 @@ $(document).ready(() => {
             contentType: false,
             processData: false,
             cache: false,
-            success: function (response) {
-                if (response.status == "success") {
-                    alert(response["message"]);
-                    window.location = window.location.origin + "#configurar";
-                    window.location.reload(true);
-                } else {
-                    Materialize.toast(response["message"], 8000, 'rounded');
+            success: (response) => {
+                if (response.status !== "success") {
+                    alert("Ocorreu um erro durante a importação dos dados.");
+                    return;
                 }
+
+                alert(response.message);
+                window.location = window.location.origin + "#configurar";
+                window.location.reload(true);
             },
         });
     });
@@ -1794,17 +1770,23 @@ $(document).ready(() => {
         searchLoaded();
     }
 
+    const setOutputPath = () => {
+        $.get("/set_path", (response) => {
+            if (response.status !== "success") {
+                alert("Ocorreu um erro durante a configuração do caminho.");
+                return;
+            }
+
+            Cookies.set("path", response.path, { expires: 10 });
+            showMessage(`Caminho alterado para ${response.path}`, { notification: false });
+        });
+    };
+
     if (Cookies.get("path") === undefined) {
         alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-
-        $.get("/set_path", (response) => {
-            if (response.path != "") {
-                alert(response.message);
-                Cookies.set("path", response.path, { expires: 10 });
-            }
-        });
+        setOutputPath();
     } else {
-        socket.emit("set_path", { path : Cookies.get("path") });
+        socket.emit("set_path", { path: Cookies.get("path") });
     }
 
     if (!is_chrome_installed)
@@ -1815,33 +1797,24 @@ $(document).ready(() => {
 
     socket.on("set_path", () => {
         alert("O antigo diretório foi deletado! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-
-        $.get("/set_path", (response) => {
-            if (response.path != "") {
-                alert(response.message);
-                Cookies.set("path", response.path, { expires: 10 });
-            }
-        });
+        setOutputPath();
     });
 
     socket.connect("http://127.0.0.1:5000/");
 
     $("#config_path").on("click", (e) => {
         e.preventDefault();
+
         alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-        $.get("/set_path", (response) => {
-            if (response.path != "") {
-                alert(response.message);
-                Cookies.set("path", response["path"], {expires: 10});
-            }
-        });
+        setOutputPath();
     });
 
     $("#close_app").on("click", () => {
-        if (window.confirm("Deseja realmente fechar o programa?")) {
-            socket.emit("exit");
-            window.close();
-        }
+        if (!window.confirm("Deseja realmente fechar o programa?"))
+            return;
+
+        socket.emit("exit");
+        window.close();
     });
 
     $("#open_folder").on("click", () => {

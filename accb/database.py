@@ -13,10 +13,11 @@ import os
 from os import path
 import json
 
-from typing import Any, Sequence
+from typing import Any, Sequence, Generator
 
 from accb.utils import log
 
+DB_PATH = "accb.sqlite"
 
 class DatabaseConnection:
     def __init__(self, conn: sqlite3.Connection) -> None:
@@ -57,13 +58,13 @@ class DatabaseManager:
     def __init__(self) -> None:
         pass
 
-    def dump_table(self, table_name):
-        """Importa um arquivo sql para ser injetado no banco de dados."""
+    def dump_table(self, table_name: str) -> Generator[str, None, None]:
+        """Importa um arquivo sql para ser injetado no banco de dados.
 
-        # Mimic the sqlite3 console shell's .dump command
-        # Author: Paul Kippes <kippesp@gmail.com>
+        Mimic the sqlite3 console shell's .dump command
 
-        """
+        Author: Paul Kippes <kippesp@gmail.com>
+
         Returns an iterator to the dump of the database in an SQL text format.
 
         Used to produce an SQL dump of the database.  Useful to save an in-memory
@@ -72,7 +73,7 @@ class DatabaseManager:
         """
 
         schema = self.resource_path("schema.sql")
-        cursor = sqlite3.connect("accb.sqlite").cursor()
+        cursor = sqlite3.connect(DB_PATH).cursor()
         table_name = table_name
 
         yield ("BEGIN TRANSACTION;")
@@ -108,52 +109,53 @@ class DatabaseManager:
 
         yield ("COMMIT;")
 
-    def import_database(self, file_path=None):
+    def import_database(self, file_path=None) -> None:
         """Importa um arquivo sql e injeta ele no banco de dados."""
-        if file_path == None:
-            """Metodo de importação para debug."""
-            schema = self.resource_path("importar.sql")
-            cursor = sqlite3.connect("accb.sqlite").cursor()
-            with open(schema, "r", encoding="latin-1") as fp:
-                text = fp.read().split(";")
-                for command in text:
-                    try:
-                        cursor.execute(command)
-                    except sqlite3.Error:
-                        pass
-        else:
 
-            cursor = sqlite3.connect("accb.sqlite").cursor()
-            for command in file_path.read().decode("latin-1").split(";"):
+        ENCODING = "utf-8" # or "latin-1"?
+
+        if file_path is not None:
+            sql_script = file_path.read().decode(ENCODING)
+        else:
+            schema_path = self.resource_path("importar.sql")
+            with open(schema_path, "r", encoding=ENCODING) as file:
+                sql_script = file.read()
+
+        # FIXME: evitar isso - é melhor limpar o banco de dados ou serializar p/ um arquivo JSON o conteúdo
+        with self.db_connection() as conn:
+            cursor = conn.get_cursor()
+
+            for command in sql_script.split(";"):
+                # XXX: se tiver um texto com SQL, isso quebra
                 try:
                     cursor.execute(command)
                 except sqlite3.Error:
                     pass
 
-    def resource_path(self, path):
+            # Tentativa mais segura (mas não funciona porque dá erro e para a execução inteira):
+            # try:
+            #     cursor.executescript(sql_script)
+            # except sqlite3.Error:
+            #     pass
+
+    def resource_path(self, path: str) -> str:
         """Recupera o caminho de um recurso da aplicação."""
 
-        try:
-            base_path = sys._MEIPASS
-        except:
-            base_path = os.path.abspath(".")
-
+        base_path = getattr(sys, "_MEIPASS", None) or os.path.abspath(".")
         return os.path.join(base_path, path)
 
     def db_start(self):
         """Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe."""
         schema = self.resource_path("schema.sql")
-        cursor = sqlite3.connect("accb.sqlite").cursor()
+        cursor = sqlite3.connect(DB_PATH).cursor()
         sql_file = open(schema, encoding="utf-8")
         sql_as_string = sql_file.read()
         cursor.executescript(sql_as_string)
         sql_file.close()
-        # subprocess.check_call(["attrib", "+H", "accb.sqlite"])
+        # subprocess.check_call(["attrib", "+H", DB_PATH])
 
     def db_connection(self) -> DatabaseConnection:
         """Realiza a conexão com o banco de dados ou o povoa caso não exista."""
-
-        DB_PATH = "accb.sqlite"
 
         if exists(DB_PATH):
             conn = sqlite3.connect(DB_PATH)
@@ -181,13 +183,13 @@ class DatabaseManager:
             sql_query = """INSERT INTO city(city_name) VALUES(?)"""
             cursor.execute(sql_query, (city,))
 
-    def db_save_product(self, product):
+    def db_save_product(self, product_name: str, keywords: str) -> None:
         """Salva um produto no banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """INSERT INTO product(product_name, keywords) VALUES(?, ?)"""
-            cursor.execute(query, (product["product_name"], product["keywords"]))
+            cursor.execute(query, (product_name, keywords))
 
     def db_save_search(self, done, city_name, duration) -> int:
         """Salva as pesquisas no banco de dados. Retorna o ID da última pesquisa"""

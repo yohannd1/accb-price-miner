@@ -89,6 +89,7 @@ def route_home():
         "SELECT id FROM search WHERE done = 0 AND search_date = ? ORDER BY city_name ASC",
         (str(date.today()),),
     )
+    log(f"{search_id=}")
 
     product_names = db.db_run_query("SELECT product_name FROM product")
     search = False
@@ -114,7 +115,10 @@ def route_home():
             if done == 0:
                 search = True
 
-    except:
+    except Exception:  # FIXME: remove this except
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
         if not len(product_names) == 0:
             progress_value = 100 / len(product_names)
 
@@ -169,32 +173,20 @@ def route_home():
 
 
 @app.route("/insert_product")
-def route_insert_product():
+def route_insert_product() -> dict:
     """Rota de inserção de produtos no banco de dados."""
 
-    db = state.db_manager
-    product_name = request.args.get("product_name")
-    keywords = request.args.get("keywords")
+    product_name = request.args["product_name"]
 
-    try:
-        db.db_save_product({"product_name": product_name, "keywords": keywords})
-        return {
-            "success": True,
-            "message": "O produto {} foi inserido com sucesso".format(product_name),
-        }
+    state.db_manager.db_save_product(
+        product_name=product_name,
+        keywords=request.args["keywords"],
+    )
 
-    except sqlite3.Error as er:
-
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "O produto {} não pode ser inserido.".format(product_name),
-        }
+    return {
+        "status": "success",
+        "message": f"O produto {product_name} foi inserido com sucesso",
+    }
 
 
 @app.errorhandler(Exception)
@@ -240,71 +232,49 @@ def route_select_search_data():
 
 
 @app.route("/select_search_info")
-def route_select_search_info():
+def route_select_search_info() -> dict:
     """Rota de seleção de informação das pesquisas no banco de dados."""
-    db = state.db_manager
-    search_data = ""
 
-    month = request.args.get("month")
+    db = state.db_manager
+
+    month = request.args["month"]
     year = request.args.get("year")
 
-    try:
-        if year is None:
-            month = "0" + month if int(month) < 10 else month
-            search_data = db.db_run_query(
-                "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
-                (f"%-{month}-%",),
-            )
-        else:
-            search_data = db.db_run_query(
-                "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
-                (f"{year}%",),
-            )
-        print(f"search_data {search_data}")
-        return {"success": True, "data": json.dumps(search_data)}
+    if year is None:
+        month = "0" + month if int(month) < 10 else month
+        search_data = db.db_run_query(
+            "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
+            (f"%-{month}-%",),
+        )
+    else:
+        search_data = db.db_run_query(
+            "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
+            (f"{year}%",),
+        )
 
-    except sqlite3.Error as er:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-        }
+    return {"status": "success", "data": search_data}
 
 
 @app.route("/update_product")
-def route_update_product():
+def route_update_product() -> dict:
     """Rota de atualização de produtos no banco de dados."""
+
     product_name = request.args.get("product_name")
     keywords = request.args.get("keywords")
     primary_key = request.args.get("primary_key")
 
-    try:
-        state.db_manager.db_update_product(
-            {
-                "product_name": product_name,
-                "keywords": keywords,
-                "primary_key": primary_key,
-            }
-        )
-        state.wait_reload = True
-        return {
-            "success": True,
-            "message": "O produto {} foi atualizado com sucesso".format(primary_key),
+    state.db_manager.db_update_product(
+        {
+            "product_name": product_name,
+            "keywords": keywords,
+            "primary_key": primary_key,
         }
-
-    except sqlite3.Error as er:
-
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "O produto {} não pode ser atualizado.".format(primary_key),
-        }
+    )
+    state.wait_reload = True
+    return {
+        "status": "success",
+        "message": f"O produto {primary_key} foi atualizado com sucesso",
+    }
 
 
 @app.route("/select_estab")
@@ -319,75 +289,42 @@ def route_select_estab():
 
 
 @app.route("/remove_estab")
-def route_remove_estab():
+def route_remove_estab() -> dict:
     """Rota de remoção de estabelecimentos no banco de dados."""
-    db = state.db_manager
-    estab_name = request.args.get("estab_name")
-    try:
-        db.db_delete("estab", "estab_name", estab_name)
-        return {
-            "success": True,
-            "message": "O estabelecimento {} foi removido com sucesso".format(
-                estab_name
-            ),
-        }
 
-    except sqlite3.Error as er:
+    estab_name = request.args["estab_name"]
 
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "O estabelecimento {} não pode ser removido.".format(estab_name),
-        }
+    state.db_manager.db_delete("estab", "estab_name", estab_name)
+    return {
+        "status": "success",
+        "message": f"O estabelecimento {estab_name} foi removido com sucesso",
+    }
 
 
 @app.route("/update_estab")
-def route_update_estab():
+def route_update_estab() -> dict:
     """Rota de atualização de estabelecimentos no banco de dados."""
-    db = state.db_manager
-    city_name = request.args.get("city_name")
-    estab_name = request.args.get("estab_name")
-    primary_key = request.args.get("primary_key")
-    web_name = request.args.get("web_name")
-    adress = request.args.get("adress")
 
-    try:
+    city_name = request.args["city_name"]
+    estab_name = request.args["estab_name"]
+    primary_key = request.args["primary_key"]
+    web_name = request.args["web_name"]
+    adress = request.args["adress"]
 
-        db.db_update_estab(
-            {
-                "primary_key": primary_key,
-                "city_name": city_name,
-                "estab_name": estab_name,
-                "web_name": web_name,
-                "adress": adress,
-            }
-        )
-        return {
-            "success": True,
-            "message": "O estabelecimento {} foi atualizado com sucesso".format(
-                estab_name
-            ),
+    state.db_manager.db_update_estab(
+        {
+            "primary_key": primary_key,
+            "city_name": city_name,
+            "estab_name": estab_name,
+            "web_name": web_name,
+            "adress": adress,
         }
+    )
 
-    except sqlite3.Error as er:
-
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "O estabelecimento {} não pode ser atualizado.".format(
-                estab_name
-            ),
-        }
+    return {
+        "status": "success",
+        "message": f"O estabelecimento {estab_name} foi atualizado com sucesso",
+    }
 
 
 @app.route("/insert_estab")
@@ -471,34 +408,18 @@ def route_insert_city():
 
 
 @app.route("/update_city")
-def route_update_city():
+def route_update_city() -> dict:
     """Rota de atualização de cidades no banco de dados."""
 
-    db = state.db_manager
-    city_name = request.args.get("city_name")
-    primary_key = request.args.get("primary_key")
+    city_name = request.args["city_name"]
+    primary_key = request.args["primary_key"]
+    state.db_manager.db_update_city({"city_name": city_name, "primary_key": primary_key})
+    state.wait_reload = True
 
-    try:
-
-        db.db_update_city({"city_name": city_name, "primary_key": primary_key})
-        state.wait_reload = True
-        return {
-            "success": True,
-            "message": "A cidade {} foi editada com sucesso".format(city_name),
-        }
-
-    except sqlite3.Error as er:
-
-        # print("SQLite error: %s" % (" ".join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print("SQLite traceback: ")
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "A cidade {} não pode ser editada.".format(city_name),
-        }
+    return {
+        "status": "success",
+        "message": f"A cidade {city_name} foi editada com sucesso",
+    }
 
 
 @app.route("/delete_city")
@@ -532,103 +453,65 @@ def route_delete_city():
 
 
 @app.route("/set_path")
-def route_set_path():
-    try:
-        global path
+def route_set_path() -> dict:
+    global path
 
-        directory = ask_user_directory()
-        if directory is None:
-            raise Exception("No directory selected")
+    directory = ask_user_directory()
+    if directory is None:
+        raise Exception("Nenhum diretório selecionado")
 
-        path = directory
-        Path(path).mkdir(exist_ok=True)
+    path = directory
+    Path(path).mkdir(exist_ok=True)
 
-        return {
-            "success": True,
-            "message": "Caminho configurado com sucesso.",
-            "path": path,
-        }
-
-    except Exception:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "Ocorreu um erro durante a configuração de caminho padrão.",
-        }
+    return {
+        "status": "success",
+        "message": "Caminho configurado com sucesso.",
+        "path": path,
+    }
 
 
 # Gerando Arquivos
-
-
 @app.route("/delete_search")
-def route_delete_search():
+def route_delete_search() -> dict:
     """Rota de deleção de pesquisa no banco de dados."""
-    try:
 
-        db = state.db_manager
-        search_id = request.args.get("search_id")
+    search_id = request.args["search_id"]
 
-        db.db_delete("search", "id", search_id)
-        state.wait_reload = True
-        return {"status": "success", "message": "Pesquisa deletada com sucesso."}
-
-    except:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-        return {
-            "status": "error",
-            "message": "Ocorreu um erro durante a deleção da pesquisa, mais detalhes no arquivo err.log.",
-        }
+    state.db_manager.db_delete("search", "id", search_id)
+    state.wait_reload = True
+    return {"status": "success", "message": "Pesquisa deletada com sucesso."}
 
 
 @app.route("/export_database")
-def route_export_database():
+def route_export_database() -> dict:
     """Rota responsável por exportar os dados do banco"""
-    try:
-        db = state.db_manager
-        tables = ["city", "estab", "product"]
-        with open("importar.sql", "w+") as f:
-            for table in tables:
-                for line in db.dump_table(table):
-                    f.write("%s\n" % line)
 
-        return {
-            "status": "success",
-            "message": "Dados exportados com sucesso, agora é possível importa-lo em outro computador com o arquivo importar.sql.",
-        }
+    OUTPUT_FILENAME = "importar.sql"
+    TABLES = ("city", "estab", "product")
 
-    except:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-        return {
-            "status": "error",
-            "message": "Ocorreu um erro durante a exportação dos dados.",
-        }
+    db = state.db_manager
+    with open(OUTPUT_FILENAME, "w+") as f:
+        for table in TABLES:
+            for line in db.dump_table(table):
+                f.write(f"{line}\n")
 
+    return {
+        "status": "success",
+        "message": "Dados exportados com sucesso - agora é possível importá-lo em outro computador com o arquivo 'importar.sql'.",
+    }
 
 @app.route("/import_database", methods=["POST"])
-def route_import_database():
+def route_import_database() -> dict:
     """Rota responsável por importar os dados do banco"""
-    try:
-        db = state.db_manager
-        file = request.files["file"]
-        db.import_database(file)
 
-        state.wait_reload = True
-        return {
-            "status": "success",
-            "message": "Dados importados com sucesso.",
-        }
+    file = request.files["file"]
+    state.db_manager.import_database(file)
 
-    except:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-        return {
-            "status": "error",
-            "message": "Ocorreu um erro durante a importação dos dados.",
-        }
+    state.wait_reload = True
+    return {
+        "status": "success",
+        "message": "Dados importados com sucesso.",
+    }
 
 
 @app.route("/open_folder")
@@ -696,31 +579,25 @@ def route_generate_file() -> dict:
     db = state.db_manager
     global path
 
-    try:
-        format_type = request.args.get("format")
-        city = request.args.get("city_name")
-        search_id = request.args.get("search_id")
+    format_type = request.args.get("format")
+    city = request.args.get("city_name")
+    search_id = request.args.get("search_id")
 
-        if format_type == "all":
-            output_folder = db_to_xlsx_all(city, search_id, db, path)
-            return {"status": "success", "path": str(output_folder)}
-
-        names = request.args.get("names")
-        assert names is not None
-
-        estab_names = json.loads(names)
-        estabs = db.db_get_estab()
-        product = db.db_get_product()
-
-        estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
-
-        output_folder = db_to_xlsx(db, search_id, estab_data, city, path)
+    if format_type == "all":
+        output_folder = db_to_xlsx_all(city, search_id, db, path)
         return {"status": "success", "path": str(output_folder)}
 
-    except:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-        return {"status": "error"}
+    names = request.args.get("names")
+    assert names is not None
+
+    estab_names = json.loads(names)
+    estabs = db.db_get_estab()
+    product = db.db_get_product()
+
+    estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
+
+    output_folder = db_to_xlsx(db, search_id, estab_data, city, path)
+    return {"status": "success", "path": str(output_folder)}
 
 
 # SocketIO
@@ -803,6 +680,7 @@ def on_disconnect():
 
 @socketio.on("set_path")
 def on_set_path(config_path):
+    # TODO: should this be here? and should it emit set_path back? it's confusing
     global path
     path = config_path["path"]
     if not os.path.exists(path):
@@ -995,40 +873,30 @@ def utility_processor():
     }
 
 
-def run_app() -> None:
+def main() -> None:
     """Inicia o programa com as configurações da plataforma atual, Windows ou Linux."""
 
-    config_name = "ACCB.cfg"
-    url = "http://127.0.0.1:5000"
+    SERVER_URL = "http://127.0.0.1:5000"
 
     is_in_bundle = getattr(sys, "frozen", False)
-
-    debug_enabled = bool(__file__)
+    debug_enabled = bool(__file__) and not is_in_bundle
     if debug_enabled:
         os.environ["WDM_LOCAL"] = "1"
     else:
         os.environ["WDM_LOG_LEVEL"] = "0"
 
-    if is_port_in_use(5000):
-        webbrowser.open(url)
-    else:
-        webbrowser.open(url)
-        socketio.run(app, debug=debug_enabled)
+    # TODO: configurar o arquivo de log
 
-    # Determina se a aplicação está rodando por um bundle feito pelo pyinstaller (exe) ou command line
-
-    # if is_in_bundle:
-    # application_path = os.path.dirname(sys.executable)
-    # config_path = os.path.join(application_path, config_name)
-
+    webbrowser.open(SERVER_URL)
+    if not is_port_in_use(5000):
+        socketio.run(app, debug=debug_enabled, use_reloader=False)
 
 if __name__ == "__main__":
     # log = logging.getLogger("werkzeug")
     # log.disabled = True
 
-    cli = sys.modules["flask.cli"]
-
+    # cli = sys.modules["flask.cli"]
     # def noop(*_): pass
     # cli.show_server_banner = noop
 
-    run_app()
+    main()
