@@ -9,7 +9,8 @@ def before_anything() -> None:
     showwarning("ACCB", "Carregando. Por favor aguarde...")
 
 
-Thread(target=before_anything).start()
+if __name__ == "__main__":
+    Thread(target=before_anything).start()
 
 # import eventlet
 # eventlet.patcher.monkey_patch(select=True, socket=True)
