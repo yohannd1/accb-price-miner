@@ -1358,14 +1358,15 @@ $(document).ready(() => {
 
         if (window.confirm(`Realmente deseja deletar o produto ${product_name} permanentemente?`)) {
             $.get("/remove_product", { product_name: product_name }, (response) => {
-                if (response.success) {
-                    $(this).parent().parent().remove();
-                    Materialize.toast(response.message, 2000, 'rounded');
-                    if ($(".product-config .edit-product").length == 0) {
-                        $("#no-result-product").fadeIn(500);
-                    }
-                } else {
-                    Materialize.toast(response.message, 2000, 'rounded');
+                if (response.status !== "success") {
+                    alert("Não foi possível deletar o produto selecionado");
+                    return;
+                }
+
+                $(this).parent().parent().remove();
+                Materialize.toast(response.message, 2000, 'rounded');
+                if ($(".product-config .edit-product").length == 0) {
+                    $("#no-result-product").fadeIn(500);
                 }
             });
         }

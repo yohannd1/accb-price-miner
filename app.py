@@ -199,7 +199,7 @@ def route_remove_product() -> dict:
     state.db_manager.db_delete("product", "product_name", product_name)
 
     return {
-        "success": True,
+        "status": "success",
         "message": f"O produto {product_name} foi removido com sucesso",
     }
 
@@ -682,7 +682,7 @@ def on_search(search_info) -> None:
         if done == 0:
             emit(
                 "captcha",
-                {"type": "notification", "message": "Retomando pesquisa ..."},
+                {"type": "notification", "message": "Retomando pesquisa..."},
                 broadcast=True,
             )
 
@@ -829,6 +829,8 @@ def main() -> None:
 
     is_in_bundle = getattr(sys, "frozen", False)
     debug_enabled = bool(__file__) and not is_in_bundle
+    log(f"{is_in_bundle=}; {debug_enabled=}")
+
     if debug_enabled:
         os.environ["WDM_LOCAL"] = "1"
     else:
