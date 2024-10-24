@@ -73,7 +73,7 @@ path = None
 """Variável de caminho padrão para gerar coleção excel."""
 
 
-def is_port_in_use(port):
+def is_port_in_use(port) -> bool:
     """Confere se uma dada porta port está em uso pelo sistema."""
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -81,7 +81,7 @@ def is_port_in_use(port):
 
 
 @app.route("/")
-def route_home():
+def route_home() -> str:
     """Rota inicial do programa, realiza os tratamentos de backup e passa as informações básicas para o estado inicial da aplicação"""
 
     db = state.db_manager
@@ -94,7 +94,7 @@ def route_home():
 
     product_names = db.db_run_query("SELECT product_name FROM product")
     search = False
-    progress_value = 0
+    progress_value = 0.0
     active = "0.0"
     try:
         search_id = search_id[0][0]
@@ -110,7 +110,7 @@ def route_home():
                 product_info,
                 search_id,
                 duration,
-                progress_value,
+                _,
             ) = backup_info[0]
 
             if done == 0:
@@ -119,9 +119,6 @@ def route_home():
     except Exception:  # FIXME: remove this except
         exc_type, exc_value, exc_tb = sys.exc_info()
         log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        if not len(product_names) == 0:
-            progress_value = 100 / len(product_names)
 
     day = str(date.today()).split("-")[1]
     search_info = db.db_run_query(
@@ -163,8 +160,6 @@ def route_home():
         products=product,
         active=active,
         product_len=len(product_names),
-        search_info=search_info,
-        progress_value=math.floor(progress_value),
         month=MONTHS_PT_BR,
         active_month=day,
         active_year=str(date.today()).split("-")[0],
@@ -191,13 +186,13 @@ def route_insert_product() -> dict:
 
 
 @app.errorhandler(Exception)
-def all_exception_handler(error):
+def all_exception_handler(error) -> Response:
     res = {"status": "error", "message": "Erro interno da aplicação"}
     return Response(status=200, mimetype="application/json", response=json.dumps(res))
 
 
 @app.route("/remove_product")
-def route_remove_product():
+def route_remove_product() -> dict:
     """Rota de remoção de produtos no banco de dados."""
 
     product_name = request.args.get("product_name")
@@ -210,7 +205,7 @@ def route_remove_product():
 
 
 @app.route("/select_product")
-def route_select_product():
+def route_select_product() -> str:
     """Rota de seleção de produtos."""
 
     products = state.db_manager.db_get_product()
@@ -218,7 +213,7 @@ def route_select_product():
 
 
 @app.route("/select_search_data")
-def route_select_search_data():
+def route_select_search_data() -> str:
     """Rota de seleção de pesquisas no banco de dados."""
 
     search_id = request.args.get("search_id")
@@ -279,7 +274,7 @@ def route_update_product() -> dict:
 
 
 @app.route("/select_estab")
-def route_select_estab():
+def route_select_estab() -> str:
     """Rota de seleção de estabelecimentos no banco de dados."""
 
     db = state.db_manager
@@ -329,50 +324,32 @@ def route_update_estab() -> dict:
 
 
 @app.route("/insert_estab")
-def route_insert_estab():
+def route_insert_estab() -> dict:
     """Rota de inserção de estabelecimentos no banco de dados."""
 
     db = state.db_manager
-    city_name = request.args.get("city_name")
-    estab_name = request.args.get("estab_name")
-    web_name = request.args.get("web_name")
-    adress = request.args.get("adress")
+    city_name = request.args["city_name"]
+    estab_name = request.args["estab_name"]
+    web_name = request.args["web_name"]
+    adress = request.args["adress"]
 
-    try:
-
-        db.db_save_estab(
-            {
-                "city_name": city_name,
-                "estab_name": estab_name,
-                "web_name": web_name,
-                "adress": adress,
-            }
-        )
-        return {
-            "success": True,
-            "message": "O estabelecimento {} foi adicionado com sucesso".format(
-                estab_name
-            ),
+    db.db_save_estab(
+        {
+            "city_name": city_name,
+            "estab_name": estab_name,
+            "web_name": web_name,
+            "adress": adress,
         }
+    )
 
-    except sqlite3.Error as er:
-
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "O estabelecimento {} não pode ser adicionado.".format(
-                estab_name
-            ),
-        }
+    return {
+        "status": "success",
+        "message": f"O estabelecimento {estab_name} foi adicionado com sucesso",
+    }
 
 
 @app.route("/select_city")
-def route_select_city():
+def route_select_city() -> str:
     """Rota de seleção de cidades no banco de dados."""
 
     db = state.db_manager
@@ -381,31 +358,17 @@ def route_select_city():
 
 
 @app.route("/insert_city")
-def route_insert_city():
+def route_insert_city() -> dict:
     """Rota de inserção de cidades no banco de dados."""
     db = state.db_manager
     city_name = request.args.get("city_name")
 
-    try:
-
-        db.db_save_city(city_name)
-        state.wait_reload = True
-        return {
-            "success": True,
-            "message": "A cidade {} foi adicionado com sucesso".format(city_name),
-        }
-
-    except sqlite3.Error as er:
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "A cidade {} não pode ser adicionado.".format(city_name),
-        }
+    db.db_save_city(city_name)
+    state.wait_reload = True
+    return {
+        "status": "success",
+        "message": f"A cidade {city_name} foi adicionada com sucesso",
+    }
 
 
 @app.route("/update_city")
@@ -414,7 +377,9 @@ def route_update_city() -> dict:
 
     city_name = request.args["city_name"]
     primary_key = request.args["primary_key"]
-    state.db_manager.db_update_city({"city_name": city_name, "primary_key": primary_key})
+    state.db_manager.db_update_city(
+        {"city_name": city_name, "primary_key": primary_key}
+    )
     state.wait_reload = True
 
     return {
@@ -424,33 +389,18 @@ def route_update_city() -> dict:
 
 
 @app.route("/delete_city")
-def route_delete_city():
+def route_delete_city() -> dict:
     """Rota de deleção de cidades no banco de dados."""
 
     db = state.db_manager
-    city_name = request.args.get("city_name")
+    city_name = request.args["city_name"]
 
-    try:
-
-        db.db_delete("city", "city_name", city_name)
-        state.wait_reload = True
-        return {
-            "success": True,
-            "message": "A cidade {} foi deletada com sucesso".format(city_name),
-        }
-
-    except sqlite3.Error as er:
-
-        # print('SQLite error: %s' % (' '.join(er.args)))
-        # print("Exception class is: ", er.__class__)
-        # print('SQLite traceback: ')
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-        return {
-            "success": False,
-            "message": "A cidade {} não pode ser deletada.".format(city_name),
-        }
+    db.db_delete("city", "city_name", city_name)
+    state.wait_reload = True
+    return {
+        "status": "success",
+        "message": f"A cidade {city_name} foi deletada com sucesso",
+    }
 
 
 @app.route("/set_path")
@@ -501,6 +451,7 @@ def route_export_database() -> dict:
         "message": "Dados exportados com sucesso - agora é possível importá-lo em outro computador com o arquivo 'importar.sql'.",
     }
 
+
 @app.route("/import_database", methods=["POST"])
 def route_import_database() -> dict:
     """Rota responsável por importar os dados do banco"""
@@ -523,10 +474,12 @@ def route_open_folder() -> dict:
 
 
 @app.route("/clean_search")
-def route_clean_search():
+def route_clean_search() -> dict:
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
 
     global path
+    assert path is not None
+
     db = state.db_manager
 
     generate = request.args.get("generate") == "true"
@@ -639,7 +592,7 @@ def response_ok() -> dict:
 
 
 @socketio.on("connect")
-def on_connect():
+def on_connect() -> None:
     """Quando algum cliente conecta"""
     global watchdog
 
@@ -654,7 +607,7 @@ def on_connect():
 
 
 @socketio.on("disconnect")
-def on_disconnect():
+def on_disconnect() -> None:
     """Rota contas os clientes desconectados."""
     global watchdog
 
@@ -680,22 +633,23 @@ def on_disconnect():
 
 
 @socketio.on("set_path")
-def on_set_path(config_path):
+def on_set_path(config_path) -> None:
     # TODO: should this be here? and should it emit set_path back? it's confusing
     global path
     path = config_path["path"]
+    assert path is not None
     if not os.path.exists(path):
         emit("set_path", broadcast=True)
 
 
 @socketio.on("exit")
-def on_exit():
+def on_exit() -> None:
     os._exit(0)
 
 
 # Inicia pesquisa
 @socketio.on("search")
-def on_search(search_info):
+def on_search(search_info) -> None:
     """Rota responsável por iniciar a pesquisa."""
 
     db = state.db_manager
@@ -820,27 +774,12 @@ def on_search(search_info):
             db_to_xlsx(db, search_id, estab_data, city, path)
 
     except Exception:
-        try:
-            if "error" not in search_info:
-                search_info["error"] = 0
-            search_info["error"] += 1
-            if search_info["error"] > 3:
-                emit(
-                    "captcha",
-                    {
-                        "type": "error",
-                        "message": "Ocorreram muitos erros em sucessão, a pesquisa será parada, inicie manualmente para garantir a segurança do processo.",
-                    },
-                    broadcast=True,
-                )
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
-                exc_type, exc_value, exc_tb = sys.exc_info()
-                log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-        except Exception:
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
-            search_info["error"] = 1
+        search_info["error"] = search_info.get("error", 0) + 1
 
+        if search_info < 4:
             emit(
                 "captcha",
                 {
@@ -850,10 +789,19 @@ def on_search(search_info):
                 broadcast=True,
             )
             on_search(search_info)
+        else:
+            emit(
+                "captcha",
+                {
+                    "type": "error",
+                    "message": "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.",
+                },
+                broadcast=True,
+            )
 
 
 @app.context_processor
-def utility_processor():
+def utility_processor() -> dict:
     """Insere a função para ser chamada em todos os templates a qualquer momento"""
 
     def decode(text):
@@ -891,6 +839,7 @@ def main() -> None:
     webbrowser.open(SERVER_URL)
     if not is_port_in_use(5000):
         socketio.run(app, debug=debug_enabled, use_reloader=False)
+
 
 if __name__ == "__main__":
     # log = logging.getLogger("werkzeug")

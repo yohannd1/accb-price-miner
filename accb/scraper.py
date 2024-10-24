@@ -26,6 +26,7 @@ from accb.utils import log, log_error, show_warning, get_time_hms
 from accb.state import State
 from accb.database import DatabaseManager
 
+URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
 
 @dataclass
 class ScraperOptions:
@@ -64,6 +65,9 @@ class ScraperOptions:
     """Valor de soma da barra de pesquisa, caso seja adicionado um novo produto é necessário manter os dados da pesquisa anterior."""
     # FIXME: deletar isso? não usa mais, eu acho
 
+    url: str = URL_PRECODAHORA
+    """URL do site a ser pesquisado"""
+
 
 class ScraperError(Exception): ...
 
@@ -83,8 +87,6 @@ class Scraper:
         self.driver: Optional[Chrome] = None
         """Instância do navegador do selenium."""
 
-        self.url: Optional[str] = None
-
         self.stop = False
         """Variável de controle para parar a execução da pesquisa."""
 
@@ -97,11 +99,11 @@ class Scraper:
         self.start_time = time.time()
         """Valor do tempo no inicio da pesquisa."""
 
-    def check_connection(self, url: str = "https://www.example.org/") -> bool:
-        """Confere a conexão com a URL desejada."""
+    def is_connected(self, test_url: str = "https://www.example.org/") -> bool:
+        """Confere a conexão com a URL_PRECODAHORA desejada."""
 
         try:
-            urllib.request.urlopen(url)
+            urllib.request.urlopen(test_url)
             return True
         except urllib.error.URLError:
             return False
@@ -160,21 +162,22 @@ class Scraper:
             self.driver.quit()
             return
 
-    def get_data(self, product: str, keyword: str):
+    def get_data(self, product: str, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
 
         assert self.driver is not None
         elements = self.driver.page_source
         soup = BeautifulSoup(elements, "html.parser")
-        arr = []
+        search_results = []
 
-        patt = re.compile(r"[^A-Za-z0-9,]+")
+        irrelevant_patt = re.compile(r"[^A-Za-z0-9,]+")
+        money_patt = re.compile(r" R\$ \d+(,\d{1,2})")
 
         def adjust_and_clean(input: str) -> str:
-            return patt.sub(" ", input).lstrip()
+            return irrelevant_patt.sub(" ", input).lstrip()
 
         # search_item["search_id"], search_item["city_name"], search_item["estab_name"], search_item["web_name"], search_item["adress"], search_item["price"])
-        for item in soup.findAll(True, {"class": "flex-item2"}):
+        for item in soup.find_all(True, {"class": "flex-item2"}):
             product_name = adjust_and_clean(item.find("strong").text)
             product_address = adjust_and_clean(
                 item.find(attrs={"data-original-title": "Endereço"}).parent.text
@@ -182,52 +185,53 @@ class Scraper:
             product_local = adjust_and_clean(
                 item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text
             )
-            product_price = item.find(text=re.compile(r" R\$ \d+(,\d{1,2})")).lstrip()
+            product_price = item.find(text=money_patt).lstrip()
 
             log(
                 f"Produto encontrado - endereço: {product_address}; estab.: {product_local}; preço: {product_price}; nome: {product_name};"
             )
 
+            if self.stop:
+                return
+
             try:
-                if not self.stop:
-                    self.db.db_save_search_item(
-                        {
-                            "search_id": self.options.id,
-                            "web_name": product_local,
-                            "adress": product_address,
-                            "product_name": product_name,
-                            "price": product_price,
-                            "keyword": keyword,
-                        }
-                    )
-                    arr.append(
-                        [
-                            str(product_name),
-                            str(product_local),
-                            str(keyword),
-                            str(product_address),
-                            str(product_price),
-                        ]
-                    )
-            except Exception:
+                self.db.db_save_search_item(
+                    {
+                        "search_id": self.options.id,
+                        "web_name": product_local,
+                        "adress": product_address,
+                        "product_name": product_name,
+                        "price": product_price,
+                        "keyword": keyword,
+                    }
+                )
+            except Exception: # FIXME: parar de usar esse except?
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+                return
 
-                # TODO: handle exception
-                pass
-        if not self.stop:
+            search_results.append(
+                [
+                    str(product_name),
+                    str(product_local),
+                    str(keyword),
+                    str(product_address),
+                    str(product_price),
+                ]
+            )
+
             emit(
                 "captcha",
                 {
                     "type": "log",
-                    "data": json.dumps(arr),
+                    "data": json.dumps(search_results),
                 },
                 broadcast=True,
             )
 
-    def check_captcha(self, request: int = 0) -> bool:
-        """Função que confere se o captcha foi resolvido com sucesso pelo usuário."""
-        # FIXME: `request` não parece estar sendo usado
+    def is_in_captcha(self) -> bool:
+        """Confere se o usuário precisa resolver o captcha."""
+        # FIXME: confirmar: ela retorna True se precisar, ou se não precisar?
 
         try:
             WebDriverWait(self.driver, 5).until(
@@ -239,11 +243,14 @@ class Scraper:
 
         return True
 
-    def pop_up(self):
-        """Mostra uma mensagem em pop up para o usuário."""
+    def open_captcha_and_warn(self) -> None:
+        """Abre a URL de captcha, avisa e aguarda o aviso ser fechado."""
 
-        message = "Captcha foi ativado, foi aberto uma aba no seu navegador, resolva-o e pressione okay."
+        webbrowser.open(self.options.url)
 
+        message = "O Captcha foi ativado. Foi aberta uma aba no seu navegador - resolva-o lá e depois pressione OK nesta mensagem."
+
+        # FIXME: acho que não precisa mandar a mensagem para o front-end também...
         emit(
             "captcha",
             {
@@ -260,38 +267,33 @@ class Scraper:
 
         self.driver.back()
 
-    def captcha(self) -> None:
-        """Trata por erro de rede e inicia um loop para conferir se o usuário resolveu o captcha."""
+    def captcha_wait_loop(self) -> None: # FIXME: rename
+        """Abre o captcha e aguarda o usuário resolver o captcha."""
+
         # TODO: trocar nome da função
 
-        if not self.check_connection():
+        if not self.is_connected():
             self.exit_thread(True)
             raise ScraperError("Sem conexão com a rede!")
 
-        log("~~ CAPTCHA")  # FIXME: remove(breakpoint)
-
-        while True:
-            log(f"~~ LOOP CAPTCHA")  # FIXME: remove(breakpoint)
-            if self.check_captcha(1):
-                assert self.url is not None
-                webbrowser.open(self.url)
-                self.pop_up()
-            else:
-                # log("CAPTCHA FALSE")
-                return
+        log("Aguardando usuário resolver o captcha...")
+        while self.is_in_captcha():
+            self.open_captcha_and_warn()
+        log("Captcha resolvido!")
 
     def run(self) -> bool:
-        """Realiza a pesquisa na plataforma do Preço da Hora Bahia."""
+        """Realiza a pesquisa na plataforma do Preço da Hora Bahia. Retorna se a pesquisa funcionou."""
 
-        URL = "https://precodahora.ba.gov.br/produtos"
+        # FIXME: retornar exception caso a pesquisa tenha falhado, eu acho.
 
         log(f"Iniciando pesquisa...")
 
-        self.url = URL
         times = 4
+        """Multiplicador para tempo de espera"""
+
         try:
             driver = self.driver = open_chrome_driver()
-            driver.get(URL)
+            driver.get(self.options.url)
         except Exception:
             return False
 
@@ -307,12 +309,7 @@ class Scraper:
             )
             driver.find_element(By.ID, "informe-sefaz-error").click()
         except Exception:
-            # log("Pop Up Error")
             pass
-
-        # * Processo de pesquisa de produto
-
-        # time.sleep(times)
 
         # * Processo para definir a região desejada para ser realizada a pesquisa
 
@@ -331,7 +328,7 @@ class Scraper:
                 EC.presence_of_element_located((By.CLASS_NAME, "location-box"))
             )
         except Exception:
-            self.captcha()
+            self.captcha_wait_loop()
             time.sleep(1)
         finally:
             driver.find_element(By.CLASS_NAME, "location-box").click()
@@ -343,7 +340,7 @@ class Scraper:
                 EC.presence_of_element_located((By.ID, "add-center"))
             )
         except Exception:
-            self.captcha()
+            self.captcha_wait_loop()
             time.sleep(1)
         finally:
             driver.find_element(By.ID, "add-center").click()
@@ -432,8 +429,8 @@ class Scraper:
                     WebDriverWait(driver, 3 * times).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "sbar-input"))
                     )
-                except:
-                    self.captcha()
+                except Exception:
+                    self.captcha_wait_loop()
                 finally:
                     search = driver.find_element(By.ID, "top-sbar")
 
@@ -470,7 +467,7 @@ class Scraper:
                         EC.presence_of_element_located((By.CLASS_NAME, "flex-item2"))
                     )
                 except Exception:
-                    self.captcha()
+                    self.captcha_wait_loop()
                     time.sleep(times)
 
                 finally:
@@ -495,11 +492,9 @@ class Scraper:
                                 break
                             log("~~ 5.4")  # FIXME: remove(breakpoint)
                         except Exception:
-                            if not self.check_captcha(0):
-                                # log("Quantidade máxima de paginas abertas.")
+                            if not self.is_in_captcha():
                                 break
-                            else:
-                                self.captcha()
+                            self.captcha_wait_loop()
 
                     if self.stop:
                         self.exit = True
@@ -510,10 +505,10 @@ class Scraper:
 
                 log("~~ 6")  # FIXME: remove(breakpoint)
 
-            log("~~ 6.1")   # FIXME: remove(breakpoint)
+            log("~~ 6.1")  # FIXME: remove(breakpoint)
 
             if not self.stop:
-                log("~~ 6.2")   # FIXME: remove(breakpoint)
+                log("~~ 6.2")  # FIXME: remove(breakpoint)
                 emit(
                     "captcha",
                     {

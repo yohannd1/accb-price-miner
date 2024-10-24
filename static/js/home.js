@@ -423,9 +423,7 @@ const list_search = (search_id = undefined) => {
  * Lista todos os produtos na página de produtos.
  */
 const list_product = () => {
-
     $.get("/select_product", (response) => {
-
         response = JSON.parse(response);
         PRODUCT_DATA = response;
         if (response.length == 0) {
@@ -569,8 +567,7 @@ const get_modal_content_product = (product_name) => {
  * Adiciona um novo elemento .estab para a listagem de estabs com o nome novo dele. Chamado pel modal de criação de estabelecimento.
  * @param  {string} new_estab
  */
-const create_estab_element = (new_estab) => {
-
+const createEstabElement = (new_estab) => {
     var element =
         `
         <div class="z-depth-3 estab-config edit" id="ed-${new_estab}" value="${new_estab}">
@@ -580,12 +577,10 @@ const create_estab_element = (new_estab) => {
                 <a  value="${new_estab}" class="remove-estab btn-floating btn-large   red"><i class="fa fa-minus"></i></a>
             </div>
         </div>
-        `
+        `;
 
     $("#list-config").prepend(element).hide().fadeIn(1000);
-
     $("#no-result").fadeOut("500");
-
 }
 
 /**
@@ -660,7 +655,6 @@ $(document).ready(() => {
 
     const hjs_data = document.querySelector("#home-js-data");
     const active = hjs_data.getAttribute("data-active");
-    const progress_value = hjs_data.getAttribute("data-progress-value");
     const search = hjs_data.getAttribute("data-search") === "True";
     const is_chrome_installed = hjs_data.getAttribute("data-is-chrome-installed") === "True";
 
@@ -678,14 +672,8 @@ $(document).ready(() => {
             $("#backup-button").addClass("disable");
             $("#config_path").addClass("disable");
             $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
+            updateProgressBar(0.0);
             socket.emit("search", { names: "", city: "", backup: 1});
-
-            var width = active.split(".")[0];
-            var elem = document.getElementById("progress_bar");
-            width = width * progress_value;
-            width = width.toFixed(2);
-            elem.style.width = width.toString() + "%";
-            elem.innerHTML = width.toString() + "%";
 
             $("#main-navigation").tabs("select", "progress");
             $("#main-navigation  a").addClass("disabled");
@@ -945,23 +933,22 @@ $(document).ready(() => {
     // Salvar deleção de cidade
 
     $('#save-delete-city').click(function (e) {
-
         e.preventDefault();
         var city_name = $("#city-delete-select").val();
 
         if (window.confirm(`Realmente deseja deletar a cidade ${city_name} e todos os estabelecimentos pertencentes permanentemente ?`)) {
             $.get("/delete_city", { city_name: city_name }, (response) => {
-                if (response.success) {
-                    alert(response.message);
-                    var modal = $("#delete-city").modal();
-                    modal.closeModal();
-                    $(".jquery-modal").fadeOut(500);
-                    window.location = window.location.origin + "#configurar";
-                    window.location.reload(true);
-
-                } else {
-                    Materialize.toast(response.message, 2000, 'rounded');
+                if (response.status !== "success") {
+                    showMessage("A cidade não pôde ser deletada", { notification: false });
+                    return;
                 }
+
+                alert(response.message);
+                var modal = $("#delete-city").modal();
+                modal.closeModal();
+                $(".jquery-modal").fadeOut(500);
+                window.location = window.location.origin + "#configurar";
+                window.location.reload(true);
             });
         }
     });
@@ -1031,64 +1018,54 @@ $(document).ready(() => {
     });
 
     // Adicionar cidade
-
     $("#add-city").click(function (e) {
         e.preventDefault();
 
         var new_city = $("#save-city").val();
         if (validateForm([new_city]))
             $.get("/insert_city", { city_name: new_city }, (response) => {
-                if (response.success) {
-                    alert(response.message);
-                    var modal = $("#add-city-modal").modal();
-                    modal.closeModal();
-                    $(".jquery-modal").fadeOut(500);
-                    var element = `<option value="${new_city}">${new_city}</option>`
-                    $("#city-select").append(element);
-                    window.location = window.location.origin + "#configurar";
-                    window.location.reload(true);
-                } else {
-                    Materialize.toast(response.message, 2000, 'rounded');
+                if (response.status !== "success") {
+                    showMessage("A cidade não pôde ser adicionada", { notification: false });
+                    return;
                 }
 
+                alert(response.message);
+                var modal = $("#add-city-modal").modal();
+                modal.closeModal();
+                $(".jquery-modal").fadeOut(500);
+                var element = `<option value="${new_city}">${new_city}</option>`
+                $("#city-select").append(element);
+                window.location = window.location.origin + "#configurar";
+                window.location.reload(true);
             });
-
-
     });
 
     // Adicionar estab
-
     $("#save-add").click(function (e) {
-
         var city_name = $("#city_name-save").val();
         var estab_name = $("#estab_name-save").val();
         var web_name = $("#web_name-save").val().toUpperCase();
         var adress = $("#adress-save").val().toUpperCase();
 
         if (validateForm([city_name, estab_name, web_name, adress]))
-
             $.get("/insert_estab", { city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
-
-                if (response.success) {
-
-                    Materialize.toast(response.message, 2000, 'rounded');
-                    var modal = $("#add-modal").modal();
-                    modal.closeModal();
-                    $(".jquery-modal").fadeOut(500);
-
-                    ESTAB_DATA.push([city_name, estab_name, adress, web_name]);
-                    create_estab_element(estab_name);
-
-                } else {
-                    Materialize.toast(response.message, 2000, 'rounded');
+                if (response.status !== "success") {
+                    showMessage("O estabelecimento não pôde ser adicionado", { notification: false });
+                    return;
                 }
 
-            });
+                showMessage(response.message, { notification: false });
 
+                var modal = $("#add-modal").modal();
+                modal.closeModal();
+                $(".jquery-modal").fadeOut(500);
+
+                ESTAB_DATA.push([city_name, estab_name, adress, web_name]);
+                createEstabElement(estab_name);
+            });
     });
 
     // Adicionar produto
-
     $("#save-add-product").click(function (e) {
         var product_name = $("#product_name").val().toUpperCase();
         var keywords = $("#keywords").val().toUpperCase();
