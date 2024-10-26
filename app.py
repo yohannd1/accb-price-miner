@@ -42,6 +42,8 @@ from accb.utils import (
     ask_user_directory,
     open_folder,
 )
+from accb.restartable_timer import RestartableTimer
+from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
@@ -54,8 +56,13 @@ socketio = SocketIO(app, manage_session=False, async_mode="threading")
 
 state = State(db_manager=DatabaseManager())
 
-watchdog_lock = Lock()
-watchdog = None
+
+def timeout_exit() -> None:
+    log("Ninguém mais se conectou - fechando o programa")
+    os._exit(0)  # forçar a fechar o programa
+
+
+watchdog = LockedVar(RestartableTimer(8, timeout_exit))
 
 
 def is_port_in_use(port) -> bool:
@@ -84,10 +91,6 @@ def route_home() -> str:
         search = done == 0
 
     day = str(date.today()).split("-")[1]
-    args = db.run_query(
-        "SELECT * FROM search WHERE done = 1 AND search_date LIKE ?",
-        (f"%%-{day}-%%",),
-    )
 
     search_years = db.run_query(
         "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
@@ -548,31 +551,23 @@ def on_cancel() -> dict:
 @socketio.on("connect")
 def on_connect() -> None:
     """Quando algum cliente conecta"""
-    global watchdog
 
     state.connected_count += 1
     log(f"Nova conexão; total: {state.connected_count}")
 
-    with watchdog_lock:
-        if watchdog is not None:
-            log("Cancelando timeout para fechar o programa")
-            watchdog.cancel()
-            watchdog = None
+    log("Cancelando timeout para fechar o programa...")
+    with watchdog as w_timer:
+        w_timer.cancel()
 
 
 @socketio.on("disconnect")
 def on_disconnect() -> None:
     """Rota contas os clientes desconectados."""
-    global watchdog
 
     state.connected_count -= 1
     log(f"Conexão fechada; total: {state.connected_count}")
 
     WATCHDOG_TIMEOUT = 8
-
-    def timeout_exit() -> None:
-        log("Ninguém mais se conectou - fechando o programa")
-        os._exit(0)  # forçar a fechar o programa
 
     if state.connected_count <= 0:
         if state.wait_reload:
@@ -581,9 +576,8 @@ def on_disconnect() -> None:
             log(
                 f"Todos os clientes desconectaram; esperando uma nova conexão por {WATCHDOG_TIMEOUT} segundos..."
             )
-            with watchdog_lock:
-                watchdog = Timer(8, timeout_exit)
-                watchdog.start()
+            with watchdog as w_timer:
+                w_timer.start()
 
 
 @socketio.on("output_path_from_cookies")
@@ -593,12 +587,10 @@ def on_path_from_cookies(args: dict) -> None:
 
     if not is_valid:
         emit("invalid_output_path", broadcast=True)
+        return
 
-    # TODO: should this be here? and should it emit set_path back? it's confusing
-    state.output_path = Path(args["path"])
-    assert state.output_path is not None
-    if not state.output_path.exists():
-        emit("set_path", broadcast=True)
+    assert path is not None
+    state.output_path = Path(path)
 
 
 @socketio.on("exit")
@@ -734,7 +726,8 @@ def utility_processor() -> dict:
 def main() -> None:
     """Inicia o programa com as configurações da plataforma atual, Windows ou Linux."""
 
-    SERVER_URL = "http://127.0.0.1:5000"
+    SERVER_URL = "http://127.0.0.1"
+    PORT = 5000
 
     is_in_bundle = getattr(sys, "frozen", False)
     debug_enabled = bool(__file__) and not is_in_bundle
@@ -747,8 +740,11 @@ def main() -> None:
 
     # TODO: configurar o arquivo de log
 
-    webbrowser.open(SERVER_URL)
-    if not is_port_in_use(5000):
+    webbrowser.open(f"{SERVER_URL}:{PORT}")
+
+    if is_port_in_use(PORT):
+        print(f"Porta {PORT} já em uso - o programa já está rodando?")
+    else:
         socketio.run(app, debug=debug_enabled, use_reloader=False)
 
 

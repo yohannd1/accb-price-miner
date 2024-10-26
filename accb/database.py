@@ -467,5 +467,3 @@ class DatabaseManager:
             return None
 
         return result[0][0]
-
-
