@@ -108,7 +108,7 @@ class ScraperOptions:
             "duration": 0,
             "progress_value": -1,
         }
-        db.db_save_backup(data)
+        db.save_backup(data)
 
 
 class ScraperError(Exception):
@@ -237,7 +237,7 @@ class Scraper:
                 return
 
             try:
-                self.db.db_save_search_item(
+                self.db.save_search_item(
                     {
                         "search_id": self.options.id,
                         "web_name": product_local,
@@ -439,7 +439,7 @@ class Scraper:
 
                 log("~~ BEFORE BACKUP")  # FIXME: remove(breakpoint)
 
-                self.db.db_update_backup(
+                self.db.update_backup(
                     {
                         "active": active,
                         "city": self.options.city,
@@ -569,7 +569,7 @@ class Scraper:
         log("~~ 8")  # FIXME: remove(breakpoint)
 
         duration = get_time_hms(self.start_time)
-        self.db.db_update_search(
+        self.db.update_search(
             {
                 "id": self.options.id,
                 "done": 1,
@@ -579,7 +579,7 @@ class Scraper:
 
         log("~~ 9")  # FIXME: remove(breakpoint)
 
-        self.db.db_update_backup(
+        self.db.update_backup(
             {
                 "active": "0.0",
                 "city": self.options.city,

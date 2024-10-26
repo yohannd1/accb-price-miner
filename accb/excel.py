@@ -16,7 +16,7 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
     """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
     df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
     duration = get_time_hms(time())
-    search_id = db.db_save_search(True, city_name, duration["minutes"])
+    search_id = db.save_search(True, city_name, duration["minutes"])
 
     for _index, row in df.iterrows():
         (name, local, keyword, adress, price) = row
@@ -29,7 +29,7 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
             "price": price,
             "keyword": keyword,
         }
-        db.db_save_search_item(info)
+        db.save_search_item(info)
 
     return search_id
 
@@ -71,7 +71,7 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path) -> Path:
     GROUP BY web_name
     """
 
-    result = db.db_run_query(query, (search_id,))
+    result = db.run_query(query, (search_id,))
 
     output_folder = Path(path) / "Todos" / f"{get_time_filename()} {city}"
     output_folder.mkdir(parents=True, exist_ok=True)
@@ -93,7 +93,7 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path) -> Path:
 def export_to_xlsx(db: DatabaseManager, search_id, filter_by_address: bool, output_path: Path, web_name, adress) -> None:
     log(f"Writing excel file to {output_path}...")
 
-    products = db.db_run_query(
+    products = db.run_query(
         "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
         (search_id, web_name),
     )

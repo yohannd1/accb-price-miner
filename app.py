@@ -84,7 +84,7 @@ def route_home() -> str:
 
     db = state.db_manager
 
-    product_names = db.db_run_query("SELECT product_name FROM product")
+    product_names = db.run_query("SELECT product_name FROM product")
     search = False
     active = "0.0"
 
@@ -97,18 +97,18 @@ def route_home() -> str:
         search = (done == 0)
 
     day = str(date.today()).split("-")[1]
-    args = db.db_run_query(
+    args = db.run_query(
         "SELECT * FROM search WHERE done = 1 AND search_date LIKE ?",
         (f"%%-{day}-%%",),
     )
 
-    search_years = db.db_run_query(
+    search_years = db.run_query(
         "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
     )
 
-    city = db.db_get_city()
-    estab_names = db.db_get_estab()
-    product = db.db_get_product()
+    city = db.get_city()
+    estab_names = db.get_estab()
+    product = db.get_product()
 
     # print("CONNECTED {}".format(state.connected_count))
     # Se tiver mais que uma pagina aberta, renderiza o notallowed.html,
@@ -150,7 +150,7 @@ def route_insert_product() -> dict:
 
     product_name = request.args["product_name"]
 
-    state.db_manager.db_save_product(
+    state.db_manager.save_product(
         product_name=product_name,
         keywords=request.args["keywords"],
     )
@@ -172,7 +172,7 @@ def route_remove_product() -> dict:
     """Rota de remoção de produtos no banco de dados."""
 
     product_name = request.args.get("product_name")
-    state.db_manager.db_delete("product", "product_name", product_name)
+    state.db_manager.delete("product", "product_name", product_name)
 
     return {
         "status": "success",
@@ -184,7 +184,7 @@ def route_remove_product() -> dict:
 def route_select_product() -> str:
     """Rota de seleção de produtos."""
 
-    products = state.db_manager.db_get_product()
+    products = state.db_manager.get_product()
     return json.dumps(products)
 
 
@@ -194,7 +194,7 @@ def route_select_search_data() -> str:
 
     search_id = request.args["search_id"]
 
-    search_data = state.db_manager.db_run_query(
+    search_data = state.db_manager.run_query(
         "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = ? AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC",
         (search_id,),
     )
@@ -213,12 +213,12 @@ def route_select_search_info() -> dict:
 
     if year is None:
         month = "0" + month if int(month) < 10 else month
-        search_data = db.db_run_query(
+        search_data = db.run_query(
             "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
             (f"%-{month}-%",),
         )
     else:
-        search_data = db.db_run_query(
+        search_data = db.run_query(
             "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
             (f"{year}%",),
         )
@@ -234,7 +234,7 @@ def route_update_product() -> dict:
     keywords = request.args.get("keywords")
     primary_key = request.args.get("primary_key")
 
-    state.db_manager.db_update_product(
+    state.db_manager.update_product(
         {
             "product_name": product_name,
             "keywords": keywords,
@@ -254,7 +254,7 @@ def route_select_estab() -> str:
 
     db = state.db_manager
     city = request.args.get("city")
-    g.estab = db.db_get_estab()
+    g.estab = db.get_estab()
     g.estab_list = [estab for estab in g.estab if estab[0] == city]
     return json.dumps(g.estab_list)
 
@@ -265,7 +265,7 @@ def route_remove_estab() -> dict:
 
     estab_name = request.args["estab_name"]
 
-    state.db_manager.db_delete("estab", "estab_name", estab_name)
+    state.db_manager.delete("estab", "estab_name", estab_name)
     return {
         "status": "success",
         "message": f"O estabelecimento {estab_name} foi removido com sucesso",
@@ -282,7 +282,7 @@ def route_update_estab() -> dict:
     web_name = request.args["web_name"]
     adress = request.args["adress"]
 
-    state.db_manager.db_update_estab(
+    state.db_manager.update_estab(
         {
             "primary_key": primary_key,
             "city_name": city_name,
@@ -308,7 +308,7 @@ def route_insert_estab() -> dict:
     web_name = request.args["web_name"]
     adress = request.args["adress"]
 
-    db.db_save_estab(
+    db.save_estab(
         {
             "city_name": city_name,
             "estab_name": estab_name,
@@ -328,7 +328,7 @@ def route_select_city() -> str:
     """Rota de seleção de cidades no banco de dados."""
 
     db = state.db_manager
-    g.cities = db.db_get_city()
+    g.cities = db.get_city()
     return json.dumps(g.cities)
 
 
@@ -338,7 +338,7 @@ def route_insert_city() -> dict:
     db = state.db_manager
     city_name = request.args.get("city_name")
 
-    db.db_save_city(city_name)
+    db.save_city(city_name)
     state.wait_reload = True
     return {
         "status": "success",
@@ -352,7 +352,7 @@ def route_update_city() -> dict:
 
     city_name = request.args["city_name"]
     primary_key = request.args["primary_key"]
-    state.db_manager.db_update_city(
+    state.db_manager.update_city(
         {"city_name": city_name, "primary_key": primary_key}
     )
     state.wait_reload = True
@@ -370,7 +370,7 @@ def route_delete_city() -> dict:
     db = state.db_manager
     city_name = request.args["city_name"]
 
-    db.db_delete("city", "city_name", city_name)
+    db.delete("city", "city_name", city_name)
     state.wait_reload = True
     return {
         "status": "success",
@@ -403,7 +403,7 @@ def route_delete_search() -> dict:
 
     search_id = request.args["search_id"]
 
-    state.db_manager.db_delete("search", "id", search_id)
+    state.db_manager.delete("search", "id", search_id)
     state.wait_reload = True
     return {"status": "success", "message": "Pesquisa deletada com sucesso."}
 
@@ -463,11 +463,11 @@ def route_clean_search() -> dict:
     if generate:
         limpeza_path = Path(path) / "Limpeza"
 
-        for city_name, *_ in db.db_get_city():
-            estab_data = db.db_run_query(
+        for city_name, *_ in db.get_city():
+            estab_data = db.run_query(
                 "SELECT * FROM estab WHERE city_name = ?", (city_name,)
             )
-            args = db.db_run_query(
+            args = db.run_query(
                 "SELECT DISTINCT id,search_date FROM search WHERE done = 1"
             )
 
@@ -494,8 +494,8 @@ def route_clean_search() -> dict:
     else:
         response["message"] = "Pesquisas deletadas com sucesso."
 
-    db.db_run_query("DELETE FROM search_item")
-    db.db_run_query("DELETE FROM search")
+    db.run_query("DELETE FROM search_item")
+    db.run_query("DELETE FROM search")
 
     return response
 
@@ -519,8 +519,8 @@ def route_generate_file() -> dict:
     assert names is not None
 
     estab_names = json.loads(names)
-    estabs = db.db_get_estab()
-    product = db.db_get_product()
+    estabs = db.get_estab()
+    product = db.get_product()
 
     estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
 
@@ -549,7 +549,7 @@ def on_cancel() -> dict:
 
     state.wait_reload = True
 
-    state.db_manager.db_run_query("DELETE FROM search WHERE id = ?", (state.search_id,))
+    state.db_manager.run_query("DELETE FROM search WHERE id = ?", (state.search_id,))
 
     state.pause = False
     state.cancel = True
@@ -643,11 +643,11 @@ def attempt_search(args: dict) -> None:
         estab_data = opts.locals
     else:
         city = args["city"]
-        search_id = db.db_save_search(False, city, 0)
+        search_id = db.save_search(False, city, 0)
         active = "0.0"
         estab_names = json.loads(args["names"])
-        estabs = db.db_get_estab()
-        product = db.db_get_product()
+        estabs = db.get_estab()
+        product = db.get_product()
         duration = 0
 
         estab_data = [
