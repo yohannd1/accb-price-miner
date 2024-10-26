@@ -57,9 +57,9 @@ def show_warning(title: str, message: str) -> None:
     root.destroy()
 
 
-def ask_user_directory() -> Optional[str]:
+def ask_user_directory() -> Optional[Path]:
     result = filedialog.askdirectory()
-    return result if result != () else None
+    return Path(result) if result != () else None
 
 
 def get_time_hms(start_time_sec: float) -> dict:
@@ -81,9 +81,6 @@ def get_time_filename() -> str:
 
 
 def open_folder(path: Path) -> None:
-    # custom_path = custom_path.replace("/", "\\")
-    # subprocess.Popen(f"explorer {custom_path}")
-
     if is_windows():
         # https://docs.python.org/3.6/library/os.html#os.startfile
         os.startfile(str(path))  # type: ignore

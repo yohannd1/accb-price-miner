@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Any, TYPE_CHECKING
+from pathlib import Path
 
 if TYPE_CHECKING:
     from accb.database import DatabaseManager
@@ -17,7 +18,7 @@ class State:
     """Se o servidor deve esperar uma nova conexão (a página conetada está recarregando)."""
 
     connected_count: int = 0
-    """Conta a quantidade de clientes conectados"""
+    """Conta a quantidade de clientes conectados."""
 
     scraper: Optional[Scraper] = None
     """Scraper utilizado para pesquisar."""
@@ -30,3 +31,6 @@ class State:
 
     search_id: Optional[int] = None
     """O ID da pesquisa atualmente ocorrendo (None se nenhuma pesquisa estiver ocorrendo)"""
+
+    output_path: Optional[Path] = None
+    """Caminho de saída dos dados (Excel)."""

@@ -13,8 +13,9 @@ import os
 from os import path
 import json
 
-from typing import Any, Sequence, Generator, Optional, TypedDict
+from typing import Any, Sequence, Generator, Optional
 
+from accb.model import Backup
 from accb.utils import log
 
 DB_PATH = "accb.sqlite"
@@ -230,7 +231,7 @@ class DatabaseManager:
                 (
                     str(backup["active"]),
                     backup["city"],
-                    backup["done"],
+                    int(backup["done"]),
                     backup["estab_info"],
                     backup["product_info"],
                     backup["search_id"],
@@ -468,12 +469,3 @@ class DatabaseManager:
         return result[0][0]
 
 
-class Backup(TypedDict):
-    active: str
-    city: str
-    done: str
-    estab_info: list[str]
-    product_info: list[str]
-    search_id: str
-    duration: int
-    progress_value: float

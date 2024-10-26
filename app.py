@@ -52,16 +52,10 @@ app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
 
-state = State(
-    db_manager=DatabaseManager(),
-)
+state = State(db_manager=DatabaseManager())
 
 watchdog_lock = Lock()
 watchdog = None
-
-
-path = None
-"""Variável de caminho padrão para gerar coleção excel."""
 
 
 def is_port_in_use(port) -> bool:
@@ -369,21 +363,18 @@ def route_delete_city() -> dict:
     }
 
 
-@app.route("/set_path")
-def route_set_path() -> dict:
-    global path
-
-    directory = ask_user_directory()
-    if directory is None:
+@app.route("/ask_output_path")
+def route_ask_output_path() -> dict:
+    state.output_path = ask_user_directory()
+    if state.output_path is None:
         raise Exception("Nenhum diretório selecionado")
 
-    path = directory
-    Path(path).mkdir(exist_ok=True)
+    state.output_path.mkdir(exist_ok=True)
 
     return {
         "status": "success",
         "message": "Caminho configurado com sucesso.",
-        "path": path,
+        "path": str(state.output_path),
     }
 
 
@@ -443,7 +434,7 @@ def route_open_folder() -> dict:
 def route_clean_search() -> dict:
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
 
-    assert path is not None
+    assert state.output_path is not None
 
     db = state.db_manager
 
@@ -452,7 +443,7 @@ def route_clean_search() -> dict:
     response = {"status": "success"}
 
     if generate:
-        limpeza_path = Path(path) / "Limpeza"
+        limpeza_path = state.output_path / "Limpeza"
 
         for city_name, *_ in db.get_city():
             estab_data = db.run_query(
@@ -495,6 +486,8 @@ def route_clean_search() -> dict:
 def route_generate_file() -> dict:
     """Gera arquivo(s) excel com os dados das pesquisas."""
 
+    assert state.output_path is not None
+
     db = state.db_manager
 
     format_type = request.args.get("format")
@@ -502,7 +495,7 @@ def route_generate_file() -> dict:
     search_id = request.args.get("search_id")
 
     if format_type == "all":
-        output_folder = db_to_xlsx_all(city, search_id, db, path)
+        output_folder = db_to_xlsx_all(city, search_id, db, state.output_path)
         return {"status": "success", "path": str(output_folder)}
 
     names = request.args.get("names")
@@ -513,7 +506,7 @@ def route_generate_file() -> dict:
 
     estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
 
-    output_folder = db_to_xlsx(db, search_id, estab_data, city, path)
+    output_folder = db_to_xlsx(db, search_id, estab_data, city, state.output_path)
     return {"status": "success", "path": str(output_folder)}
 
 
@@ -593,13 +586,18 @@ def on_disconnect() -> None:
                 watchdog.start()
 
 
-@socketio.on("set_path")
-def on_set_path(config_path) -> None:
+@socketio.on("output_path_from_cookies")
+def on_path_from_cookies(args: dict) -> None:
+    path = args.get("path")
+    is_valid = path is not None and Path(path).exists()
+
+    if not is_valid:
+        emit("invalid_output_path", broadcast=True)
+
     # TODO: should this be here? and should it emit set_path back? it's confusing
-    global path
-    path = config_path["path"]
-    assert path is not None
-    if not os.path.exists(path):
+    state.output_path = Path(args["path"])
+    assert state.output_path is not None
+    if not state.output_path.exists():
         emit("set_path", broadcast=True)
 
 
@@ -612,6 +610,7 @@ def attempt_search(args: dict) -> None:
     """Inicia a pesquisa."""
 
     db = state.db_manager
+    assert state.output_path is not None
 
     search_id = db.get_incomplete_search_id()
 
@@ -679,7 +678,7 @@ def attempt_search(args: dict) -> None:
         state.wait_reload = True
 
         # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
-        db_to_xlsx(db, search_id, estab_data, city, path)
+        db_to_xlsx(db, search_id, estab_data, city, state.output_path)
 
 
 @socketio.on("search")

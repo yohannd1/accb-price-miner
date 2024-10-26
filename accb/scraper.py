@@ -26,6 +26,7 @@ from selenium.webdriver import Chrome
 from accb.web_driver import open_chrome_driver
 from accb.utils import log, log_error, show_warning, get_time_hms
 from accb.state import State
+from accb.model import Backup
 from accb.database import DatabaseManager
 
 URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
@@ -97,17 +98,16 @@ class ScraperOptions:
         )
 
     def save_as_backup(self, db: DatabaseManager, is_done: bool) -> None:
-        # TODO: https://stackoverflow.com/questions/65196658/nice-way-to-turn-a-dict-into-a-typeddict
-        data = {
-            "active": self.active,
-            "city": self.city,
-            "done": int(is_done),
-            "estab_info": json.dumps({"names": self.locals_name, "info": self.locals}),
-            "product_info": json.dumps(self.product_info),
-            "search_id": self.id,
-            "duration": 0,
-            "progress_value": -1,
-        }
+        data = Backup(
+            active=self.active,
+            city=self.city,
+            done=is_done,
+            estab_info=json.dumps({"names": self.locals_name, "info": self.locals}),
+            product_info=json.dumps(self.product_info),
+            search_id=self.id,
+            duration=0,
+            progress_value=-1,
+        )
         db.save_backup(data)
 
 

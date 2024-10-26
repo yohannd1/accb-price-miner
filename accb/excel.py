@@ -39,13 +39,13 @@ def db_to_xlsx(
     search_id,
     estab_data,
     city,
-    path,
+    path: Path,
     filter_by_address: bool = True,
 ) -> Path:
     """Transforma uma dada pesquisa com id search_id em uma coleção de arquivos na pasta da cidade em questão (cidade) [data] [hora de geração dos arquivos]
     Retorna o caminho"""
 
-    output_folder = Path(path) / f"{get_time_filename()} {city}"
+    output_folder = path / f"{get_time_filename()} {city}"
     output_folder.mkdir(parents=True, exist_ok=True)
 
     for city, name, adress, web_name in estab_data:
@@ -63,7 +63,7 @@ def db_to_xlsx(
     return output_folder
 
 
-def db_to_xlsx_all(city, search_id, db: DatabaseManager, path) -> Path:
+def db_to_xlsx_all(city, search_id, db: DatabaseManager, path: Path) -> Path:
     query = """
     SELECT DISTINCT * FROM search_item
     WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
@@ -73,7 +73,7 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path) -> Path:
 
     result = db.run_query(query, (search_id,))
 
-    output_folder = Path(path) / "Todos" / f"{get_time_filename()} {city}"
+    output_folder = path / "Todos" / f"{get_time_filename()} {city}"
     output_folder.mkdir(parents=True, exist_ok=True)
 
     for id, product, web_name, adress, price, keyword in result:

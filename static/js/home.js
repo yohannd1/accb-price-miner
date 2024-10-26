@@ -23,13 +23,6 @@ const updateProgressBar = (newValue) => {
  * @param  {string} month
  */
 function filter_search(month) {
-    // var search_id = $("#search-select").val();
-
-    // if (search_id == "null") {
-    //     alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
-    //     return;
-    // }
-
     $.get("/select_search_info", { month: month }, (response) => {
         if (response.status !== "success") {
             showMessage(response.message, { notification: false });
@@ -59,6 +52,7 @@ function filter_search(month) {
         return true;
     });
 }
+
 /**
  * Função de ajuda para a similarity, retorna a distancia entre as palavras.
  * @param  {string} s1
@@ -94,9 +88,7 @@ function distance(s1, s2) {
  * Cria um input customizado select na página de configuração.
  */
 const custom_select = () => {
-
     $('.config-menu select').each(function () {
-
         // Cache the number of options
         var $this = $(this),
             numberOfOptions = $(this).children('option').length;
@@ -314,7 +306,6 @@ const custom_select_search = () => {
  * @param  {integer} city=undefined
  */
 const list_estab = (city = undefined) => {
-
     if (city == undefined)
         city = $("city").attr('value');
     else {
@@ -323,27 +314,24 @@ const list_estab = (city = undefined) => {
     }
 
     $.get("/select_estab", { city: city }, (response) => {
-
         response = JSON.parse(response);
         ESTAB_DATA = response;
         if (response.length == 0) {
-
             $("#no-result").fadeIn(500);
-
-        } else {
-            response.map((value, index) => {
-                $(`
-                    <div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
-                        <p>${value[1]}</p>
-                        <div class="right">
-                            <a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit "  ><i class="fa fa-edit"></i></a>
-                            <a  value="${value[1]}" class="remove-estab btn-floating btn-large  red " data-position="left" ><i class="fa fa-minus"></i></a>
-                        </div>
-                    </div>
-                `).appendTo("#list-config").hide().slideDown("slow");
-            });
+            return;
         }
 
+        response.map((value, index) => {
+            $(`
+                <div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
+                    <p>${value[1]}</p>
+                    <div class="right">
+                        <a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit "  ><i class="fa fa-edit"></i></a>
+                        <a  value="${value[1]}" class="remove-estab btn-floating btn-large  red " data-position="left" ><i class="fa fa-minus"></i></a>
+                    </div>
+                </div>
+            `).appendTo("#list-config").hide().slideDown("slow");
+        });
     });
 
 
@@ -355,7 +343,6 @@ const list_estab = (city = undefined) => {
  * @param  {integer} search_id=undefined
  */
 const list_search = (search_id = undefined) => {
-
     $("#search-loader").show();
 
     if (search_id == undefined) {
@@ -1712,34 +1699,35 @@ $(document).ready(() => {
     }
 
     const setOutputPath = () => {
-        $.get("/set_path", (response) => {
+        $.get("/ask_output_path", (response) => {
             if (response.status !== "success") {
-                alert("Ocorreu um erro durante a configuração do caminho.");
+                alert("Ocorreu um erro durante a escolha do diretório.");
                 return;
             }
 
             Cookies.set("path", response.path, { expires: 10 });
-            showMessage(`Caminho alterado para ${response.path}`, { notification: false });
+            showMessage(`Diretório alterado para ${response.path}`, { notification: false });
         });
     };
 
-    if (Cookies.get("path") === undefined) {
+    const ck_path = Cookies.get("path");
+    if (ck_path === undefined) {
         alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
         setOutputPath();
     } else {
-        socket.emit("set_path", { path: Cookies.get("path") });
+        socket.emit("output_path_from_cookies", { path: ck_path });
     }
+
+    socket.on("invalid_output_path", () => {
+        alert("O diretório de arquivos registrado é inválido! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+        setOutputPath();
+    });
 
     if (!is_chrome_installed)
         alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
 
     if (search)
         $("body").on("click", "#backup-button", (_) => searchLoaded());
-
-    socket.on("set_path", () => {
-        alert("O antigo diretório foi deletado! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-        setOutputPath();
-    });
 
     socket.connect("http://127.0.0.1:5000/");
 
