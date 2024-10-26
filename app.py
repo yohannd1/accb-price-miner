@@ -32,8 +32,6 @@ from flask import Flask, render_template, request, g, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
 
-from openpyxl.styles import Border, Side, Alignment
-
 # from webdriver_manager.chrome import ChromeDriverManager
 # from webdriver_manager.core.driver_cache import DriverCacheManager
 
@@ -41,10 +39,7 @@ from accb.scraper import Scraper, ScraperOptions
 from accb.utils import (
     log,
     log_error,
-    is_windows,
     ask_user_directory,
-    get_time_hms,
-    get_time_filename,
     open_folder,
 )
 from accb.state import State
@@ -52,8 +47,6 @@ from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager
 from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
-
-# TODO: move flask creation to another part. in separate module
 
 app = Flask(__name__)
 Material(app)
@@ -94,7 +87,7 @@ def route_home() -> str:
         search = False
     else:
         (_, _, done, *_) = backup_info
-        search = (done == 0)
+        search = done == 0
 
     day = str(date.today()).split("-")[1]
     args = db.run_query(
@@ -138,7 +131,7 @@ def route_home() -> str:
         product_len=len(product_names),
         month=MONTHS_PT_BR,
         active_month=day,
-        active_year=str(date.today()).split("-")[0],
+        active_year=str(date.today()).split("-", maxsplit=1)[0],
         chrome_installed=str(is_chrome_installed()),
         years=search_years,
     )
@@ -162,7 +155,7 @@ def route_insert_product() -> dict:
 
 
 @app.errorhandler(Exception)
-def all_exception_handler(error) -> Response:
+def all_exception_handler(_exc: Exception) -> Response:
     res = {"status": "error", "message": "Erro interno da aplicação"}
     return Response(status=200, mimetype="application/json", response=json.dumps(res))
 
@@ -414,9 +407,10 @@ def route_export_database() -> dict:
 
     OUTPUT_FILENAME = "importar.sql"
     TABLES = ("city", "estab", "product")
+    ENCODING = "utf-8"
 
     db = state.db_manager
-    with open(OUTPUT_FILENAME, "w+") as f:
+    with open(OUTPUT_FILENAME, "w+", encoding=ENCODING) as f:
         for table in TABLES:
             for line in db.dump_table(table):
                 f.write(f"{line}\n")
@@ -451,7 +445,6 @@ def route_open_folder() -> dict:
 def route_clean_search() -> dict:
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
 
-    global path
     assert path is not None
 
     db = state.db_manager
@@ -505,7 +498,6 @@ def route_generate_file() -> dict:
     """Gera arquivo(s) excel com os dados das pesquisas."""
 
     db = state.db_manager
-    global path
 
     format_type = request.args.get("format")
     city = request.args.get("city_name")
@@ -520,7 +512,6 @@ def route_generate_file() -> dict:
 
     estab_names = json.loads(names)
     estabs = db.get_estab()
-    product = db.get_product()
 
     estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
 
@@ -573,7 +564,7 @@ def on_connect() -> None:
 
     with watchdog_lock:
         if watchdog is not None:
-            log(f"Cancelando timeout para fechar o programa")
+            log("Cancelando timeout para fechar o programa")
             watchdog.cancel()
             watchdog = None
 
@@ -589,7 +580,7 @@ def on_disconnect() -> None:
     WATCHDOG_TIMEOUT = 8
 
     def timeout_exit() -> None:
-        log(f"Ninguém mais se conectou - fechando o programa")
+        log("Ninguém mais se conectou - fechando o programa")
         os._exit(0)  # forçar a fechar o programa
 
     if state.connected_count <= 0:
