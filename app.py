@@ -19,16 +19,12 @@ if __name__ == "__main__":
 # necessário para evitar bugs com aplicações que rodam tarefas no background.
 # from engineio.async_drivers import threading
 
-import math
-import time
 import json
-import sqlite3
 import sys
 import os
 from datetime import date
 import traceback
 import webbrowser
-import subprocess
 from pathlib import Path
 import socket
 
@@ -56,6 +52,8 @@ from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager
 from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
+
+# TODO: move flask creation to another part. in separate module
 
 app = Flask(__name__)
 Material(app)
@@ -86,42 +84,20 @@ def route_home() -> str:
 
     db = state.db_manager
 
-    search_id = db.db_run_query(
-        "SELECT id FROM search WHERE done = 0 AND search_date = ? ORDER BY city_name ASC",
-        (str(date.today()),),
-    )
-    log(f"{search_id=}")
-
     product_names = db.db_run_query("SELECT product_name FROM product")
     search = False
-    progress_value = 0.0
     active = "0.0"
-    try:
-        search_id = search_id[0][0]
 
-        backup_info = db.db_get_backup(search_id)
-        # log_error(backup_info[0])
-        if len(backup_info) != 0:
-            (
-                active,
-                city,
-                done,
-                estab_info,
-                product_info,
-                search_id,
-                duration,
-                _,
-            ) = backup_info[0]
-
-            if done == 0:
-                search = True
-
-    except Exception:  # FIXME: remove this except
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+    search_id = db.get_incomplete_search_id()
+    backup_info = db.get_backup(search_id)
+    if backup_info is None:
+        search = False
+    else:
+        (_, _, done, *_) = backup_info
+        search = (done == 0)
 
     day = str(date.today()).split("-")[1]
-    search_info = db.db_run_query(
+    args = db.db_run_query(
         "SELECT * FROM search WHERE done = 1 AND search_date LIKE ?",
         (f"%%-{day}-%%",),
     )
@@ -216,8 +192,7 @@ def route_select_product() -> str:
 def route_select_search_data() -> str:
     """Rota de seleção de pesquisas no banco de dados."""
 
-    search_id = request.args.get("search_id")
-    city_name = request.args.get("city_name")
+    search_id = request.args["search_id"]
 
     search_data = state.db_manager.db_run_query(
         "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = ? AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC",
@@ -468,8 +443,7 @@ def route_import_database() -> dict:
 
 @app.route("/open_folder")
 def route_open_folder() -> dict:
-    path = request.args["path"]
-    open_folder(Path(path))
+    open_folder(Path(request.args["path"]))
     return {"status": "success"}
 
 
@@ -493,11 +467,11 @@ def route_clean_search() -> dict:
             estab_data = db.db_run_query(
                 "SELECT * FROM estab WHERE city_name = ?", (city_name,)
             )
-            search_info = db.db_run_query(
+            args = db.db_run_query(
                 "SELECT DISTINCT id,search_date FROM search WHERE done = 1"
             )
 
-            for search_id, search_date in search_info:
+            for search_id, search_date in args:
                 output_folder = limpeza_path / search_date
                 output_folder.mkdir(parents=True, exist_ok=True)
 
@@ -554,40 +528,38 @@ def route_generate_file() -> dict:
     return {"status": "success", "path": str(output_folder)}
 
 
-# SocketIO
-@socketio.on("reload")
-def on_reload():
-    state.wait_reload = True
-
-
 @socketio.on("pause")
-def on_pause(cancel: bool = False) -> None:
-    """Rota responsável por pausar a pesquisa"""
+def on_pause() -> dict:
+    """Pausa a pesquisa atual, mantendo seu estado no banco de dados."""
+
     state.wait_reload = True
 
-    scraper = state.scraper
+    state.pause = True
+    state.cancel = False
 
-    if cancel != False:
-        state.cancel = True
-        if scraper is not None:
-            scraper.pause(True)
-    else:
-        if scraper is not None:
-            scraper.pause()
-        state.pause = True
+    assert state.scraper is not None
+    state.scraper.pause(cancel=False)
+
+    return {"status": "success"}
 
 
 @socketio.on("cancel")
 def on_cancel() -> dict:
-    """Rota responsável por pausar a pesquisa"""
+    """Cancela a pesquisa atual e deleta os dados dela no banco de dados."""
 
     state.wait_reload = True
+
     state.db_manager.db_run_query("DELETE FROM search WHERE id = ?", (state.search_id,))
 
-    return response_ok()
+    state.pause = False
+    state.cancel = True
 
+    assert state.scraper is not None
+    state.scraper.pause(cancel=True)
 
-def response_ok() -> dict:
+    if state.search_id is None:
+        return {"status": "error"}
+
     return {"status": "success"}
 
 
@@ -647,71 +619,42 @@ def on_exit() -> None:
     os._exit(0)
 
 
-# Inicia pesquisa
-@socketio.on("search")
-def on_search(search_info) -> None:
-    """Rota responsável por iniciar a pesquisa."""
+def attempt_search(args: dict) -> None:
+    """Inicia a pesquisa."""
 
     db = state.db_manager
 
-    search = db.db_run_query(
-        "SELECT id FROM search WHERE done = 0 AND search_date = ? ORDER BY city_name ASC",
-        (str(date.today()),),
-    )
+    search_id = db.get_incomplete_search_id()
 
-    search_id = search[0][0] if len(search) != 0 else None
+    is_backup = args["is_backup"]
+    backup_info = db.get_backup(search_id) if is_backup else None
 
-    backup_info = db.db_get_backup(search_id)
+    if backup_info is not None:
+        (_, _, done, *_) = backup_info
+        if done == 1:
+            emit("showNotification", "A pesquisa já estava finalizada.", broadcast=True)
+            # TODO: salvar a pesquisa do backup?
+            return
 
-    if len(backup_info) != 0 and search_info["backup"] == 1:
-        (
-            active,
-            city,
-            done,
-            estab_info,
-            product_info,
-            search_id,
-            duration,
-            progress_value,
-        ) = backup_info[0]
-        estab_info = json.loads(estab_info)
-        estab_names = estab_info["names"]
-        estab_data = estab_info["info"]
-        product = json.loads(product_info)
+        emit("showNotification", "Retomando pesquisa...", broadcast=True)
+        opts = ScraperOptions.from_backup_info(backup_info)
+        scrap = Scraper(opts, state)
 
-        if done == 0:
-            emit(
-                "captcha",
-                {"type": "notification", "message": "Retomando pesquisa..."},
-                broadcast=True,
-            )
-
-            opts = ScraperOptions(
-                locals=estab_data,
-                city=city,
-                locals_name=estab_names,
-                product_info=product,
-                active=active,
-                id=search_id,
-                backup=False,
-                duration=duration,
-                progress_value=progress_value,
-            )
-            scrap = Scraper(opts, state)
-
+        estab_data = opts.locals
     else:
-        if search_info["backup"] == 1 and len(backup_info) != 0:
-            db.db_run_query("DELETE FROM search WHERE id = ?", (search_id,))
-        search_id = db.db_save_search(0, search_info["city"], 0)
+        city = args["city"]
+        search_id = db.db_save_search(False, city, 0)
         active = "0.0"
-        city = search_info["city"]
-        estab_names = json.loads(search_info["names"])
+        estab_names = json.loads(args["names"])
         estabs = db.db_get_estab()
         product = db.db_get_product()
+        duration = 0
 
-        estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
-
-        progress_value = 100 / len(product)
+        estab_data = [
+            (e_city, e_estab, *e_rest)
+            for (e_city, e_estab, *e_rest) in estabs
+            if e_city == city and e_estab in estab_names
+        ]
 
         opts = ScraperOptions(
             locals=estab_data,
@@ -721,83 +664,53 @@ def on_search(search_info) -> None:
             active=active,
             id=search_id,
             backup=False,
-            duration=0,
-            progress_value=progress_value,
+            duration=duration,
         )
+        opts.save_as_backup(db=db, is_done=False)
         scrap = Scraper(opts, state)
-
-        db.db_save_backup(
-            {
-                "active": "0.0",
-                "city": city,
-                "done": 0,
-                "estab_info": json.dumps({"names": estab_names, "info": estab_data}),
-                "product_info": json.dumps(product),
-                "search_id": search_id,
-                "duration": 0,
-                "progress_value": progress_value,
-            }
-        )
 
     state.scraper = scrap
     state.search_id = search_id
     state.cancel = False
     state.pause = False
 
-    try:
-        result = scrap.run()
+    success = scrap.run()
+    if not success:
+        state.cancel = True
+        state.pause = True
 
-        if not result:
-            emit(
-                "captcha",
-                {"type": "chrome", "installed": False},
-                broadcast=True,
-            )
-            state.cancel = True
-            state.pause = True
+    if not state.cancel and not state.pause:
+        emit("showNotification", "Pesquisa concluída.", broadcast=True)
 
-        if not state.cancel and not state.pause:
-            emit(
-                "captcha",
-                {"type": "notification", "message": "Pesquisa concluida."},
-                broadcast=True,
-            )
-            emit(
-                "captcha",
-                {"type": "progress", "done": 1},
-                broadcast=True,
-            )
-            state.wait_reload = True
-            # search_id = xlsx_to_bd(db, search_info["city"])
+        emit(
+            "captcha",
+            {"type": "progress", "done": 1},
+            broadcast=True,
+        )
+        state.wait_reload = True
 
-            # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
-            db_to_xlsx(db, search_id, estab_data, city, path)
+        # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
+        db_to_xlsx(db, search_id, estab_data, city, path)
 
-    except Exception:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
 
-        search_info["error"] = search_info.get("error", 0) + 1
+@socketio.on("search")
+def on_search(args: dict) -> None:
+    error_count = 0
 
-        if search_info < 4:
-            emit(
-                "captcha",
-                {
-                    "type": "notification",
-                    "message": "Ocorreu um erro durante a pesquisa, a pesquisa será reiniciada, aguarde um instante.",
-                },
-                broadcast=True,
-            )
-            on_search(search_info)
-        else:
-            emit(
-                "captcha",
-                {
-                    "type": "error",
-                    "message": "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.",
-                },
-                broadcast=True,
-            )
+    while True:
+        try:
+            attempt_search(args)
+        except Exception:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+
+            error_count += 1
+
+            if error_count >= 4:
+                emit("captcha.error", "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.", broadcast=True)
+                return
+
+            emit("showNotification", "Ocorreu um erro durante a pesquisa; ela será reiniciada, aguarde um instante.", broadcast=True)
 
 
 @app.context_processor
@@ -844,9 +757,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # log = logging.getLogger("werkzeug")
-    # log.disabled = True
-
     # cli = sys.modules["flask.cli"]
     # def noop(*_): pass
     # cli.show_server_banner = noop

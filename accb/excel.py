@@ -16,7 +16,7 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
     """Função para debug, injeta uma pesquisa com nome da cidade_todos.xlsx no banco de dados."""
     df = pd.read_excel("{}_todos.xlsx".format(city_name), skiprows=0, index_col=0)
     duration = get_time_hms(time())
-    search_id = db.db_save_search(1, city_name, duration["minutes"])
+    search_id = db.db_save_search(True, city_name, duration["minutes"])
 
     for _index, row in df.iterrows():
         (name, local, keyword, adress, price) = row

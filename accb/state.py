@@ -28,5 +28,5 @@ class State:
     pause: bool = False
     # TODO: explicação
 
-    search_id: str = ""
-    # TODO: explicação
+    search_id: Optional[int] = None
+    """O ID da pesquisa atualmente ocorrendo (None se nenhuma pesquisa estiver ocorrendo)"""

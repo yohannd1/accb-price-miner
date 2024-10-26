@@ -665,18 +665,18 @@ $(document).ready(() => {
     });
 
     const searchLoaded = () => {
-        if (search || !is_chrome_installed)
+        if (!search || !is_chrome_installed)
             return;
 
-        if (confirm("Uma pesquisa foi encontrada em progresso, deseja retomá-la?")) {
+        if (confirm("Uma pesquisa foi encontrada em progresso - deseja retomá-la?")) {
             $("#backup-button").addClass("disable");
             $("#config_path").addClass("disable");
             $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
             updateProgressBar(0.0);
-            socket.emit("search", { names: "", city: "", backup: 1});
+            socket.emit("search", { is_backup: true });
 
             $("#main-navigation").tabs("select", "progress");
-            $("#main-navigation  a").addClass("disabled");
+            $("#main-navigation a").addClass("disabled");
         }
     }
 
@@ -685,21 +685,35 @@ $(document).ready(() => {
         updateProgressBar(parseFloat(msg.value));
     });
 
+    socket.on("showNotification", (msg) => showMessage(msg));
+
+    socket.on("captcha.error", (msg) => {
+        $("#progress_bar").css("width", "0%");
+        $("#progress_bar").html("0%");
+        $('ul.tabs').tabs('select', 'pesquisar');
+        $("#progress h5").html(`Iniciando Pesquisa`);
+        $(".tabs a").addClass('enable');
+        $(".log_item").remove();
+        $("#progress_log").css("height", "100%");
+        showMessage(msg, { notification: true });
+        alert(msg);
+    });
+
     /**
      * Função responsável por tratar todas as emisões do tipo catpcha vinda do servidor.
      * @param  {route} 'captcha'
      * @param  {json} msg
      */
     socket.on('captcha', (msg) => {
-        if (msg['type'] == 'notification') {
+        if (msg.type == 'notification') {
             showMessage(msg.message);
-        } else if (msg['type'] == 'progress') {
+        } else if (msg.type == 'progress') {
             $("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
 
-            if (msg.value !== undefined)
-                updateProgressBar(parseFloat(msg.value));
+            if (msg.value !== undefined) // FIXME: remover
+                console.warn(`Valor de progresso recebido, mas ignorado (API velha): ${msg.value}`);
 
-            if (msg['done'] == 1) {
+            if (msg.done == 1) {
                 // console.log("DONE");
                 $("#progress_bar").css("width", "0%");
                 $("#progress_bar").html("0%");
@@ -714,21 +728,16 @@ $(document).ready(() => {
                 $(".log_item").remove();
                 window.location.reload(true);
             }
-
-        } else if (msg['type'] == 'captcha') {
+        } else if (msg.type == 'captcha') {
             showMessage(msg.message);
-        } else if (msg['type'] == 'log') {
-
-            var log_data = JSON.parse(msg['data'])
-            // console.table(log_data);
+        } else if (msg.type == 'log') {
+            var log_data = JSON.parse(msg.data);
             $("#progress_log").css("height", "fit-content");
             log_data.map((data) => {
                 $("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
             });
-
             $("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
-
-        } else if (msg['type'] == 'cancel') {
+        } else if (msg.type == 'cancel') {
             $("#progress_bar").css("width", "0%");
             $("#progress_bar").html("0%");
             $('ul.tabs').tabs('select', 'pesquisar');
@@ -737,15 +746,12 @@ $(document).ready(() => {
             $(".log_item").remove();
             $("#progress_log").css("height", "100%");
             socket.emit('cancel');
-            new Notification("ACCB - Pesquisa Automática", {
-                body: msg['message'],
-            });
+            showMessage(msg.message, { notification: true });
             $(".pause-overlay").fadeOut(500);
             $("#pause-loader").fadeOut(500);
             socket.emit('reload');
             window.location.reload(true);
-
-        } else if (msg['type'] == 'pause') {
+        } else if (msg.type == 'pause') {
             $("#progress_bar").css("width", "0%");
             $("#progress_bar").html("0%");
             $('ul.tabs').tabs('select', 'pesquisar');
@@ -753,12 +759,11 @@ $(document).ready(() => {
             $(".tabs a").addClass('enable');
             $(".log_item").remove();
             $("#progress_log").css("height", "100%");
-            new Notification("ACCB - Pesquisa Automática", {
-                body: msg['message'],
-            });
+            showMessage(msg.message, { notification: true });
             $("#pause-loader").fadeOut(500);
             $(".pause-overlay").fadeOut(500);
-        } else if (msg['type'] == 'error') {
+        } else if (msg.type == 'error') {
+            console.warn("DEPRECATED! Use captcha.error signal instead"); // FIXME: tirar isso aqui
             $("#progress_bar").css("width", "0%");
             $("#progress_bar").html("0%");
             $('ul.tabs').tabs('select', 'pesquisar');
@@ -766,10 +771,8 @@ $(document).ready(() => {
             $(".tabs a").addClass('enable');
             $(".log_item").remove();
             $("#progress_log").css("height", "100%");
-            new Notification("ACCB - Pesquisa Automática", {
-                body: msg['message'],
-            });
-            alert(msg['message'])
+            showMessage(msg.message, { notification: true });
+            alert(msg.message);
         }
     });
 
@@ -877,39 +880,28 @@ $(document).ready(() => {
     custom_select_date();
     custom_select_search();
 
-
     $("#sec-navigation").tabs({
-        onShow: () => { },
+        onShow: () => {},
     })
-    /**
-     * Listener responsável por parar a pesquisa.
-     * @param  {id} "#pause"
-     */
-    $("#pause").click(function (e) {
 
+    // Listener responsável por parar a pesquisa.
+    $("#pause").click((e) => {
         e.preventDefault();
-        if (window.confirm(`Realmente deseja PARAR a pesquisa ? Todo o progresso será salvo.`)) {
-            socket.emit('pause');
-            $("#progress h5").html(`Parando Pesquisa`);
+        if (window.confirm(`Deseja realmente PAUSAR a pesquisa? Todo o progresso será salvo.`)) {
+            socket.emit("pause");
+            $("#progress h5").html(`Pausando pesquisa`);
             $(".pause-overlay").fadeIn(500);
             $("#pause-loader").fadeIn(500);
             $(window).off();
         }
-
-
     });
-    /**
-     * Listener responsável por cancelar a pesquisa.
-     * @param  {id} "#cancel"
-     */
-    $("#cancel").click(function (e) {
 
+    // Listener responsável por cancelar a pesquisa.
+    $("#cancel").click((e) => {
         e.preventDefault();
-        // $(this).html("PAUSANDO PESQUISA");
-        // $(this).addClass('disable');
-        if (window.confirm(`Realmente deseja CANCELAR a pesquisa ? Todos os dados serão EXCLUIDOS.`)) {
-            socket.emit('pause', { data: true });
-            $("#progress h5").html(`Cancelando Pesquisa`);
+        if (window.confirm(`Deseja realmente CANCELAR a pesquisa? Todos os dados da pesquisa serão EXCLUÌDOS.`)) {
+            socket.emit("cancel");
+            $("#progress h5").html(`Cancelando pesquisa`);
             $(".pause-overlay").fadeIn(500);
             $("#pause-loader").fadeIn(500);
             $(window).off();
@@ -921,7 +913,6 @@ $(document).ready(() => {
     // ACUCAR CRISTAL, ACUCAR CRISTAL 1KG, A
 
     $('body').on('keyup', '#keywords', function (e) {
-
         var pattern = new RegExp(',+(?=[/\s])', 'i');
         var keywords = $('#keywords').val().toUpperCase();
         var result = keywords.replace(pattern, "");
@@ -1090,7 +1081,6 @@ $(document).ready(() => {
     });
 
     // Abrir modal dinamico de estab
-
     $('body').on('click', '.edit', (event) => {
         event.preventDefault();
 
@@ -1103,11 +1093,9 @@ $(document).ready(() => {
             let estab_name = $(event.currentTarget).attr('value');
             get_modal_content(estab_name, JSON.parse(response));
         });
-
     });
 
     // Abrir modal dinamico de product
-
     $('body').on('click', '.edit-product', (event) => {
         event.preventDefault();
 
@@ -1118,12 +1106,9 @@ $(document).ready(() => {
 
         let product_name = $(event.currentTarget).attr('value').toUpperCase();
         get_modal_content_product(product_name);
-
-
     });
 
     // Cancelar edição de estab
-
     $('body').on('click', '#cancel', (event) => {
         event.preventDefault();
 
@@ -1133,7 +1118,6 @@ $(document).ready(() => {
     });
 
     // Salvar edição de estab
-
     $('body').on('click', '#save-edit', (event) => {
         event.stopPropagation();
         event.preventDefault();
@@ -1161,27 +1145,17 @@ $(document).ready(() => {
     });
 
     // Botões de seleção de estab
-
     $('body').on('click', 'a.estab', function (e) {
-
         let id = $(this).attr('id');
-
         if ($(`#${id}`).hasClass('select-item-active')) {
-
             $(`#${id}`).removeClass('select-item-active');
-
         } else {
-
             $(`#${id}`).addClass('select-item-active');
-
         }
-
     });
 
     // Botões de seleção de cidade
-
     $('.city').click(function (e) {
-
         let id = $(this).attr('id');
         let value = $(this).attr('value');
         $('.estab').removeClass("select-item-active"); ''
@@ -1190,22 +1164,17 @@ $(document).ready(() => {
             city = value;
             $(`#${id}`).addClass('select-item-active');
         } else {
-
             if (city === value) {
                 $(`#${id}`).removeClass('select-item-active');
                 city = undefined;
             } else {
                 Materialize.toast('Você só pode selecionar um municipio por vez ...', 1000, 'rounded');
             }
-
         }
-
     });
 
     // Botão de iniciar pesquisa
-
     $("#start").click((e) => {
-
         e.preventDefault();
 
         if (!$('.estab').hasClass("select-item-active")) {
@@ -1220,16 +1189,10 @@ $(document).ready(() => {
             var names = [];
 
             estabs.each(function (estab) {
-
                 names.push($(this).attr("value"));
-
             });
 
-            var form_data = { names: JSON.stringify(names), city: local_city, backup: 0 };
-            // console.table(form_data);
-
-
-            socket.emit('search', form_data);
+            socket.emit('search', { names: JSON.stringify(names), city: local_city, is_backup: false });
             $('ul.tabs').tabs('select', 'progress');
             $("#main-navigation a").addClass("disable");
             $(window).on('unload', function (event) {

@@ -1,5 +1,7 @@
 """Módulo de pesquisa via scraping."""
 
+from __future__ import annotations
+
 import re
 import time
 import os, sys
@@ -28,6 +30,7 @@ from accb.database import DatabaseManager
 
 URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
 
+
 @dataclass
 class ScraperOptions:
     """Armazena informações que instruem a pesquisa feita pelo Scraper."""
@@ -52,6 +55,7 @@ class ScraperOptions:
     """Valor decimal de indexes ativos 1.1, onde 1. é o index do produto e .1 é o index da palavra chave."""
 
     id: Any
+    # TODO: renomear p/ search_id
     """ID da pesquisa atual."""
 
     # TODO: isso é usado? pelo jeito não. mas acho que seria bom usar...
@@ -61,15 +65,54 @@ class ScraperOptions:
     duration: Any
     """A duração de execução da pesquisa atual (necessário para reinicialização através de backup)."""
 
-    progress_value: Any
-    """Valor de soma da barra de pesquisa, caso seja adicionado um novo produto é necessário manter os dados da pesquisa anterior."""
-    # FIXME: deletar isso? não usa mais, eu acho
-
     url: str = URL_PRECODAHORA
     """URL do site a ser pesquisado"""
 
+    @staticmethod
+    def from_backup_info(backup_info: tuple) -> ScraperOptions:
+        (
+            active,
+            city,
+            _done,
+            estab_info,
+            product_info,
+            search_id,
+            duration,
+            _progress_value,
+        ) = backup_info
+        estab_info = json.loads(estab_info)
+        estab_names = estab_info["names"]
+        estab_data = estab_info["info"]
+        product = json.loads(product_info)
 
-class ScraperError(Exception): ...
+        return ScraperOptions(
+            active=active,
+            city=city,
+            locals=estab_data,
+            locals_name=estab_names,
+            product_info=product,
+            id=search_id,
+            backup=False,
+            duration=duration,
+        )
+
+    def save_as_backup(self, db: DatabaseManager, is_done: bool) -> None:
+        # TODO: https://stackoverflow.com/questions/65196658/nice-way-to-turn-a-dict-into-a-typeddict
+        data = {
+            "active": self.active,
+            "city": self.city,
+            "done": int(is_done),
+            "estab_info": json.dumps({"names": self.locals_name, "info": self.locals}),
+            "product_info": json.dumps(self.product_info),
+            "search_id": self.id,
+            "duration": 0,
+            "progress_value": -1,
+        }
+        db.db_save_backup(data)
+
+
+class ScraperError(Exception):
+    pass
 
 
 class Scraper:
@@ -86,6 +129,7 @@ class Scraper:
 
         self.driver: Optional[Chrome] = None
         """Instância do navegador do selenium."""
+        # TODO: fazer isso não ser opcional
 
         self.stop = False
         """Variável de controle para parar a execução da pesquisa."""
@@ -108,19 +152,17 @@ class Scraper:
         except urllib.error.URLError:
             return False
 
-    def pause(self, cancel=False):
-        """Seta as varáveis de controle do programa (parada, cancelar e saída)."""
+    def pause(self, cancel: bool = False) -> None:
+        """Seta as variáveis de controle do programa (parada, cancelar e saída)."""
 
         self.cancel = cancel
         self.exit = True
         self.stop = True
 
-    # CHECK
-
-    def exit_thread(self, error=False):
+    def exit_thread(self, error: bool = False) -> None:
         """Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a ou cancele manualmente."""
-        if error:
 
+        if error:
             emit(
                 "search",
                 {
@@ -130,12 +172,11 @@ class Scraper:
                 broadcast=True,
             )
 
+            assert self.driver is not None
             self.driver.close()
             self.driver.quit()
-            return
 
         elif self.cancel:
-
             emit(
                 "search",
                 {
@@ -144,12 +185,12 @@ class Scraper:
                 },
                 broadcast=True,
             )
+
+            assert self.driver is not None
             self.driver.close()
             self.driver.quit()
-            return
 
         elif self.exit:
-
             emit(
                 "search",
                 {
@@ -158,9 +199,10 @@ class Scraper:
                 },
                 broadcast=True,
             )
+
+            assert self.driver is not None
             self.driver.close()
             self.driver.quit()
-            return
 
     def get_data(self, product: str, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
@@ -205,7 +247,7 @@ class Scraper:
                         "keyword": keyword,
                     }
                 )
-            except Exception: # FIXME: parar de usar esse except?
+            except Exception:  # FIXME: parar de usar esse except?
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
                 return
@@ -246,6 +288,8 @@ class Scraper:
     def open_captcha_and_warn(self) -> None:
         """Abre a URL de captcha, avisa e aguarda o aviso ser fechado."""
 
+        assert self.driver is not None
+
         webbrowser.open(self.options.url)
 
         message = "O Captcha foi ativado. Foi aberta uma aba no seu navegador - resolva-o lá e depois pressione OK nesta mensagem."
@@ -267,7 +311,7 @@ class Scraper:
 
         self.driver.back()
 
-    def captcha_wait_loop(self) -> None: # FIXME: rename
+    def captcha_wait_loop(self) -> None:  # FIXME: rename
         """Abre o captcha e aguarda o usuário resolver o captcha."""
 
         # TODO: trocar nome da função
@@ -284,9 +328,9 @@ class Scraper:
     def run(self) -> bool:
         """Realiza a pesquisa na plataforma do Preço da Hora Bahia. Retorna se a pesquisa funcionou."""
 
-        # FIXME: retornar exception caso a pesquisa tenha falhado, eu acho.
+        emit("search.updateProgressBar", {"value": 0.0}, broadcast=True)
 
-        log(f"Iniciando pesquisa...")
+        # FIXME: retornar exception caso a pesquisa tenha falhado, eu acho.
 
         times = 4
         """Multiplicador para tempo de espera"""
@@ -296,12 +340,6 @@ class Scraper:
             driver.get(self.options.url)
         except Exception:
             return False
-
-        emit(
-            "captcha",
-            {"type": "notification", "message": "Iniciando pesquisa ..."},
-            broadcast=True,
-        )
 
         try:
             WebDriverWait(driver, 5).until(

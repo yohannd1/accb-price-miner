@@ -13,7 +13,7 @@ import os
 from os import path
 import json
 
-from typing import Any, Sequence, Generator
+from typing import Any, Sequence, Generator, Optional, TypedDict
 
 from accb.utils import log
 
@@ -191,14 +191,15 @@ class DatabaseManager:
             query = """INSERT INTO product(product_name, keywords) VALUES(?, ?)"""
             cursor.execute(query, (product_name, keywords))
 
-    def db_save_search(self, done, city_name, duration) -> int:
+    def db_save_search(self, done: bool, city_name: str, duration: int) -> int:
         """Salva as pesquisas no banco de dados. Retorna o ID da última pesquisa"""
         # TODO: analisar isso direito - tá funcionando certo?
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """INSERT INTO search(done, city_name, search_date, duration) VALUES(?, ?, ?, ?)"""
-            cursor.execute(query, (done, city_name, str(date.today()), duration))
+            print(f"{city_name=}")
+            cursor.execute(query, (int(done), city_name, str(date.today()), duration))
             return cursor.lastrowid
 
     def db_save_estab(self, estab):
@@ -217,7 +218,7 @@ class DatabaseManager:
                 ),
             )
 
-    def db_save_backup(self, backup):
+    def db_save_backup(self, backup: Backup) -> None:
         """Salva o estado do backup no banco de dados."""
 
         with self.db_connection() as conn:
@@ -273,7 +274,6 @@ class DatabaseManager:
             cities = cursor.fetchall()
             return cities
 
-    # query
     def db_get_search(self, where: str, equals: Any = None) -> list[Any]:
         """Seleciona uma pesquisa do banco de dados."""
 
@@ -290,7 +290,6 @@ class DatabaseManager:
             res = cursor.execute(query, args)
             return res.fetchall()
 
-    # query
     def db_get_search_item(self, search_id=None):
         """Seleciona itens de uma pesquisa do banco de dados."""
 
@@ -306,10 +305,11 @@ class DatabaseManager:
             res = cursor.execute(query, args)
             return res.fetchall()
 
-    # query
-    def db_get_backup(self, id=None):
-        """Seleciona um backup do banco de dados."""
+    def get_backup(self, id: Optional[int] = None) -> Optional[tuple]:
+        """Seleciona um dos backups."""
+        # FIXME: o que acontece se tiver mais de um?
 
+        args: tuple
         if id is None:
             query = "SELECT * FROM backup"
             args = ()
@@ -320,7 +320,7 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             res = cursor.execute(query, args)
-            return res.fetchall()
+            return res.fetchone()
 
     def db_get_product(self):
         """Seleciona produtos do banco de dados."""
@@ -343,7 +343,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """ UPDATE estab SET city_name=?, estab_name=?, adress=?, web_name=? WHERE estab_name = ? """
+            query = """UPDATE estab SET city_name=?, estab_name=?, adress=?, web_name=? WHERE estab_name = ?"""
             cursor.execute(
                 query,
                 (
@@ -360,7 +360,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """ UPDATE product SET product_name=?, keywords=? WHERE product_name = ? """
+            query = """UPDATE product SET product_name = ?, keywords = ? WHERE product_name = ?"""
             cursor.execute(
                 query,
                 (product["product_name"], product["keywords"], product["primary_key"]),
@@ -371,7 +371,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """ UPDATE city SET city_name = ? WHERE city_name = ? """
+            query = """UPDATE city SET city_name = ? WHERE city_name = ?"""
             cursor.execute(query, (city["city_name"], city["primary_key"]))
 
     def db_update_backup(self, backup):
@@ -379,7 +379,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """ UPDATE backup SET active = ?, city = ?, done = ?, estab_info = ?, product_info = ?, duration = ? WHERE search_id = ? """
+            query = """UPDATE backup SET active = ?, city = ?, done = ?, estab_info = ?, product_info = ?, duration = ? WHERE search_id = ?"""
             cursor.execute(
                 query,
                 (
@@ -399,7 +399,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """ UPDATE search SET done = ?, duration = ? WHERE id = ? """
+            query = """UPDATE search SET done = ?, duration = ? WHERE id = ?"""
             cursor.execute(query, (search["done"], search["duration"], search["id"]))
 
     def db_run_query(self, query: str, args: tuple = ()) -> list[Any]:
@@ -415,17 +415,17 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """ UPDATE keyword SET keyword = ?, rate = ?, similarity = ? WHERE id = ? """
+            query = """UPDATE keyword SET keyword = ?, rate = ?, similarity = ? WHERE id = ?"""
             cursor.execute(
                 query, (keyword["keyword"], keyword["rate"], keyword["similarity"])
             )
 
-    def db_save_keyword(self, keyword):
+    def db_save_keyword(self, keyword) -> None:
         """Salva uma palavra chave no banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """ INSERT INTO keyword(product_name, keyword, rate, similarity) VALUES(?, ?, ?, ?) """
+            query = """INSERT INTO keyword(product_name, keyword, rate, similarity) VALUES(?, ?, ?, ?)"""
             cursor.execute(
                 query,
                 (
@@ -445,3 +445,25 @@ class DatabaseManager:
             raise ValueError(f"valor não passou o check de argumento seguro para query: {repr(a)}")
 
         return fmt.format(*args)
+
+    def get_incomplete_search_id(self) -> Optional[int]:
+        # query = "SELECT id FROM search WHERE done = 0 AND search_date = ? ORDER BY city_name ASC"
+        # result = db.db_run_query(query, (str(date.today(),)))
+
+        query = "SELECT id FROM search WHERE done = 0 ORDER BY search_date DESC"
+        result = self.db_run_query(query)
+
+        if len(result) == 0:
+            return None
+
+        return result[0][0]
+
+class Backup(TypedDict):
+    active: str
+    city: str
+    done: str
+    estab_info: list[str]
+    product_info: list[str]
+    search_id: str
+    duration: int
+    progress_value: float
