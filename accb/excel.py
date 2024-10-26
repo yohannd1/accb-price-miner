@@ -90,7 +90,15 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path) -> Path:
 
     return output_folder
 
-def export_to_xlsx(db: DatabaseManager, search_id, filter_by_address: bool, output_path: Path, web_name, adress) -> None:
+
+def export_to_xlsx(
+    db: DatabaseManager,
+    search_id,
+    filter_by_address: bool,
+    output_path: Path,
+    web_name,
+    adress,
+) -> None:
     log(f"Writing excel file to {output_path}...")
 
     products = db.run_query(
@@ -157,4 +165,3 @@ def export_to_xlsx(db: DatabaseManager, search_id, filter_by_address: bool, outp
         worksheet.column_dimensions[column].width = adjusted_width
 
     writer.close()
-

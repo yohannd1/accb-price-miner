@@ -40,8 +40,10 @@ def log_error(err):
 def is_windows() -> bool:
     return sys.platform == "win32"
 
+
 def is_linux() -> bool:
     return sys.platform.startswith("linux")
+
 
 def is_macos() -> bool:
     return sys.platform == "darwin"

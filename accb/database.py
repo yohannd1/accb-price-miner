@@ -19,6 +19,7 @@ from accb.utils import log
 
 DB_PATH = "accb.sqlite"
 
+
 class DatabaseConnection:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._closed: bool = False
@@ -112,7 +113,7 @@ class DatabaseManager:
     def import_database(self, file_path=None) -> None:
         """Importa um arquivo sql e injeta ele no banco de dados."""
 
-        ENCODING = "utf-8" # or "latin-1"?
+        ENCODING = "utf-8"  # or "latin-1"?
 
         if file_path is not None:
             sql_script = file_path.read().decode(ENCODING)
@@ -262,7 +263,9 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = self.safe_query_format(""" DELETE FROM {} WHERE {} = ? """, table, where)
+            query = self.safe_query_format(
+                """ DELETE FROM {} WHERE {} = ? """, table, where
+            )
             cursor.execute(query, (value,))
 
     def get_city(self):
@@ -282,7 +285,9 @@ class DatabaseManager:
             query = """SELECT * FROM search ORDER BY id ASC"""
             args = ()
         else:
-            query = self.safe_query_format(""" SELECT * FROM search WHERE {} = ? ORDER BY id ASC """, where)
+            query = self.safe_query_format(
+                """ SELECT * FROM search WHERE {} = ? ORDER BY id ASC """, where
+            )
             args = (equals,)
 
         with self.db_connection() as conn:
@@ -297,7 +302,9 @@ class DatabaseManager:
             query = "SELECT * FROM search_item ORDER BY search_id ASC"
             args = ()
         else:
-            query = "SELECT * FROM search_item WHERE search_id = ? ORDER BY search_id ASC"
+            query = (
+                "SELECT * FROM search_item WHERE search_id = ? ORDER BY search_id ASC"
+            )
             args = (search_id,)
 
         with self.db_connection() as conn:
@@ -442,7 +449,9 @@ class DatabaseManager:
         for a in args:
             if patt.match(a) is not None:
                 continue
-            raise ValueError(f"valor não passou o check de argumento seguro para query: {repr(a)}")
+            raise ValueError(
+                f"valor não passou o check de argumento seguro para query: {repr(a)}"
+            )
 
         return fmt.format(*args)
 
@@ -457,6 +466,7 @@ class DatabaseManager:
             return None
 
         return result[0][0]
+
 
 class Backup(TypedDict):
     active: str

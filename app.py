@@ -345,9 +345,7 @@ def route_update_city() -> dict:
 
     city_name = request.args["city_name"]
     primary_key = request.args["primary_key"]
-    state.db_manager.update_city(
-        {"city_name": city_name, "primary_key": primary_key}
-    )
+    state.db_manager.update_city({"city_name": city_name, "primary_key": primary_key})
     state.wait_reload = True
 
     return {
@@ -698,10 +696,18 @@ def on_search(args: dict) -> None:
             error_count += 1
 
             if error_count >= 4:
-                emit("captcha.error", "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.", broadcast=True)
+                emit(
+                    "captcha.error",
+                    "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.",
+                    broadcast=True,
+                )
                 return
 
-            emit("showNotification", "Ocorreu um erro durante a pesquisa; ela será reiniciada, aguarde um instante.", broadcast=True)
+            emit(
+                "showNotification",
+                "Ocorreu um erro durante a pesquisa; ela será reiniciada, aguarde um instante.",
+                broadcast=True,
+            )
 
 
 @app.context_processor
