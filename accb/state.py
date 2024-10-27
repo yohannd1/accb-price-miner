@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from pathlib import Path
 
 if TYPE_CHECKING:

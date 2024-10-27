@@ -35,6 +35,8 @@ state = State(db_manager=DatabaseManager())
 
 SERVER_URL = "http://127.0.0.1"
 PORT = 5000
+ENCODING = "utf-8"
+WATCHDOG_TIMEOUT = 8
 
 
 def timeout_exit() -> None:
@@ -42,7 +44,7 @@ def timeout_exit() -> None:
     os._exit(0)  # forçar a fechar o programa
 
 
-watchdog = LockedVar(RestartableTimer(8, timeout_exit))
+watchdog = LockedVar(RestartableTimer(WATCHDOG_TIMEOUT, timeout_exit))
 
 
 def is_port_in_use(port) -> bool:
@@ -354,7 +356,7 @@ def route_delete_city() -> dict:
 def route_ask_output_path() -> dict:
     state.output_path = ask_user_directory()
     if state.output_path is None:
-        raise Exception("Nenhum diretório selecionado")
+        raise ValueError("Nenhum diretório selecionado")
 
     state.output_path.mkdir(exist_ok=True)
 
@@ -381,13 +383,12 @@ def route_delete_search() -> dict:
 def route_export_database() -> dict:
     """Rota responsável por exportar os dados do banco"""
 
-    OUTPUT_FILENAME = "importar.sql"
-    TABLES = ("city", "estab", "product")
-    ENCODING = "utf-8"
+    output_filename = "importar.sql"
+    tables = ("city", "estab", "product")
 
     db = state.db_manager
-    with open(OUTPUT_FILENAME, "w+", encoding=ENCODING) as f:
-        for table in TABLES:
+    with open(output_filename, "w+", encoding=ENCODING) as f:
+        for table in tables:
             for line in db.dump_table(table):
                 f.write(f"{line}\n")
 
@@ -550,8 +551,6 @@ def on_disconnect() -> None:
 
     state.connected_count -= 1
     log(f"Conexão fechada; total: {state.connected_count}")
-
-    WATCHDOG_TIMEOUT = 8
 
     if state.connected_count <= 0:
         if state.wait_reload:
@@ -733,6 +732,7 @@ def main() -> None:
     Timer(1, callback).start()
 
     if is_port_in_use(PORT):
-        print(f"Porta {PORT} já em uso - o programa já está rodando?")
+        log(f"Porta {PORT} já em uso - o programa já está rodando?")
     else:
         socketio.run(app, debug=debug_enabled, use_reloader=False, port=PORT)
+    log("X***")

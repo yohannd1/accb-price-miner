@@ -3,7 +3,6 @@
 from typing import Any
 from time import time
 from pathlib import Path
-import os
 
 import pandas as pd
 from openpyxl.styles import Border, Side, Alignment
@@ -48,7 +47,7 @@ def db_to_xlsx(
     output_folder = path / f"{get_time_filename()} {city}"
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    for city, name, adress, web_name in estab_data:
+    for _city, name, adress, web_name in estab_data:
         output_path = output_folder / f"{name}.xlsx"
 
         export_to_xlsx(
@@ -76,7 +75,7 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path: Path) -> Path:
     output_folder = path / "Todos" / f"{get_time_filename()} {city}"
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    for id, product, web_name, adress, price, keyword in result:
+    for _id, _product, web_name, adress, _price, _keyword in result:
         output_path = output_folder / f"{web_name}.xlsx"
 
         export_to_xlsx(
@@ -159,8 +158,7 @@ def export_to_xlsx(
         max_length = 0
         column = col[0].column_letter
         for cell in col:
-            if len(str(cell.value)) > max_length:
-                max_length = len(str(cell.value))
+            max_length = max(max_length, len(str(cell.value)))
         adjusted_width = (max_length + 2) * 1.2
         worksheet.column_dimensions[column].width = adjusted_width
 

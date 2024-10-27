@@ -3,24 +3,22 @@
 from __future__ import annotations
 
 import re
-import time
-import os, sys
+import sys
 import json
-import urllib.request
-from bs4 import BeautifulSoup
-from dataclasses import dataclass
-from typing import Any, Optional
-import time
+from time import sleep, time
 import webbrowser
 import traceback
+from typing import Any, Optional
+from dataclasses import dataclass
+from urllib.request import urlopen
+from urllib.error import URLError
 
-from flask_socketio import SocketIO, send, emit
-
+from bs4 import BeautifulSoup
+from flask_socketio import emit
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver import Chrome
 
 from accb.web_driver import open_chrome_driver
@@ -140,16 +138,18 @@ class Scraper:
         self.cancel = False
         """Variável de controle para cancelar a execução da pesquisa."""
 
-        self.start_time = time.time()
+        self.start_time = time()
         """Valor do tempo no inicio da pesquisa."""
 
-    def is_connected(self, test_url: str = "https://www.example.org/") -> bool:
+    @staticmethod
+    def is_connected(test_url: str = "https://www.example.org/") -> bool:
         """Confere a conexão com a URL_PRECODAHORA desejada."""
 
         try:
-            urllib.request.urlopen(test_url)
-            return True
-        except urllib.error.URLError:
+            with urlopen(test_url):
+                return True
+
+        except URLError:
             return False
 
     def pause(self, cancel: bool = False) -> None:
@@ -204,8 +204,9 @@ class Scraper:
             self.driver.close()
             self.driver.quit()
 
-    def get_data(self, product: str, keyword: str) -> None:
+    def get_data(self, _product: str, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
+        # FIXME: tirar argumento `_product`? ele não é usado
 
         assert self.driver is not None
         elements = self.driver.page_source
@@ -215,8 +216,8 @@ class Scraper:
         irrelevant_patt = re.compile(r"[^A-Za-z0-9,]+")
         money_patt = re.compile(r" R\$ \d+(,\d{1,2})")
 
-        def adjust_and_clean(input: str) -> str:
-            return irrelevant_patt.sub(" ", input).lstrip()
+        def adjust_and_clean(x: str) -> str:
+            return irrelevant_patt.sub(" ", x).lstrip()
 
         # search_item["search_id"], search_item["city_name"], search_item["estab_name"], search_item["web_name"], search_item["adress"], search_item["price"])
         for item in soup.find_all(True, {"class": "flex-item2"}):
@@ -281,7 +282,7 @@ class Scraper:
                 EC.presence_of_element_located((By.CLASS_NAME, "flash"))
             )
         except Exception:
-            time.sleep(1)
+            sleep(1)
             return False
 
         return True
@@ -333,8 +334,8 @@ class Scraper:
 
         # FIXME: retornar exception caso a pesquisa tenha falhado, eu acho.
 
+        # multiplicador para tempo de espera
         times = 4
-        """Multiplicador para tempo de espera"""
 
         try:
             driver = self.driver = open_chrome_driver()
@@ -368,10 +369,10 @@ class Scraper:
             )
         except Exception:
             self.captcha_wait_loop()
-            time.sleep(1)
+            sleep(1)
         finally:
             driver.find_element(By.CLASS_NAME, "location-box").click()
-            time.sleep(2 * times)
+            sleep(2 * times)
 
         # Botão que abre a opção de inserir o CEP
         try:
@@ -380,25 +381,25 @@ class Scraper:
             )
         except Exception:
             self.captcha_wait_loop()
-            time.sleep(1)
+            sleep(1)
         finally:
             driver.find_element(By.ID, "add-center").click()
-            time.sleep(2 * times)
+            sleep(2 * times)
 
         # Envia o MUNICIPIO desejado para o input
 
         driver.find_element(By.CLASS_NAME, "sbar-municipio").send_keys(
             self.options.city
         )
-        time.sleep(1)
+        sleep(1)
 
         # Pressiona o botão que realiza a pesquisa por MUNICIPIO
         driver.find_element(By.CLASS_NAME, "set-mun").click()
 
-        time.sleep(1)
+        sleep(1)
         driver.find_element(By.ID, "aplicar").click()
 
-        time.sleep(2 * times)
+        sleep(2 * times)
         product_count = len(self.options.product_info)
 
         for index, (product, keywords) in enumerate(
@@ -459,7 +460,7 @@ class Scraper:
 
                 log("~~ AFTER BACKUP")  # FIXME: remove(breakpoint)
 
-                time.sleep(1.5 * times)
+                sleep(1.5 * times)
 
                 log("~~ WILL GET PRODUCT BAR")  # FIXME: remove(breakpoint)
 
@@ -477,7 +478,7 @@ class Scraper:
 
                 for w in keyword:
                     search.send_keys(w)
-                    time.sleep(0.25)
+                    sleep(0.25)
 
                 log("~~ 2")  # FIXME: remove(breakpoint)
 
@@ -486,7 +487,7 @@ class Scraper:
 
                 log("~~ 3")  # FIXME: remove(breakpoint)
 
-                time.sleep(3 * times)
+                sleep(3 * times)
                 driver.page_source.encode("utf-8")
 
                 log("~~ 4")  # FIXME: remove(breakpoint)
@@ -507,40 +508,39 @@ class Scraper:
                     )
                 except Exception:
                     self.captcha_wait_loop()
-                    time.sleep(times)
+                    sleep(times)
 
-                finally:
-                    log("~~ 5.1")  # FIXME: remove(breakpoint)
-                    flag = 0
-                    while True:
-                        if self.stop:
-                            self.exit = True
-                            self.exit_thread()
-                            return True
-
-                        try:
-                            log("~~ 5.2")  # FIXME: remove(breakpoint)
-                            WebDriverWait(driver, 2 * times).until(
-                                EC.presence_of_element_located((By.ID, "updateResults"))
-                            )
-                            time.sleep(2 * times)
-                            driver.find_element(By.ID, "updateResults").click()
-                            flag = flag + 1
-
-                            if flag == 3:
-                                break
-                            log("~~ 5.4")  # FIXME: remove(breakpoint)
-                        except Exception:
-                            if not self.is_in_captcha():
-                                break
-                            self.captcha_wait_loop()
-
+                log("~~ 5.1")  # FIXME: remove(breakpoint)
+                flag = 0
+                while True:
                     if self.stop:
                         self.exit = True
                         self.exit_thread()
                         return True
 
-                    self.get_data(product, keyword)
+                    try:
+                        log("~~ 5.2")  # FIXME: remove(breakpoint)
+                        WebDriverWait(driver, 2 * times).until(
+                            EC.presence_of_element_located((By.ID, "updateResults"))
+                        )
+                        sleep(2 * times)
+                        driver.find_element(By.ID, "updateResults").click()
+                        flag = flag + 1
+
+                        if flag == 3:
+                            break
+                        log("~~ 5.4")  # FIXME: remove(breakpoint)
+                    except Exception:
+                        if not self.is_in_captcha():
+                            break
+                        self.captcha_wait_loop()
+
+                if self.stop:
+                    self.exit = True
+                    self.exit_thread()
+                    return True
+
+                self.get_data(product, keyword)
 
                 log("~~ 6")  # FIXME: remove(breakpoint)
 

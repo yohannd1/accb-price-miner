@@ -1,9 +1,11 @@
 import sys
 from functools import lru_cache
+import traceback
+
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
+
 from accb.utils import log_error
-import traceback
 
 
 @lru_cache(maxsize=1)

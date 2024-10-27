@@ -7,10 +7,8 @@ import re
 import sqlite3
 import sys
 from os.path import exists
-import subprocess
 from datetime import date
 import os
-from os import path
 import json
 
 from typing import Any, Sequence, Generator, Optional
@@ -19,6 +17,7 @@ from accb.model import Backup
 from accb.utils import log
 
 DB_PATH = "accb.sqlite"
+ENCODING = "utf-8"  # or "latin-1"?
 
 
 class DatabaseConnection:
@@ -40,7 +39,7 @@ class DatabaseConnection:
         self._cursor.close()
 
         if has_errored:
-            log(f"Ocorreu um erro - revertendo mudanças ao banco de dados")
+            log("Ocorreu um erro - revertendo mudanças ao banco de dados")
             self._conn.rollback()
         else:
             self._conn.commit()
@@ -74,11 +73,9 @@ class DatabaseManager:
         directly but instead called from the Connection method, iterdump().
         """
 
-        schema = self.resource_path("schema.sql")
         cursor = sqlite3.connect(DB_PATH).cursor()
-        table_name = table_name
 
-        yield ("BEGIN TRANSACTION;")
+        yield "BEGIN TRANSACTION;"
 
         # sqlite_master table contains the SQL CREATE statements for the database.
         q = """
@@ -89,15 +86,15 @@ class DatabaseManager:
                 name == :table_name
             """
         schema_res = cursor.execute(q, {"table_name": table_name})
-        for table_name, type, sql in schema_res.fetchall():
+        for table_name, _type, sql in schema_res.fetchall():
             if table_name == "sqlite_sequence":
-                yield ("DELETE FROM sqlite_sequence;")
+                yield "DELETE FROM sqlite_sequence;"
             elif table_name == "sqlite_stat1":
-                yield ("ANALYZE sqlite_master;")
+                yield "ANALYZE sqlite_master;"
             elif table_name.startswith("sqlite_"):
                 continue
             else:
-                yield ("%s;" % sql)
+                yield f"{sql};"
 
             # Build the insert statement for each row of the current table
             res = cursor.execute("PRAGMA table_info('%s')" % table_name)
@@ -107,14 +104,12 @@ class DatabaseManager:
             q += ")' FROM '%(tbl_name)s'"
             query_res = cursor.execute(q % {"tbl_name": table_name})
             for row in query_res:
-                yield ("%s;" % row[0])
+                yield f"{row[0]};"
 
-        yield ("COMMIT;")
+        yield "COMMIT;"
 
     def import_database(self, file_path=None) -> None:
         """Importa um arquivo sql e injeta ele no banco de dados."""
-
-        ENCODING = "utf-8"  # or "latin-1"?
 
         if file_path is not None:
             sql_script = file_path.read().decode(ENCODING)
@@ -150,10 +145,11 @@ class DatabaseManager:
         """Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe."""
         schema = self.resource_path("schema.sql")
         cursor = sqlite3.connect(DB_PATH).cursor()
-        sql_file = open(schema, encoding="utf-8")
-        sql_as_string = sql_file.read()
+
+        with open(schema, "r", encoding=ENCODING) as f:
+            sql_as_string = f.read()
+
         cursor.executescript(sql_as_string)
-        sql_file.close()
         # subprocess.check_call(["attrib", "+H", DB_PATH])
 
     def db_connection(self) -> DatabaseConnection:
@@ -170,7 +166,7 @@ class DatabaseManager:
             self.update_city({"city_name": "Ilhéus", "primary_key": "IlhÃ©us"})
 
             for estab_name in ("itabuna.json", "ilheus.json"):
-                with open(self.resource_path(estab_name), "r", encoding="utf-8") as f:
+                with open(self.resource_path(estab_name), "r", encoding=ENCODING) as f:
                     estab_info = json.load(f)
                     for estab in estab_info:
                         self.save_estab(estab)
@@ -200,7 +196,6 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """INSERT INTO search(done, city_name, search_date, duration) VALUES(?, ?, ?, ?)"""
-            print(f"{city_name=}")
             cursor.execute(query, (int(done), city_name, str(date.today()), duration))
             return cursor.lastrowid
 
@@ -313,17 +308,17 @@ class DatabaseManager:
             res = cursor.execute(query, args)
             return res.fetchall()
 
-    def get_backup(self, id: Optional[int] = None) -> Optional[tuple]:
+    def get_backup(self, id_: Optional[int] = None) -> Optional[tuple]:
         """Seleciona um dos backups."""
         # FIXME: o que acontece se tiver mais de um?
 
         args: tuple
-        if id is None:
+        if id_ is None:
             query = "SELECT * FROM backup"
             args = ()
         else:
             query = "SELECT * FROM backup WHERE search_id = ?"
-            args = (id,)
+            args = (id_,)
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()

@@ -1,10 +1,9 @@
-import sys, os
+import sys
+import os
 from time import strftime, asctime, time
 from typing import Iterable, Optional
 from datetime import datetime
-import traceback
-import tkinter
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, Tk
 from subprocess import Popen
 from pathlib import Path
 
@@ -50,7 +49,7 @@ def is_macos() -> bool:
 
 
 def show_warning(title: str, message: str) -> None:
-    root = tkinter.Tk()
+    root = Tk()
     root.attributes("-topmost", True)
     root.withdraw()
     messagebox.showwarning(title, message, icon="warning", parent=root)
@@ -91,4 +90,4 @@ def open_folder(path: Path) -> None:
         # https://scriptingosx.com/2017/02/the-macos-open-command/
         Popen(["open", str(path)])
     else:
-        raise Exception("unsupported operating system")
+        raise NotImplementedError("unsupported operating system")
