@@ -12,10 +12,6 @@ from flask import Flask, render_template, request, g, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
 
-# usado para resolver um problema c/ o pyinstaller
-# TODO: talvez o hidden import já resolva isso?
-from engineio.async_drivers import threading
-
 from accb.scraper import Scraper, ScraperOptions
 from accb.utils import (
     log,
