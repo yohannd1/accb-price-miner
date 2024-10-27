@@ -3,13 +3,21 @@
 </span>
 <h1 align="center">ACCB Price Miner</h1>
 
-O ACCB Price Miner, desenvolvido por [Samuel Vasconcelos](https://github.com/smvasconcelos/) como projeto de Iniciação Tecnológica, é um software que busca TODO(descrição completa do projeto aqui)
+O ACCB Price Miner, desenvolvido por [Samuel
+Vasconcelos](https://github.com/smvasconcelos/) como Projeto de
+Iniciação Tecnológica, é um software que busca automatizar a coleta de
+preços de produtos na Bahia, utilizando-se de dados da plataforma Preço
+da Hora.
 
-Esta versão é uma melhora da [versão original](https://github.com/smvasconcelos/ACCB_IT).
+Esta versão é uma melhora da [versão
+original](https://github.com/smvasconcelos/ACCB_IT) feita por
+[Yohanan](https://github.com/yohannd1/) como Projeto de Extensão,
+buscando manutenir o projeto e melhorá-lo em alguns aspectos.
 
-A página oficial do projeto está disponível no [site da IM&A da UESC](https://ima.uesc.br/accb_price_miner/).
+A página oficial do projeto está disponível no [site da IM&A da
+UESC](https://ima.uesc.br/accb_price_miner/).
 
-TODO: atualizar resto abaixo
+**Plataformas suportadas**: Windows 10+, Linux
 
 ## Preparação
 
@@ -44,6 +52,13 @@ relacionados ao ambiente virtual estão acessíveis diretamente**. Caso
 algum comando não esteja disponível, verifique se ele está acessível em
 `venv/bin/nome_comando` (ou `venv/Scripts/nome_comando` no Windows).
 
+Se você estiver usando Windows, certifique-se que está com Windows 10+ e
+tem um compilador de C++ instalado disponível em seu ambiente.
+
+Caso queira usar MinGW, [veja a seção sobre cygwin/mingw da documentação
+do
+pyinstaller](https://pyinstaller.readthedocs.io/en/stable/bootloader-building.html#build-using-cygwin-and-mingw).
+
 ## Testes e compilação
 
 Instale o pacote do `accb-price-miner` no ambiente virtual (isso só
@@ -65,6 +80,11 @@ Para criar um executável (usando PyInstaller, `pip install pyinstaller`):
 pyinstaller app.spec
 ```
 
+Nota: o executável criado para windows usa `uac_admin=True`, que faz o
+executável precisar de persmissão de administrador. Isso foi feito
+porque, por algum motivo, abrir o diálogo de arquivo pelo Tkinter estava
+pedindo permissão de administrador. :(
+
 ## Ferramentas de desenvolvimento
 
 Esse projeto usa `black` para formatar o código (`pip install black`):
@@ -73,133 +93,16 @@ Esse projeto usa `black` para formatar o código (`pip install black`):
 black .
 ```
 
-É possível também verificar a corretude de tipos do código (até certo ponto) usando `mypy` (`pip install mypy`):
+É possível também verificar a corretude de tipos do código (até certo
+ponto) usando `mypy` (`pip install mypy`):
 
 ```sh
 mypy app.py --ignore-missing-imports
 ```
 
----
+Para gerar a documentação do programa usando `pdoc` (`pip install
+pdoc`):
 
-## Progresso de Desenvolvimento
-
-- [x] Interface
-- [x] Banco de Dados
-- [x] Log de Erros
-- [x] CRUD de Componentes
-- [x] Backup de Pesquisa
-- [x] Configuração de Estabelecimentos
-- [x] Configuração de Produtos
-- [x] Log de Produtos
-- [x] Melhoria de reconhecimento de produto
-- [x] Listagem de Pesquisas
-- [x] Pesquisa de Pesquisas
-- [x] Filtragem de Pesquisas
-- [x] Transformar csv_to_xlsx em db_to_xlsx
-- [x] Limitar à somente uma aba de navegação
-- [x] Fechar o programa caso atualizada a página e não seja o prório programa.
-- [x] Checar se o chrome está instalado
-- [x] Popup de backup de pesquisa anterior
-- [ ] Botão para iniciar a partir de um backup caso a pessoa ja tenha fechado o popup anterior.
-
-## Informações de Desenvolvimento
-
-### Python
-
-Para rodar o projeto preferencialmente inicie um ambiente virtual com :
-
-```
-pip install virtualenv
-python -m venv <nome>
-```
-
-Em seguida abra a pasta do ambiente e clone o repositório em questão com :
-
-```
-cd <nome>
-git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
-```
-
-E por último inicie o ambiente virtual e instale as dependências do python para iniciar o projeto :
-
-```
-cd Scripts
-activate.bat
-cd ..
-pip install -r requirements.txt
-```
-
-### Conda
-
-Para rodar o projeto preferencialmente inicie um ambiente virtual com :
-
-```
-conda create --name ACCB
-```
-
-Em seguida clone o repositório em questão com :
-
-```
-git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
-```
-
-E por último inicie o ambiente virtual e instale as dependências do python para iniciar o projeto :
-
-```
-conda activate ACCB
-pip install -r requirements.txt
-```
-
-Agora é só rodar o projeto com python -m flask run ou python app.py.
-
-## Observações
-
-Para que seja possível gerar um exe sem uma janela de console do windows é necessário alterar um arquivo fonte do selenium, este que se encontra em :
-
-```
-\Lib\site-packages\selenium\webdriver\common\service.py
-Altere então :
-self.process = subprocess.Popen(cmd, env=self.env, close_fds=platform.system() != 'Windows', stdout=self.log_file, stderr=self.log_file, stdin=PIPE)
-para :
-self.process = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE ,stderr=PIPE, shell=False, creationflags=0x08000000)
-```
-
-E em seguida é só executar o comando pyinstaller app.spec.
-
-## Criando um .spec Novo
-
-```
-pyi-makespec  --noconsole --onefile app.py
-```
-
-\.spec Completo :
-
-```
-pyi-makespec --noconsole --onefile --add-data="templates;templates" --add-data="static;static" --add-data="schema.sql;." --add-data="itabuna.json;." --add-data="ilheus.json;." --name="ACCB" --icon=logo.ico --paths="E:\Uesc\Scrapper\web\ACCB\Lib\flask_material\templates\material" --hidden-import=engineio.async_drivers.eventlet --hidden-import=flask_material --uac-admin --additional-hooks-dir=. app.py
-```
-
-## Gerando nova documentação com pdoc
-
-```
-pdoc app.py database scraper -o doc
-```
-
-## Caso necessário instalar a ultima versão do pyinstaller
-
-```
-- Neste caso existem algumas ferramentas necessárias para realizar esta etapa : https://pyinstaller.readthedocs.io/en/stable/bootloader-building.html#build-using-cygwin-and-mingw
-
-- Eu recomendo essa utilizar o compilador para C mingw64 e não 32 bits que pode ser baixado no link : https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download, não esqueça de mudar a arquitetura para x86_64
-
-- git clone https://github.com/pyinstaller/pyinstaller
-
-- cd pyinstaller
-
-- cd bootloader
-
-- python ./waf distclean all - builda o bootloader para o sistema em questão.
-
-- cd ..
-
-- python setup.py install - instala o pyinstaller no ambiente ativo no momento
+```sh
+pdoc -o doc accb
 ```
