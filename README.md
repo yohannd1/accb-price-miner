@@ -1,27 +1,52 @@
-# ACCB Price Miner
+<p align="center">
+  <img src="static/img/accb.png" alt="Logo ACCB" width="100"/>
+</span>
+<h1 align="center">ACCB Price Miner</h1>
 
-TODO: colocar descrição formal do projeto aqui
+O ACCB Price Miner, desenvolvido por [Samuel Vasconcelos](https://github.com/smvasconcelos/) como projeto de Iniciação Tecnológica, é um software que busca TODO(descrição completa do projeto aqui)
 
-Versão anterior do projeto disponível no [repositório de Samuel Vasconcelos](https://github.com/smvasconcelos/ACCB_IT/tree/tcc-apresentacao).
+Esta versão é uma melhora da [versão original](https://github.com/smvasconcelos/ACCB_IT).
+
+A página oficial do projeto está disponível no [site da IM&A da UESC](https://ima.uesc.br/accb_price_miner/).
 
 TODO: atualizar resto abaixo
 
+## Preparação
+
+Clone o repositório:
+
+```sh
+git clone https://github.com/yohannd1/accb-price-miner/ --depth 1
+```
+
+TODO: especificar a branch aqui! a não ser que a main tenha se tornado a
+oficial já.
+
+Crie um ambiente virtual (vamos chamar aqui de `venv`) e o ative:
+
+```sh
+python -m venv venv
+
+# em linux
+
+# em windows (batch)
+TODO
+
+# em windows (PowerShell)
+TODO
+```
+
+## Testes e Compilação
+
+Para rodar o aplicativo (debug):
+
+```sh
+python app.py
+```
+
+Para criar um executável (usando PyInstaller): TODO
+
 ---
-
-<!-- PROJECT LOGO -->
-<br />
-<p align="center">
-  <a href="https://github.com/Syphoon/ACCB_IT/tree/GUI">
-    <!-- <img src="./img/logo_2.png" alt="Logo" width="100"> -->
-	<h3 align="center">Projeto ACCB - GUI</h3>
-  </a>
-  <p align="center">
-    Projeto desenvolvido para o projeto de iniciação tecnológica
-    <br />
-    <!-- <a href="https://syphoon.github.io/ACCB_IT/tree/GUI"><strong>Documentação do código do projeto</strong></a> -->
-  </p>
-</p>
-
 
 ## Progresso de Desenvolvimento
 
@@ -44,7 +69,6 @@ TODO: atualizar resto abaixo
 - [x] Popup de backup de pesquisa anterior
 - [ ] Botão para iniciar a partir de um backup caso a pessoa ja tenha fechado o popup anterior.
 
-
 ## Informações de Desenvolvimento
 
 ### Python
@@ -52,24 +76,24 @@ TODO: atualizar resto abaixo
 Para rodar o projeto preferencialmente inicie um ambiente virtual com :
 
 ```
-	pip install virtualenv
-	python -m venv <nome>
+pip install virtualenv
+python -m venv <nome>
 ```
 
 Em seguida abra a pasta do ambiente e clone o repositório em questão com :
 
 ```
-	cd <nome>
-	git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
+cd <nome>
+git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
 ```
 
 E por último inicie o ambiente virtual e instale as dependências do python para iniciar o projeto :
 
 ```
-	cd Scripts
-	activate.bat
-	cd ..
-	pip install -r requirements.txt
+cd Scripts
+activate.bat
+cd ..
+pip install -r requirements.txt
 ```
 
 ### Conda
@@ -77,20 +101,20 @@ E por último inicie o ambiente virtual e instale as dependências do python par
 Para rodar o projeto preferencialmente inicie um ambiente virtual com :
 
 ```
-	conda create --name ACCB
+conda create --name ACCB
 ```
 
 Em seguida clone o repositório em questão com :
 
 ```
-	git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
+git clone https://github.com/smvasconcelos/ACCB_IT.git --single-branch --branch desktop-web
 ```
 
 E por último inicie o ambiente virtual e instale as dependências do python para iniciar o projeto :
 
 ```
-	conda activate ACCB
-	pip install -r requirements.txt
+conda activate ACCB
+pip install -r requirements.txt
 ```
 
 Agora é só rodar o projeto com python -m flask run ou python app.py.
@@ -100,11 +124,11 @@ Agora é só rodar o projeto com python -m flask run ou python app.py.
 Para que seja possível gerar um exe sem uma janela de console do windows é necessário alterar um arquivo fonte do selenium, este que se encontra em :
 
 ```
-	\Lib\site-packages\selenium\webdriver\common\service.py
-	Altere então :
-	self.process = subprocess.Popen(cmd, env=self.env, close_fds=platform.system() != 'Windows', stdout=self.log_file, stderr=self.log_file, stdin=PIPE)
-	para :
-	self.process = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE ,stderr=PIPE, shell=False, creationflags=0x08000000)
+\Lib\site-packages\selenium\webdriver\common\service.py
+Altere então :
+self.process = subprocess.Popen(cmd, env=self.env, close_fds=platform.system() != 'Windows', stdout=self.log_file, stderr=self.log_file, stdin=PIPE)
+para :
+self.process = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE ,stderr=PIPE, shell=False, creationflags=0x08000000)
 ```
 
 E em seguida é só executar o comando pyinstaller app.spec.
@@ -124,7 +148,7 @@ pyi-makespec --noconsole --onefile --add-data="templates;templates" --add-data="
 ## Gerando nova documentação com pdoc
 
 ```
-	pdoc app.py database scraper -o doc
+pdoc app.py database scraper -o doc
 ```
 
 ## Caso necessário instalar a ultima versão do pyinstaller
