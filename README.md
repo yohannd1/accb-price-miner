@@ -27,9 +27,6 @@ Clone o repositório:
 git clone https://github.com/yohannd1/accb-price-miner/ --depth 1
 ```
 
-TODO: especificar a branch aqui! a não ser que a main tenha se tornado a
-oficial já.
-
 Crie um ambiente virtual usando o `venv` e o ative:
 
 ```sh
