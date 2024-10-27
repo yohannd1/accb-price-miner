@@ -1,6 +1,6 @@
 """Ponto de entrada da aplicação."""
 
-from threading import Thread, Lock, Timer
+from threading import Thread, Timer
 
 
 def before_anything() -> None:
@@ -32,9 +32,6 @@ from flask import Flask, render_template, request, g, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
 
-# from webdriver_manager.chrome import ChromeDriverManager
-# from webdriver_manager.core.driver_cache import DriverCacheManager
-
 from accb.scraper import Scraper, ScraperOptions
 from accb.utils import (
     log,
@@ -49,6 +46,9 @@ from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager
 from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
+
+# usado para resolver um problema c/ o pyinstaller
+from engineio.async_drivers import threading
 
 app = Flask(__name__)
 Material(app)
@@ -70,6 +70,16 @@ def is_port_in_use(port) -> bool:
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
+
+
+@app.errorhandler(Exception)
+def exception_handler(exc: Exception) -> Response:
+    # TODO: encontrar uma maneira de usar isso ao invés do debugger padrão
+
+    fmt = "".join(traceback.format_exception(exc))
+    log(f"Erro interno: {exc} -- {fmt}")
+    res = {"status": "error", "message": "Erro interno da aplicação"}
+    return Response(status=200, mimetype="application/json", response=json.dumps(res))
 
 
 @app.route("/")
@@ -149,12 +159,6 @@ def route_insert_product() -> dict:
         "status": "success",
         "message": f"O produto {product_name} foi inserido com sucesso",
     }
-
-
-@app.errorhandler(Exception)
-def all_exception_handler(_exc: Exception) -> Response:
-    res = {"status": "error", "message": "Erro interno da aplicação"}
-    return Response(status=200, mimetype="application/json", response=json.dumps(res))
 
 
 @app.route("/remove_product")
@@ -722,15 +726,17 @@ def utility_processor() -> dict:
         "json_stringfy": json_stringfy,
     }
 
+SERVER_URL = "http://127.0.0.1"
+PORT = 5000
+
 
 def main() -> None:
     """Inicia o programa com as configurações da plataforma atual, Windows ou Linux."""
 
-    SERVER_URL = "http://127.0.0.1"
-    PORT = 5000
+    force_debug = os.environ.get("ACCB_FORCE_DEBUG") is not None
 
     is_in_bundle = getattr(sys, "frozen", False)
-    debug_enabled = bool(__file__) and not is_in_bundle
+    debug_enabled = force_debug or bool(__file__) and not is_in_bundle
     log(f"{is_in_bundle=}; {debug_enabled=}")
 
     if debug_enabled:
@@ -740,12 +746,15 @@ def main() -> None:
 
     # TODO: configurar o arquivo de log
 
-    webbrowser.open(f"{SERVER_URL}:{PORT}")
+    # TODO: rodar isso quando o servidor tiver carregado, ao invés de usar um timer...
+    def callback() -> None:
+        webbrowser.open(f"{SERVER_URL}:{PORT}")
+    Timer(1, callback).start()
 
     if is_port_in_use(PORT):
         print(f"Porta {PORT} já em uso - o programa já está rodando?")
     else:
-        socketio.run(app, debug=debug_enabled, use_reloader=False)
+        socketio.run(app, debug=debug_enabled, use_reloader=False, port=PORT)
 
 
 if __name__ == "__main__":

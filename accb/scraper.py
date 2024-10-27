@@ -276,6 +276,7 @@ class Scraper:
         # FIXME: confirmar: ela retorna True se precisar, ou se não precisar?
 
         try:
+            assert self.driver is not None
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "flash"))
             )

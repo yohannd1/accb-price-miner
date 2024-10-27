@@ -4,14 +4,8 @@ __pycache__/
 
 # C extensions
 *.so
-*.cfg
-*Scripts
-*Include
 *.log
-*.spec
 *ico.ico
-*hook-flask_material.py
-dist/
 
 # Distribution / packaging
 bin/
@@ -55,7 +49,6 @@ coverage.xml
 *.pot
 
 # Docs
-docs/_build/
 doc/
 
 # ...

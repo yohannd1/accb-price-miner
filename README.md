@@ -22,21 +22,29 @@ git clone https://github.com/yohannd1/accb-price-miner/ --depth 1
 TODO: especificar a branch aqui! a não ser que a main tenha se tornado a
 oficial já.
 
-Crie um ambiente virtual (vamos chamar aqui de `venv`) e o ative:
+Crie um ambiente virtual usando o `venv` e o ative:
 
 ```sh
+# em linux e windows
 python -m venv venv
 
 # em linux
+source venv/bin/activate
 
 # em windows (batch)
-TODO
+venv\Scripts\activate.bat
 
 # em windows (PowerShell)
-TODO
+Set-ExecutionPolicy Unrestricted -Scope Process
+venv\Scripts\activate.ps1
 ```
 
-## Testes e Compilação
+**Daqui para frente, é subentendido que os comandos do python
+relacionados ao ambiente virtual estão acessíveis diretamente**. Caso
+algum comando não esteja disponível, verifique se ele está acessível em
+`venv/bin/nome_comando` (ou `venv/Scripts/nome_comando` no Windows).
+
+## Testes e compilação
 
 Para rodar o aplicativo (debug):
 
@@ -44,7 +52,25 @@ Para rodar o aplicativo (debug):
 python app.py
 ```
 
-Para criar um executável (usando PyInstaller): TODO
+Para criar um executável (usando PyInstaller):
+
+```
+pyinstaller app.spec
+```
+
+## Ferramentas de desenvolvimento
+
+Esse projeto usa `black` para formatar o código:
+
+```sh
+black .
+```
+
+É possível também verificar a corretude de tipos do código (até certo ponto) usando `mypy`:
+
+```sh
+mypy app.py --ignore-missing-imports
+```
 
 ---
 
