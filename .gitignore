@@ -2,11 +2,6 @@
 __pycache__/
 *.py[cod]
 
-# C extensions
-*.so
-*.log
-*ico.ico
-
 # Distribution / packaging
 bin/
 build/
@@ -22,49 +17,9 @@ var/
 .installed.cfg
 *.egg
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# dados do programa
+accb.sqlite
 
-# Unit test / coverage reports
-.tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# Rope
-.ropeproject
-
-# Django stuff:
-*.log
-*.pot
-
-# Docs
-doc/
-
-# ...
+# misc
 venv/
-*.txt
-*.xlsx
-*.iss
-*.copy
-*importar.sql
-/dataset
-*.sqlite
-*.wdm
-*.env
-*teste.py
-*bd_to_xlsx.py
-*drivers.json
-firebaseConfig.json
-manual_video.md
-release.html
+doc/
