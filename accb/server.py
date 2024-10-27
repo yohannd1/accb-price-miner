@@ -1,24 +1,3 @@
-"""Ponto de entrada da aplicação."""
-
-from threading import Thread, Timer
-
-
-def before_anything() -> None:
-    from tkinter.messagebox import showwarning
-
-    showwarning("ACCB", "Carregando. Por favor aguarde...")
-
-
-if __name__ == "__main__":
-    Thread(target=before_anything).start()
-
-# import eventlet
-# eventlet.patcher.monkey_patch(select=True, socket=True)
-# from engineio.async_drivers import gevent
-
-# necessário para evitar bugs com aplicações que rodam tarefas no background.
-# from engineio.async_drivers import threading
-
 import json
 import sys
 import os
@@ -27,10 +6,15 @@ import traceback
 import webbrowser
 from pathlib import Path
 import socket
+from threading import Timer
 
 from flask import Flask, render_template, request, g, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
+
+# usado para resolver um problema c/ o pyinstaller
+# TODO: talvez o hidden import já resolva isso?
+from engineio.async_drivers import threading
 
 from accb.scraper import Scraper, ScraperOptions
 from accb.utils import (
@@ -47,14 +31,14 @@ from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager
 from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
 
-# usado para resolver um problema c/ o pyinstaller
-from engineio.async_drivers import threading
-
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
 
 state = State(db_manager=DatabaseManager())
+
+SERVER_URL = "http://127.0.0.1"
+PORT = 5000
 
 
 def timeout_exit() -> None:
@@ -726,18 +710,18 @@ def utility_processor() -> dict:
         "json_stringfy": json_stringfy,
     }
 
-SERVER_URL = "http://127.0.0.1"
-PORT = 5000
-
 
 def main() -> None:
-    """Inicia o programa com as configurações da plataforma atual, Windows ou Linux."""
+    # cli = sys.modules["flask.cli"]
+    # def noop(*_): pass
+    # cli.show_server_banner = noop
 
     force_debug = os.environ.get("ACCB_FORCE_DEBUG") is not None
 
     is_in_bundle = getattr(sys, "frozen", False)
     debug_enabled = force_debug or bool(__file__) and not is_in_bundle
     log(f"{is_in_bundle=}; {debug_enabled=}")
+    log(f"{state.db_manager.resource_path('_dummy')=}")
 
     if debug_enabled:
         os.environ["WDM_LOCAL"] = "1"
@@ -749,17 +733,10 @@ def main() -> None:
     # TODO: rodar isso quando o servidor tiver carregado, ao invés de usar um timer...
     def callback() -> None:
         webbrowser.open(f"{SERVER_URL}:{PORT}")
+
     Timer(1, callback).start()
 
     if is_port_in_use(PORT):
         print(f"Porta {PORT} já em uso - o programa já está rodando?")
     else:
         socketio.run(app, debug=debug_enabled, use_reloader=False, port=PORT)
-
-
-if __name__ == "__main__":
-    # cli = sys.modules["flask.cli"]
-    # def noop(*_): pass
-    # cli.show_server_banner = noop
-
-    main()

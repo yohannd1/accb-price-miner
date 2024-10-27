@@ -14,6 +14,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 {% endblock %}
 
+{% macro top_logos() %}
+  <div class="top-logo">
+    {{ img("uesc_brasao.png", "Logo da UESC") }}
+    {{ img("accb.png", "Logo do ACCB") }}
+    {{ img("proex.png", "Logo da PROEX") }}
+  </div>
+{% endmacro %}
+
 {% macro use_style_local(name) %}
   <link
     rel="stylesheet"

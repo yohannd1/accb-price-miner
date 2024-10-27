@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "accb-price-miner"
+version = "1.1"
+requires-python = ">= 3.12"
+dependencies = [
+    "beautifulsoup4",
+    "Flask",
+    "Flask-Material",
+    "Flask-SocketIO",
+    "selenium",
+    "pandas",
+    "openpyxl",
+
+    # stubs (para usar no mypy)
+    "pandas-stubs",
+    "types-openpyxl",
+    "types-beautifulsoup4",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["accb"]

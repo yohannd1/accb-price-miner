@@ -46,11 +46,7 @@
   <search value="false"/>
   <header>
     <div id="top-menu">
-      <div class="top-logo">
-        {{ img("uesc_brasão.png", "Logo da UESC") }}
-        {{ img("accb.png", "Logo do ACCB") }}
-        {{ img("proex.png", "Logo da PROEX") }}
-      </div>
+      {{ top_logos() }}
 
       <div style="margin-top: 2em;">
         {% if search %}

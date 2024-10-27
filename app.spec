@@ -2,12 +2,12 @@
 # vim: ft=python
 
 a = Analysis(
-    ["app.py"],
+    ["accb/__main__.py"],
     pathex=[],
     binaries=[],
     datas=[
-        ("templates", "templates"),
-        ("static", "static"),
+        ("accb/templates", "accb/templates"),
+        ("accb/static", "accb/static"),
         ("schema.sql", "."),
         ("itabuna.json", "."),
         ("ilheus.json", "."),
@@ -27,7 +27,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="accb-price-miner",
+    name="accb-pm",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -46,5 +46,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name="accb-price-miner",
+    name="accb-pm",
 )

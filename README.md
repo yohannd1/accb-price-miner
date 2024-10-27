@@ -44,6 +44,13 @@ relacionados ao ambiente virtual estão acessíveis diretamente**. Caso
 algum comando não esteja disponível, verifique se ele está acessível em
 `venv/bin/nome_comando` (ou `venv/Scripts/nome_comando` no Windows).
 
+Instale o pacote do `accb-price-miner` no ambiente virtual (isso só precisa ser feito pela
+primeira vez)
+
+```sh
+pip install -e .
+```
+
 ## Testes e compilação
 
 Para rodar o aplicativo (debug):
@@ -52,21 +59,21 @@ Para rodar o aplicativo (debug):
 python app.py
 ```
 
-Para criar um executável (usando PyInstaller):
+Para criar um executável (usando PyInstaller, `pip install pyinstaller`):
 
-```
+```sh
 pyinstaller app.spec
 ```
 
 ## Ferramentas de desenvolvimento
 
-Esse projeto usa `black` para formatar o código:
+Esse projeto usa `black` para formatar o código (`pip install black`):
 
 ```sh
 black .
 ```
 
-É possível também verificar a corretude de tipos do código (até certo ponto) usando `mypy`:
+É possível também verificar a corretude de tipos do código (até certo ponto) usando `mypy` (`pip install mypy`):
 
 ```sh
 mypy app.py --ignore-missing-imports
