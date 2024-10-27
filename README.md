@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/img/accb.png" alt="Logo ACCB" width="100"/>
+  <img src="accb/static/img/accb.png" alt="Logo ACCB" width="100"/>
 </span>
 <h1 align="center">ACCB Price Miner</h1>
 
