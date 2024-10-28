@@ -7,6 +7,8 @@ import webbrowser
 from pathlib import Path
 import socket
 from threading import Timer
+from queue import Queue
+from typing import Any
 
 from flask import Flask, render_template, request, g, Response
 from flask_material import Material
@@ -25,7 +27,7 @@ from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager
-from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
+from accb.bi_queue import BiQueue
 
 app = Flask(__name__)
 Material(app)
@@ -45,6 +47,42 @@ def timeout_exit() -> None:
 
 
 watchdog = LockedVar(RestartableTimer(WATCHDOG_TIMEOUT, timeout_exit))
+
+
+def export_thread(recv: Queue, send: Queue) -> None:
+    from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
+
+    shutdown = False
+    while not shutdown:
+        result: Any
+        match recv.get():
+            case ("db_to_xlsx", args, kwargs):
+                result = db_to_xlsx(*args, **kwargs)
+            case ("db_to_xlsx_all", args, kwargs):
+                result = db_to_xlsx_all(*args, **kwargs)
+            case ("export_to_xlsx", args, kwargs):
+                export_to_xlsx(*args, **kwargs)
+                result = None
+            case "shutdown":
+                shutdown = True
+                result = None
+            case _:
+                result = None
+        send.put(result)
+
+
+export_bq = BiQueue(export_thread)
+
+def db_to_xlsx(*args, **kwargs):
+    return export_bq.exchange(("db_to_xlsx", args, kwargs))
+
+
+def db_to_xlsx_all(*args, **kwargs):
+    return export_bq.exchange(("db_to_xlsx_all", args, kwargs))
+
+
+def export_to_xlsx(*args, **kwargs):
+    return export_bq.exchange(("export_to_xlsx", args, kwargs))
 
 
 def is_port_in_use(port) -> bool:
@@ -705,7 +743,6 @@ def utility_processor() -> dict:
         "json_stringfy": json_stringfy,
     }
 
-
 def main() -> None:
     # cli = sys.modules["flask.cli"]
     # def noop(*_): pass
@@ -733,6 +770,9 @@ def main() -> None:
 
     if is_port_in_use(PORT):
         log(f"Porta {PORT} já em uso - o programa já está rodando?")
-    else:
+        return
+
+    try:
         socketio.run(app, debug=debug_enabled, use_reloader=False, port=PORT)
-    log("X***")
+    finally:
+        export_bq.exchange("shutdown")
