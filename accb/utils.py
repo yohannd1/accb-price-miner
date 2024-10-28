@@ -57,8 +57,16 @@ def show_warning(title: str, message: str) -> None:
 
 
 def ask_user_directory() -> Optional[Path]:
+    root = Tk()
+    root.attributes("-topmost", True)
+    root.withdraw()
     result = filedialog.askdirectory()
-    return Path(result) if result != () else None
+    root.destroy()
+
+    if result is () or (is_windows() and result == "."):
+        return None
+    else:
+        return Path(result)
 
 
 def get_time_hms(start_time_sec: float) -> dict:

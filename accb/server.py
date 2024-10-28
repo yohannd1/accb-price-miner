@@ -73,6 +73,7 @@ def export_thread(recv: Queue, send: Queue) -> None:
 
 export_bq = BiQueue(export_thread)
 
+
 def db_to_xlsx(*args, **kwargs):
     return export_bq.exchange(("db_to_xlsx", args, kwargs))
 
@@ -392,16 +393,18 @@ def route_delete_city() -> dict:
 
 @app.route("/ask_output_path")
 def route_ask_output_path() -> dict:
-    state.output_path = ask_user_directory()
-    if state.output_path is None:
+    path = ask_user_directory()
+    print(path)
+    if path is None:
         raise ValueError("Nenhum diretório selecionado")
 
-    state.output_path.mkdir(exist_ok=True)
+    path.mkdir(exist_ok=True)
+    state.output_path = path
 
     return {
         "status": "success",
         "message": "Caminho configurado com sucesso.",
-        "path": str(state.output_path),
+        "path": str(path),
     }
 
 
@@ -743,6 +746,7 @@ def utility_processor() -> dict:
         "json_stringfy": json_stringfy,
     }
 
+
 def main() -> None:
     # cli = sys.modules["flask.cli"]
     # def noop(*_): pass
@@ -773,6 +777,12 @@ def main() -> None:
         return
 
     try:
-        socketio.run(app, debug=debug_enabled, use_reloader=False, port=PORT)
+        socketio.run(
+            app,
+            debug=debug_enabled,
+            use_reloader=False,
+            port=PORT,
+            allow_unsafe_werkzeug=True,
+        )
     finally:
         export_bq.exchange("shutdown")

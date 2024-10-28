@@ -77,11 +77,6 @@ Para criar um executável (usando PyInstaller, `pip install pyinstaller`):
 pyinstaller app.spec
 ```
 
-Nota: o executável criado para windows usa `uac_admin=True`, que faz o
-executável precisar de persmissão de administrador. Isso foi feito
-porque, por algum motivo, abrir o diálogo de arquivo pelo Tkinter estava
-pedindo permissão de administrador. :(
-
 ## Ferramentas de desenvolvimento
 
 Esse projeto usa `black` para formatar o código (`pip install black`):
