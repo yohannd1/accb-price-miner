@@ -26,7 +26,7 @@ class DatabaseConnection:
         self._conn = conn
         self._cursor = conn.cursor()
 
-    def get_cursor(self):
+    def get_cursor(self) -> sqlite3.Cursor:
         return self._cursor
 
     def __enter__(self) -> DatabaseConnection:
@@ -62,6 +62,7 @@ class DatabaseManager:
     def dump_table(self, table_name: str) -> Generator[str, None, None]:
         """Importa um arquivo sql para ser injetado no banco de dados.
 
+        ```
         Mimic the sqlite3 console shell's .dump command
 
         Author: Paul Kippes <kippesp@gmail.com>
@@ -71,6 +72,7 @@ class DatabaseManager:
         Used to produce an SQL dump of the database.  Useful to save an in-memory
         database for later restoration.  This function should not be called
         directly but instead called from the Connection method, iterdump().
+        ```
         """
 
         cursor = sqlite3.connect(DB_PATH).cursor()
@@ -197,7 +199,9 @@ class DatabaseManager:
             cursor = conn.get_cursor()
             query = """INSERT INTO search(done, city_name, search_date, duration) VALUES(?, ?, ?, ?)"""
             cursor.execute(query, (int(done), city_name, str(date.today()), duration))
-            return cursor.lastrowid
+            id_ = cursor.lastrowid
+            assert id_ is not None
+            return id_
 
     def save_estab(self, estab):
         """Salva os estabelecimentos no banco de dados."""
