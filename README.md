@@ -9,10 +9,10 @@ Iniciação Tecnológica, é um software que busca automatizar a coleta de
 preços de produtos na Bahia, utilizando-se de dados da plataforma Preço
 da Hora.
 
-Esta versão é uma melhora da [versão
-original](https://github.com/smvasconcelos/ACCB_IT) feita por
-[Yohanan](https://github.com/yohannd1/) como Projeto de Extensão,
-buscando manutenir o projeto e melhorá-lo em alguns aspectos.
+Esta versão é uma melhora feita por
+[Yohanan](https://github.com/yohannd1/) da [versão
+original](https://github.com/smvasconcelos/ACCB_IT), como Projeto de
+Extensão, buscando manutenir o projeto e melhorá-lo em alguns aspectos.
 
 A página oficial do projeto está disponível no [site da IM&A da
 UESC](https://ima.uesc.br/accb_price_miner/).
