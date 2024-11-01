@@ -6,34 +6,36 @@ from datetime import datetime
 from tkinter import filedialog, messagebox, Tk
 from subprocess import Popen
 from pathlib import Path
+import traceback
 
-LOG_FILE = sys.stderr
-# LOG_FILE = open("error.log", "w+", encoding="latin-1")
+_log_file = sys.stderr
 
 
 def _curtime_str() -> str:
     return strftime("%Y-%m-%d %H:%M:%S")
 
 
+def set_log_file(f) -> None:
+    _log_file = f
+
+
 def log(message: str) -> None:
     """Faz um log de uma mensagem."""
     prefix = _curtime_str()
-    print(f"[{prefix}] {message}", file=LOG_FILE)
+    print(f"[{prefix}] {message}", file=_log_file)
 
 
 def log_multiline(messages: Iterable[str]) -> None:
     """Faz um log de uma mensagem."""
     prefix = _curtime_str()
-    print(f"[{prefix}]:", file=LOG_FILE)
+    print(f"[{prefix}]:", file=_log_file)
     for m in messages:
-        print(f"  {m}", file=LOG_FILE)
+        print(f"  {m}", file=_log_file)
 
 
-def log_error(err):
-    # FIXME: parar de usar isso - usar `log_multiline`
-    LOG_FILE.write(f"Date : {asctime()}\n")
-    for error in err:
-        LOG_FILE.write(str(error))
+def log_error(exc: Exception) -> None:
+    ls = ["Ocorreu um erro:"] + [l[:-1] for l in traceback.format_exception(exc)]
+    log_multiline(ls)
 
 
 def is_windows() -> bool:
@@ -63,7 +65,7 @@ def ask_user_directory() -> Optional[Path]:
     result = filedialog.askdirectory()
     root.destroy()
 
-    if result is () or (is_windows() and result == "."):
+    if result == () or (is_windows() and result == "."):
         return None
     else:
         return Path(result)

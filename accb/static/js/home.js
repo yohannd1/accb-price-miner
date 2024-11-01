@@ -3,8 +3,6 @@ import { showMessage } from "./misc.mjs";
 
 let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
-let CANCEL_CAPTCHA = false;
-let EDIT_FORM_DATA = undefined;
 
 const updateProgressBar = (newValue) => {
     const pb = document.querySelector("#progress_bar");
@@ -154,10 +152,9 @@ const custom_select = () => {
             $styledSelect.removeClass('active');
             $list.hide();
         });
-
     });
-
 }
+
 /**
  * Cria um input customizado select na página de pesquisa para os meses.
  */
@@ -642,7 +639,8 @@ $(document).ready(() => {
 
     const hjs_data = document.querySelector("#home-js-data");
     const active = hjs_data.getAttribute("data-active");
-    const search = hjs_data.getAttribute("data-search") === "True";
+    const has_backup = hjs_data.getAttribute("data-has-backup") === "True";
+
     const is_chrome_installed = hjs_data.getAttribute("data-is-chrome-installed") === "True";
 
     const socket = io();
@@ -651,8 +649,8 @@ $(document).ready(() => {
         console.log(`Conectado - id do socket: ${socket.id}`);
     });
 
-    const searchLoaded = () => {
-        if (!search || !is_chrome_installed)
+    const tryResumeBackup = () => {
+        if (!has_backup || !is_chrome_installed)
             return;
 
         if (confirm("Uma pesquisa foi encontrada em progresso - deseja retomá-la?")) {
@@ -667,14 +665,13 @@ $(document).ready(() => {
         }
     }
 
-    socket.on("search.updateProgressBar", (msg) => {
-        console.log(`Progresso da pesquisa: ${msg.value}%`);
-        updateProgressBar(parseFloat(msg.value));
+    socket.on("search.update_progress_bar", (val) => {
+        updateProgressBar(parseFloat(val));
     });
 
-    socket.on("showNotification", (msg) => showMessage(msg));
+    socket.on("show_notification", (msg) => showMessage(msg));
 
-    socket.on("captcha.error", (msg) => {
+    socket.on("search.error", (msg) => {
         $("#progress_bar").css("width", "0%");
         $("#progress_bar").html("0%");
         $('ul.tabs').tabs('select', 'pesquisar');
@@ -695,13 +692,14 @@ $(document).ready(() => {
         if (msg.type == 'notification') {
             showMessage(msg.message);
         } else if (msg.type == 'progress') {
+            console.warn("DEPRECIADO! Use { search.began_searching_product }"); // FIXME: remover
+
             $("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
 
             if (msg.value !== undefined) // FIXME: remover
                 console.warn(`Valor de progresso recebido, mas ignorado (API velha): ${msg.value}`);
 
             if (msg.done == 1) {
-                // console.log("DONE");
                 $("#progress_bar").css("width", "0%");
                 $("#progress_bar").html("0%");
                 $('ul.tabs').tabs('select', 'pesquisar');
@@ -713,11 +711,14 @@ $(document).ready(() => {
                 $(window).off();
 
                 $(".log_item").remove();
+                alert("Pesquisa finalizada!");
                 window.location.reload(true);
             }
         } else if (msg.type == 'captcha') {
             showMessage(msg.message);
         } else if (msg.type == 'log') {
+            console.warn("DEPRECIADO! Use { search.log }"); // FIXME: remover
+
             var log_data = JSON.parse(msg.data);
             $("#progress_log").css("height", "fit-content");
             log_data.map((data) => {
@@ -750,7 +751,8 @@ $(document).ready(() => {
             $("#pause-loader").fadeOut(500);
             $(".pause-overlay").fadeOut(500);
         } else if (msg.type == 'error') {
-            console.warn("DEPRECATED! Use captcha.error signal instead"); // FIXME: tirar isso aqui
+            console.warn("DEPRECIADO! Use { search.error }"); // FIXME: remover
+
             $("#progress_bar").css("width", "0%");
             $("#progress_bar").html("0%");
             $('ul.tabs').tabs('select', 'pesquisar');
@@ -761,6 +763,22 @@ $(document).ready(() => {
             showMessage(msg.message, { notification: true });
             alert(msg.message);
         }
+    });
+
+    socket.on("search.began_searching_product", (name) => {
+        $("#progress h5").html(`Pesquisando produto <strong>${name}</strong>`).hide().fadeIn(500);
+    });
+
+    socket.on("search.log", (logs) => {
+        const log_div = $("#progress_log");
+        log_div.css("height", "fit-content");
+
+        logs.forEach(x => {
+            const elem = $(`<p class="log_item">${x}</p>`).hide().fadeIn(300);
+            log_div.append(elem);
+        });
+
+        $("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 500);
     });
 
     /**
@@ -839,7 +857,7 @@ $(document).ready(() => {
             if (msg.value !== undefined)
                 updateProgressBar(parseFloat(msg.value));
 
-            if (msg['done'] == 1) {
+            if (msg.done == 1) {
                 $("#progress_bar").css("width", "0%");
                 $("#progress_bar").html("0%");
                 $('ul.tabs').tabs('select', 'pesquisar');
@@ -849,6 +867,8 @@ $(document).ready(() => {
                 $("#progress_log").css("height", "100%");
                 $(".estab").remove();
                 $(".log_item").remove();
+
+                alert("Pesquisa finalizada!");
                 window.location.reload(true);
             }
         }
@@ -1349,8 +1369,6 @@ $(document).ready(() => {
         }
 
         if (e.key === 'Enter' || e.keyCode === 13) {
-
-            // console.log('enter', row_len, value);
             var hide_len = 0;
 
             if (value == '') {
@@ -1367,23 +1385,18 @@ $(document).ready(() => {
 
             var odd = true;
             $(".tr-item").each(function (index) {
-
                 var found = false;
 
                 $(this).find("td").each(function (index) {
-
                     var id = $(this).text().toUpperCase();
 
                     if (id.includes(value) || similarity(id, value) >= 0.6) {
-                        // console.log(`${index} ${id} == ${value}`);
                         found = true;
                         return false;
                     }
                     else {
-                        // console.log(`${index} ${id} == ${value}`);
                         found = false;
                     }
-
                 });
 
                 if (found) {
@@ -1472,7 +1485,6 @@ $(document).ready(() => {
                 }
             }
         });
-
 
         if (hide_len + 1 == row_len) {
             $(".no-result").show();
@@ -1695,7 +1707,7 @@ $(document).ready(() => {
         $("#warning").modal({});
         Cookies.set("warning", "seen", {expires: 1});
     } else {
-        searchLoaded();
+        tryResumeBackup();
     }
 
     const setOutputPath = () => {
@@ -1726,8 +1738,8 @@ $(document).ready(() => {
     if (!is_chrome_installed)
         alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
 
-    if (search)
-        $("body").on("click", "#backup-button", (_) => searchLoaded());
+    if (has_backup)
+        $("body").on("click", "#backup-button", (_) => tryResumeBackup());
 
     socket.connect("http://127.0.0.1:5000/");
 

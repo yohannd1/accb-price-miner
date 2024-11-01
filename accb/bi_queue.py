@@ -2,6 +2,7 @@ from threading import Thread, Lock
 from queue import Queue
 from typing import Callable, Any
 
+
 class BiQueue:
     """Um meio de comunicação many-to-1, iniciando um Thread responsável por receber as mensagens e responder algo.
     Só suporta uma request por vez, via `BiQueue.exchange()`
@@ -18,7 +19,9 @@ class BiQueue:
         """
         self._sender_queue = Queue()
         self._receiver_queue = Queue()
-        self._receiver_thread: Thread = Thread(target=lambda: handler_target(self._sender_queue, self._receiver_queue))
+        self._receiver_thread: Thread = Thread(
+            target=lambda: handler_target(self._sender_queue, self._receiver_queue)
+        )
         self._receiver_thread.start()
         self._exchange_lock = Lock()
 

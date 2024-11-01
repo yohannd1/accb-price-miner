@@ -116,12 +116,16 @@ def route_home() -> str:
     search_id = db.get_incomplete_search_id()
     backup_info = db.get_backup(search_id)
     if backup_info is None:
-        search = False
+        has_backup = False
     else:
         (_, _, done, *_) = backup_info
-        search = done == 0
+        has_backup = done == 0
 
     day = str(date.today()).split("-")[1]
+    search_info = db.run_query(
+        "SELECT * FROM search WHERE done = 1 AND search_date LIKE ?",
+        (f"%%-{day}-%%",),
+    )
 
     search_years = db.run_query(
         "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
@@ -150,12 +154,13 @@ def route_home() -> str:
         template,
         initial_message=initial_message,
         data=city,
-        search=search,
+        has_backup=has_backup,
         product="Iniciando Pesquisa",
         city=city[0][0],
         estab_names=estab_names,
         products=product,
         active=active,
+        search_info=search_info,
         product_len=len(product_names),
         month=MONTHS_PT_BR,
         active_month=day,
@@ -636,11 +641,13 @@ def attempt_search(args: dict) -> None:
     if backup_info is not None:
         (_, _, done, *_) = backup_info
         if done == 1:
-            emit("showNotification", "A pesquisa já estava finalizada.", broadcast=True)
+            emit(
+                "show_notification", "A pesquisa já estava finalizada.", broadcast=True
+            )
             # TODO: salvar a pesquisa do backup?
             return
 
-        emit("showNotification", "Retomando pesquisa...", broadcast=True)
+        emit("show_notification", "Retomando pesquisa...", broadcast=True)
         opts = ScraperOptions.from_backup_info(backup_info)
         scrap = Scraper(opts, state)
 
@@ -684,7 +691,7 @@ def attempt_search(args: dict) -> None:
         state.pause = True
 
     if not state.cancel and not state.pause:
-        emit("showNotification", "Pesquisa concluída.", broadcast=True)
+        emit("show_notification", "Pesquisa concluída.", broadcast=True)
 
         emit(
             "captcha",
@@ -704,22 +711,22 @@ def on_search(args: dict) -> None:
     while True:
         try:
             attempt_search(args)
-        except Exception:
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+            break
+        except Exception as exc:
+            log_error(exc)
 
             error_count += 1
 
             if error_count >= 4:
                 emit(
-                    "captcha.error",
+                    "search.error",
                     "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.",
                     broadcast=True,
                 )
                 return
 
             emit(
-                "showNotification",
+                "show_notification",
                 "Ocorreu um erro durante a pesquisa; ela será reiniciada, aguarde um instante.",
                 broadcast=True,
             )
@@ -748,16 +755,13 @@ def utility_processor() -> dict:
 
 
 def main() -> None:
-    # cli = sys.modules["flask.cli"]
-    # def noop(*_): pass
-    # cli.show_server_banner = noop
+    log(f"Iniciando o servidor...")
 
     force_debug = os.environ.get("ACCB_FORCE_DEBUG") is not None
 
     is_in_bundle = getattr(sys, "frozen", False)
     debug_enabled = force_debug or bool(__file__) and not is_in_bundle
     log(f"{is_in_bundle=}; {debug_enabled=}")
-    log(f"{state.db_manager.resource_path('_dummy')=}")
 
     if debug_enabled:
         os.environ["WDM_LOCAL"] = "1"

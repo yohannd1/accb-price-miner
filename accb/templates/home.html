@@ -13,7 +13,7 @@
   <script type="module" src="{{ url_for('static', filename='js/home.js') }}"></script>
 
   <div hidden id="home-js-data"
-      data-search="{{ search }}"
+      data-has-backup="{{ has_backup }}"
       data-active="{{ active }}"
       data-is-chrome-installed="{{ chrome_installed }}"
       >
@@ -42,8 +42,6 @@
 {% endmacro %}
 
 {% block content %}
-  <city value="{{city}}"/>
-  <search value="false"/>
   <header>
     <div id="top-menu">
       {{ top_logos() }}
@@ -280,44 +278,36 @@
         </div>
           <div class="col s12 m12 center about-item">
             <div class="about-container">
+{% macro about_url(icon, name, href) %}
+  <div>
+    <a target="_blank" href="{{ href }}">
+      <img src="{{ url_for('static', filename=icon) }}"/>
+      {{ name }}
+    </a>
+  </div>
+{% endmacro %}
+
               <div class="about-profile z-depth-5">
-                <img src="{{ url_for('static', filename='img/okay.jpg') }}" />
                 <div>
-                  <div>
-
-                      <a target="_blank" href="https://linkedin.com/in/samuel-vasconcelos-b196001ba/"><img src="{{ url_for('static', filename='img/linkedin.svg') }}" />Samuel Mendonça Vasconcelos</a>
-                  </div>
-                  <div>
-
-                      <a href="https://github.com/smvasconcelos" target="_blank"><img src="{{ url_for('static', filename='img/github.svg') }}" /> github.com/smvasconcelos</a>
-                  </div>
+                  {{ about_url("img/linkedin.svg", "Samuel Mendonça Vasconcelos", "https://linkedin.com/in/samuel-vasconcelos-b196001ba/") }}
+                  {{ about_url("img/github.svg", "github.com/smvasconcelos", "https://github.com/smvasconcelos") }}
                 </div>
               </div>
-              <div class="about-profile z-depth-5">
-                <img style="height: 100px !important;" src="{{ url_for('static', filename='img/marta.jpg') }}" />
-                <div>
-                  <div>
 
-                      <a target="_blank" href="http://lattes.cnpq.br/0053869533760582"><img src="{{ url_for('static', filename='img/lattes.svg') }}" />Marta Magda Dornelles</a>
-                  </div>
-                  <div>
-                      <a onclick="copyToClipboard('mmbertoldi@uesc.br')"><img src="{{ url_for('static', filename='img/gmail.svg') }}" />mmbertoldi@uesc.br</a>
-                  </div>
+              <div class="about-profile z-depth-5">
+                <div>
+                  {{ about_url("img/lattes.svg", "Marta Magda Dornelles", "http://lattes.cnpq.br/0053869533760582") }}
+                  {{ about_url("img/gmail.svg", "mmbertoldi@uesc.br", "mailto:mmbertoldi@uesc.br") }}
                 </div>
               </div>
+
               <div class="about-profile z-depth-5">
-                <img src="{{ url_for('static', filename='img/monica.gif') }}" />
                 <div>
-                  <div>
-
-                      <a href="http://lattes.cnpq.br/6157255488660799"><img src="{{ url_for('static', filename='img/lattes.svg') }}" />Mônica de Moura Pires</a>
-                  </div>
-                  <div>
-
-                      <a onclick="copyToClipboard('mpires@uesc.br')"><img src="{{ url_for('static', filename='img/gmail.svg') }}" />mpires@uesc.br</a>
-                  </div>
+                  {{ about_url("img/lattes.svg", "Mônica de Moura Pires", "http://lattes.cnpq.br/6157255488660799") }}
+                  {{ about_url("img/gmail.svg", "mpires@uesc.br", "mailto:mpires@uesc.br") }}
                 </div>
               </div>
+
             </div>
           </div>
         </div>

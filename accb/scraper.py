@@ -8,6 +8,7 @@ import json
 from time import sleep, time
 import webbrowser
 import traceback
+import random
 from typing import Any, Optional
 from dataclasses import dataclass
 from urllib.request import urlopen
@@ -141,6 +142,9 @@ class Scraper:
         self.start_time = time()
         """Valor do tempo no inicio da pesquisa."""
 
+        self.time_coeff = 4
+        """Valor usado no cálculo de tempo"""
+
     @staticmethod
     def is_connected(test_url: str = "https://www.example.org/") -> bool:
         """Confere a conexão com a URL_PRECODAHORA desejada."""
@@ -204,6 +208,10 @@ class Scraper:
             self.driver.close()
             self.driver.quit()
 
+    def send_logs(self, *messages: str) -> None:
+        log(f"[Scraper.send_logs]: {str.join('\n  ', messages)}")
+        emit("search.log", list(messages), broadcast=True)
+
     def get_data(self, _product: str, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
         # FIXME: tirar argumento `_product`? ele não é usado
@@ -211,7 +219,7 @@ class Scraper:
         assert self.driver is not None
         elements = self.driver.page_source
         soup = BeautifulSoup(elements, "html.parser")
-        search_results = []
+        logs = []
 
         irrelevant_patt = re.compile(r"[^A-Za-z0-9,]+")
         money_patt = re.compile(r" R\$ \d+(,\d{1,2})")
@@ -219,7 +227,6 @@ class Scraper:
         def adjust_and_clean(x: str) -> str:
             return irrelevant_patt.sub(" ", x).lstrip()
 
-        # search_item["search_id"], search_item["city_name"], search_item["estab_name"], search_item["web_name"], search_item["adress"], search_item["price"])
         for item in soup.find_all(True, {"class": "flex-item2"}):
             product_name = adjust_and_clean(item.find("strong").text)
             product_address = adjust_and_clean(
@@ -229,10 +236,6 @@ class Scraper:
                 item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text
             )
             product_price = item.find(text=money_patt).lstrip()
-
-            log(
-                f"Produto encontrado - endereço: {product_address}; estab.: {product_local}; preço: {product_price}; nome: {product_name};"
-            )
 
             if self.stop:
                 return
@@ -248,29 +251,15 @@ class Scraper:
                         "keyword": keyword,
                     }
                 )
-            except Exception:  # FIXME: parar de usar esse except?
-                exc_type, exc_value, exc_tb = sys.exc_info()
-                log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+            except Exception as exc:  # FIXME: parar de usar esse except?
+                log_error(exc)
                 return
 
-            search_results.append(
-                [
-                    str(product_name),
-                    str(product_local),
-                    str(keyword),
-                    str(product_address),
-                    str(product_price),
-                ]
+            logs.append(
+                f"Produto: '{product_name}' em '{product_local}' a {product_price} (palavra chave: {keyword}, endereço: {product_address})"
             )
 
-            emit(
-                "captcha",
-                {
-                    "type": "log",
-                    "data": json.dumps(search_results),
-                },
-                broadcast=True,
-            )
+        self.send_logs(*logs)
 
     def is_in_captcha(self) -> bool:
         """Confere se o usuário precisa resolver o captcha."""
@@ -313,6 +302,15 @@ class Scraper:
 
         self.driver.back()
 
+    def smart_sleep(self, base: float) -> None:
+        """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo."""
+
+        min_time = 0.2
+        value = max(min_time, base * self.time_coeff + random.uniform(-1.0, 1.0))
+        self.send_logs(f"Aguardando por {value:.2f}s...")
+        sleep(value)
+
+
     def captcha_wait_loop(self) -> None:  # FIXME: rename
         """Abre o captcha e aguarda o usuário resolver o captcha."""
 
@@ -322,20 +320,23 @@ class Scraper:
             self.exit_thread(True)
             raise ScraperError("Sem conexão com a rede!")
 
-        log("Aguardando usuário resolver o captcha...")
+        self.send_logs("Aguardando usuário resolver o captcha...")
         while self.is_in_captcha():
             self.open_captcha_and_warn()
-        log("Captcha resolvido!")
+        self.send_logs("Captcha resolvido!")
 
     def run(self) -> bool:
         """Realiza a pesquisa na plataforma do Preço da Hora Bahia. Retorna se a pesquisa funcionou."""
-
-        emit("search.updateProgressBar", {"value": 0.0}, broadcast=True)
+        # TODO: emitir um "search.began" ou algo assim, que aí marca a inicialização das outras coisas também
+        emit("search.update_progress_bar", 0.0, broadcast=True)
 
         # FIXME: retornar exception caso a pesquisa tenha falhado, eu acho.
 
         # multiplicador para tempo de espera
-        times = 4
+        # TODO: parar de usar isso (em favor do self.smart_sleep)
+        times = self.time_coeff
+
+        # TODO: usar isso em forma de Generator, que poderia ser feito cada vez que um sleep é usado, e um for loop em outro lugar poderia constantemente verificar se a pesquisa precisa ser pausada. E com isso talvez seja possível detectar captchas de maneira eficiente também!
 
         try:
             driver = self.driver = open_chrome_driver()
@@ -344,6 +345,7 @@ class Scraper:
             return False
 
         try:
+            # TODO: encontrar uma maneira de usar o self.smart_sleep para isso
             WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.ID, "informe-sefaz-error"))
             )
@@ -352,7 +354,6 @@ class Scraper:
             pass
 
         # * Processo para definir a região desejada para ser realizada a pesquisa
-
         # emit(
         #     "captcha",
         #     {
@@ -372,7 +373,7 @@ class Scraper:
             sleep(1)
         finally:
             driver.find_element(By.CLASS_NAME, "location-box").click()
-            sleep(2 * times)
+            self.smart_sleep(2)
 
         # Botão que abre a opção de inserir o CEP
         try:
@@ -384,10 +385,9 @@ class Scraper:
             sleep(1)
         finally:
             driver.find_element(By.ID, "add-center").click()
-            sleep(2 * times)
+            self.smart_sleep(2)
 
         # Envia o MUNICIPIO desejado para o input
-
         driver.find_element(By.CLASS_NAME, "sbar-municipio").send_keys(
             self.options.city
         )
@@ -399,32 +399,22 @@ class Scraper:
         sleep(1)
         driver.find_element(By.ID, "aplicar").click()
 
-        sleep(2 * times)
+        self.smart_sleep(2)
         product_count = len(self.options.product_info)
 
         for index, (product, keywords) in enumerate(
             self.options.product_info[self.index :]
         ):
+            if self.stop:
+                break
+
             progress_value = 100 * (self.index + index) / product_count
-            log(f"Progress: {progress_value}")
-            emit(
-                "search.updateProgressBar",
-                {"value": progress_value},
-                broadcast=True,
+
+            self.send_logs(
+                f"Começando pesquisa do produto {product} (progresso: {progress_value:.0f}%)"
             )
-
-            log(f"Começando pesquisa do produto {product}")
-
-            if not self.stop:
-                emit(
-                    "captcha",
-                    {
-                        "type": "progress",
-                        "product": product,
-                        "value": progress_value,
-                    },
-                    broadcast=True,
-                )
+            emit("search.began_searching_product", product)
+            emit("search.update_progress_bar", progress_value, broadcast=True)
 
             for index_k, keyword in enumerate(keywords.split(",")[self.index_k :]):
                 if self.stop:
@@ -432,15 +422,14 @@ class Scraper:
                     self.exit_thread()
                     return True
 
-                log(f"Pesquisando keyword {keyword}")
+                self.send_logs(f"Próxima palavra chave: {keyword}")
 
                 active = "{}.{}".format(index + self.index, index_k + self.index_k)
                 duration = (
                     get_time_hms(self.start_time)["minutes"] + self.options.duration
                 )
 
-                log("~~ BEFORE BACKUP")  # FIXME: remove(breakpoint)
-
+                self.send_logs("Atualizando backup...")
                 self.db.update_backup(
                     {
                         "active": active,
@@ -458,11 +447,7 @@ class Scraper:
                     }
                 )
 
-                log("~~ AFTER BACKUP")  # FIXME: remove(breakpoint)
-
-                sleep(1.5 * times)
-
-                log("~~ WILL GET PRODUCT BAR")  # FIXME: remove(breakpoint)
+                self.smart_sleep(1.5)
 
                 # Barra de pesquisa superior (produtos)
                 try:
@@ -474,23 +459,15 @@ class Scraper:
                 finally:
                     search = driver.find_element(By.ID, "top-sbar")
 
-                log("~~ 1")  # FIXME: remove(breakpoint)
-
+                self.send_logs("Digitando palavra chave...")
                 for w in keyword:
                     search.send_keys(w)
                     sleep(0.25)
-
-                log("~~ 2")  # FIXME: remove(breakpoint)
-
-                # Realiza a pesquisa (pressiona enter)
                 search.send_keys(Keys.ENTER)
 
-                log("~~ 3")  # FIXME: remove(breakpoint)
+                self.smart_sleep(3)
 
-                sleep(3 * times)
                 driver.page_source.encode("utf-8")
-
-                log("~~ 4")  # FIXME: remove(breakpoint)
 
                 if self.stop:
                     self.exit = True
@@ -498,17 +475,15 @@ class Scraper:
 
                     return True
 
-                # Espera a página atualizar, ou seja, terminar a pesquisa. O proceso é reconhecido como terminado quando a classe flex-item2 está presente, que é a classe utilizada para estilizar os elementos listados
-
-                log("~~ 5")  # FIXME: remove(breakpoint)
-
+                self.send_logs("Aguardando a pesquisa da palavra chave terminar...")
+                # o processo é reconhecido como terminado quando a classe flex-item2 está presente, que é uma classe de estilo dos elementos listados.
                 try:
                     WebDriverWait(driver, 4 * times).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "flex-item2"))
                     )
                 except Exception:
                     self.captcha_wait_loop()
-                    sleep(times)
+                    self.smart_sleep(1)
 
                 log("~~ 5.1")  # FIXME: remove(breakpoint)
                 flag = 0
@@ -523,9 +498,9 @@ class Scraper:
                         WebDriverWait(driver, 2 * times).until(
                             EC.presence_of_element_located((By.ID, "updateResults"))
                         )
-                        sleep(2 * times)
+                        self.smart_sleep(2)
                         driver.find_element(By.ID, "updateResults").click()
-                        flag = flag + 1
+                        flag += 1
 
                         if flag == 3:
                             break
@@ -546,21 +521,7 @@ class Scraper:
 
             log("~~ 6.1")  # FIXME: remove(breakpoint)
 
-            if not self.stop:
-                log("~~ 6.2")  # FIXME: remove(breakpoint)
-                emit(
-                    "captcha",
-                    {
-                        "type": "progress",
-                        "product": product,
-                        "value": progress_value,
-                    },
-                    broadcast=True,
-                )
-
-            log("~~ 7")  # FIXME: remove(breakpoint)
-
-        log("~~ 7.1")  # FIXME: remove(breakpoint)
+        log("~~ 7")  # FIXME: remove(breakpoint)
 
         if self.stop:
             self.exit = True
@@ -578,8 +539,7 @@ class Scraper:
             }
         )
 
-        log("~~ 9")  # FIXME: remove(breakpoint)
-
+        self.send_logs("Atualizando backup...")
         self.db.update_backup(
             {
                 "active": "0.0",

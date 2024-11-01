@@ -17,9 +17,8 @@ def is_chrome_installed() -> bool:
         driver.close()
         driver.quit()
         return bool(driver)
-    except Exception:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        log_error(traceback.format_exception(exc_type, exc_value, exc_tb))
+    except Exception as exc:
+        log_error(exc)
         return False
 
 
