@@ -34,8 +34,8 @@ CREATE TABLE search_item (
 
 	PRIMARY KEY (search_id, product_name, web_name, adress, price),
 	FOREIGN KEY (search_id) REFERENCES search (id)
-	ON DELETE CASCADE
 	ON UPDATE CASCADE
+	ON DELETE CASCADE
 );
 
 CREATE TABLE backup (
@@ -49,8 +49,8 @@ CREATE TABLE backup (
 	progress_value decimal,
 
 	FOREIGN KEY (search_id) REFERENCES search (id)
-	ON DELETE CASCADE
 	ON UPDATE CASCADE
+	ON DELETE CASCADE
 );
 
 CREATE TABLE product (
@@ -81,8 +81,8 @@ CREATE TABLE estab (
 
 	PRIMARY KEY (estab_name),
 	FOREIGN KEY (city_name) REFERENCES city (city_name)
-	ON DELETE CASCADE
 	ON UPDATE CASCADE
+	ON DELETE CASCADE
 );
 
 

@@ -1096,7 +1096,7 @@ $(document).ready(() => {
             $('#edit-modal .modal-title').remove();
         }
 
-        $.get("/select_city", (response) => {
+        $.get("/db/get_cities", (response) => {
             let estab_name = $(event.currentTarget).attr('value');
             get_modal_content(estab_name, JSON.parse(response));
         });

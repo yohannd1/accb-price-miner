@@ -131,14 +131,11 @@ def route_home() -> str:
         "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
     )
 
-    city = db.get_city()
-    estab_names = db.get_estab()
-    product = db.get_product()
+    city_names = [c.name for c in db.get_cities()]
 
-    # print("CONNECTED {}".format(state.connected_count))
-    # Se tiver mais que uma pagina aberta, renderiza o notallowed.html,
-    # por algum motivo o flask com socketio chama a função de conexão 2x então
-    # acaba ficando 0 ou 2 já que , 0 + 1 + 1 = 2
+    # Se tiver mais que uma pagina aberta, renderiza o notallowed.html. Por
+    # algum motivo o flask com socketio chama a função de conexão 2x, e então
+    # acaba ficando 0 ou 2 já que 0 + 1 + 1 = 2
     template = "home.html" if 0 >= state.connected_count <= 2 else "notallowed.html"
 
     if not is_chrome_installed():
@@ -153,12 +150,8 @@ def route_home() -> str:
     return render_template(
         template,
         initial_message=initial_message,
-        data=city,
         has_backup=has_backup,
-        product="Iniciando Pesquisa",
-        city=city[0][0],
-        estab_names=estab_names,
-        products=product,
+        city_names=city_names,
         active=active,
         search_info=search_info,
         product_len=len(product_names),
@@ -204,8 +197,12 @@ def route_remove_product() -> dict:
 def route_select_product() -> str:
     """Rota de seleção de produtos."""
 
-    products = state.db_manager.get_product()
-    return json.dumps(products)
+    products = state.db_manager.get_products()
+
+    # TODO: parar de usar assim (ver dataclass.asdict ou alguma conversão semi-automática p/ tupla)
+    retroencoded = [(p.name, str.join(",", p.keywords)) for p in products]
+
+    return json.dumps(retroencoded)
 
 
 @app.route("/select_search_data")
@@ -343,13 +340,12 @@ def route_insert_estab() -> dict:
     }
 
 
-@app.route("/select_city")
-def route_select_city() -> str:
+@app.route("/db/get_cities")
+def route_db_get_cities() -> str:
     """Rota de seleção de cidades no banco de dados."""
 
     db = state.db_manager
-    g.cities = db.get_city()
-    return json.dumps(g.cities)
+    return json.dumps([c.name for c in db.get_cities()])
 
 
 @app.route("/insert_city")
@@ -479,9 +475,9 @@ def route_clean_search() -> dict:
     if generate:
         limpeza_path = state.output_path / "Limpeza"
 
-        for city_name, *_ in db.get_city():
+        for city in db.get_cities():
             estab_data = db.run_query(
-                "SELECT * FROM estab WHERE city_name = ?", (city_name,)
+                "SELECT * FROM estab WHERE city_name = ?", (city.name,)
             )
             args = db.run_query(
                 "SELECT DISTINCT id,search_date FROM search WHERE done = 1"
@@ -658,7 +654,10 @@ def attempt_search(args: dict) -> None:
         active = "0.0"
         estab_names = json.loads(args["names"])
         estabs = db.get_estab()
-        product = db.get_product()
+
+        # TODO: parar de usar isso
+        product_info = [(p.name, str.join(",", p.keywords)) for p in db.get_products()]
+
         duration = 0
 
         estab_data = [
@@ -671,7 +670,7 @@ def attempt_search(args: dict) -> None:
             locals=estab_data,
             city=city,
             locals_name=estab_names,
-            product_info=product,
+            product_info=product_info,
             active=active,
             id=search_id,
             backup=False,

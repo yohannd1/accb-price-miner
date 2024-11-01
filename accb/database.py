@@ -11,9 +11,9 @@ from datetime import date
 import os
 import json
 
-from typing import Any, Sequence, Generator, Optional
+from typing import Any, Sequence, Generator, Optional, Iterable
 
-from accb.model import Backup
+from accb.model import Backup, Product, City
 from accb.utils import log
 
 DB_PATH = "accb.sqlite"
@@ -244,7 +244,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            sql_query = """INSERT INTO search_item(search_id, product_name, web_name,adress, price, keyword) VALUES(?,?,?,?,?,?)"""
+            sql_query = """INSERT INTO search_item(search_id, product_name, web_name, adress, price, keyword) VALUES(?,?,?,?,?,?)"""
             cursor.execute(
                 sql_query,
                 (
@@ -268,14 +268,13 @@ class DatabaseManager:
             )
             cursor.execute(query, (value,))
 
-    def get_city(self):
+    def get_cities(self) -> Iterable[City]:
         """Seleciona uma cidade do banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            cursor.execute("""SELECT * FROM city ORDER BY city_name ASC""")
-            cities = cursor.fetchall()
-            return cities
+            cursor.execute("""SELECT city_name FROM city ORDER BY city_name ASC""")
+            return (City(name=name) for (name,) in cursor.fetchall())
 
     def get_search(self, where: str, equals: Any = None) -> list[Any]:
         """Seleciona uma pesquisa do banco de dados."""
@@ -329,13 +328,18 @@ class DatabaseManager:
             res = cursor.execute(query, args)
             return res.fetchone()
 
-    def get_product(self):
-        """Seleciona produtos do banco de dados."""
+    def get_products(self) -> Iterable[Product]:
+        """Obtém a lista de produtos do banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            res = cursor.execute("""SELECT * FROM product ORDER BY product_name ASC""")
-            return res.fetchall()
+            res = cursor.execute(
+                """SELECT product_name, keywords FROM product ORDER BY product_name ASC"""
+            )
+            return (
+                Product(name=name, keywords=keywords.split(","))
+                for (name, keywords) in res.fetchall()
+            )
 
     def get_estab(self):
         """Seleciona estabelecimentos do banco de dados."""
