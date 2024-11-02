@@ -10,7 +10,7 @@ from threading import Timer
 from queue import Queue
 from typing import Any
 
-from flask import Flask, render_template, request, g, Response
+from flask import Flask, render_template, request, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
 
@@ -26,7 +26,7 @@ from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.web_driver import is_chrome_installed
-from accb.database import DatabaseManager
+from accb.database import DatabaseManager, table_dump
 from accb.bi_queue import BiQueue
 
 app = Flask(__name__)
@@ -271,9 +271,9 @@ def route_select_estab() -> str:
 
     db = state.db_manager
     city = request.args.get("city")
-    g.estab = db.get_estab()
-    g.estab_list = [estab for estab in g.estab if estab[0] == city]
-    return json.dumps(g.estab_list)
+    estab = db.get_estab_old()
+    estab_list = [e for e in estab if e[0] == city]
+    return json.dumps(estab_list)
 
 
 @app.route("/remove_estab")
@@ -426,13 +426,14 @@ def route_export_database() -> dict:
     """Rota responsável por exportar os dados do banco"""
 
     output_filename = "importar.sql"
-    tables = ("city", "estab", "product")
+    tables_to_dump = ("city", "estab", "product")
 
     db = state.db_manager
     with open(output_filename, "w+", encoding=ENCODING) as f:
-        for table in tables:
-            for line in db.dump_table(table):
-                f.write(f"{line}\n")
+        with state.db_manager.db_connection() as conn:
+            for table in tables_to_dump:
+                for line in table_dump(conn, table):
+                    f.write(f"{line}\n")
 
     return {
         "status": "success",
@@ -480,7 +481,7 @@ def route_clean_search() -> dict:
                 "SELECT * FROM estab WHERE city_name = ?", (city.name,)
             )
             args = db.run_query(
-                "SELECT DISTINCT id,search_date FROM search WHERE done = 1"
+                "SELECT DISTINCT id, search_date FROM search WHERE done = 1"
             )
 
             for search_id, search_date in args:
@@ -532,7 +533,7 @@ def route_generate_file() -> dict:
     assert names is not None
 
     estab_names = json.loads(names)
-    estabs = db.get_estab()
+    estabs = db.get_estab_old()
 
     estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
 
@@ -653,7 +654,7 @@ def attempt_search(args: dict) -> None:
         search_id = db.save_search(False, city, 0)
         active = "0.0"
         estab_names = json.loads(args["names"])
-        estabs = db.get_estab()
+        estabs = db.get_estab_old()
 
         # TODO: parar de usar isso
         product_info = [(p.name, str.join(",", p.keywords)) for p in db.get_products()]

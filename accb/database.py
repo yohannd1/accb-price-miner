@@ -13,7 +13,7 @@ import json
 
 from typing import Any, Sequence, Generator, Optional, Iterable
 
-from accb.model import Backup, Product, City
+from accb.model import Backup, Product, City, Estab
 from accb.utils import log
 
 DB_PATH = "accb.sqlite"
@@ -57,58 +57,8 @@ class DatabaseConnection:
 
 class DatabaseManager:
     def __init__(self) -> None:
-        pass
-
-    def dump_table(self, table_name: str) -> Generator[str, None, None]:
-        """Importa um arquivo sql para ser injetado no banco de dados.
-
-        ```
-        Mimic the sqlite3 console shell's .dump command
-
-        Author: Paul Kippes <kippesp@gmail.com>
-
-        Returns an iterator to the dump of the database in an SQL text format.
-
-        Used to produce an SQL dump of the database.  Useful to save an in-memory
-        database for later restoration.  This function should not be called
-        directly but instead called from the Connection method, iterdump().
-        ```
-        """
-
-        cursor = sqlite3.connect(DB_PATH).cursor()
-
-        yield "BEGIN TRANSACTION;"
-
-        # sqlite_master table contains the SQL CREATE statements for the database.
-        q = """
-            SELECT name, type, sql
-            FROM sqlite_master
-                WHERE sql NOT NULL AND
-                type == 'table' AND
-                name == :table_name
-            """
-        schema_res = cursor.execute(q, {"table_name": table_name})
-        for table_name, _type, sql in schema_res.fetchall():
-            if table_name == "sqlite_sequence":
-                yield "DELETE FROM sqlite_sequence;"
-            elif table_name == "sqlite_stat1":
-                yield "ANALYZE sqlite_master;"
-            elif table_name.startswith("sqlite_"):
-                continue
-            else:
-                yield f"{sql};"
-
-            # Build the insert statement for each row of the current table
-            res = cursor.execute("PRAGMA table_info('%s')" % table_name)
-            column_names = [str(table_info[1]) for table_info in res.fetchall()]
-            q = 'SELECT \'INSERT INTO "%(tbl_name)s" VALUES('
-            q += ",".join(["'||quote(" + col + ")||'" for col in column_names])
-            q += ")' FROM '%(tbl_name)s'"
-            query_res = cursor.execute(q % {"tbl_name": table_name})
-            for row in query_res:
-                yield f"{row[0]};"
-
-        yield "COMMIT;"
+        self.conn_count = 0
+        """A quantidade de vezes que uma conexão foi criada."""
 
     def import_database(self, file_path=None) -> None:
         """Importa um arquivo sql e injeta ele no banco de dados."""
@@ -143,35 +93,84 @@ class DatabaseManager:
         base_path = getattr(sys, "_MEIPASS", None) or os.path.abspath(".")
         return os.path.join(base_path, path)
 
-    def db_start(self):
-        """Cria a estrutura do banco e inicia a conexão com o banco de dados uma vez que ele existe."""
+    def _init_conn(self) -> sqlite3.Connection:
+        """Inicializa o banco de dados no caminho padrão, e retorna sua conexão."""
+
         schema = self.resource_path("schema.sql")
-        cursor = sqlite3.connect(DB_PATH).cursor()
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
 
         with open(schema, "r", encoding=ENCODING) as f:
-            sql_as_string = f.read()
+            cursor.executescript(f.read())
 
-        cursor.executescript(sql_as_string)
-        # subprocess.check_call(["attrib", "+H", DB_PATH])
+        conn.commit()
+        return conn
+
+    def _perform_conn_upgrade(self, cursor: sqlite3.Cursor, version: int) -> int:
+        """Faz os upgrades necessários, e retorna a versão mais recente."""
+
+        def es(query: str) -> None:
+            cursor.executescript(query)
+
+        if version <= 0:
+            es("""
+            PRAGMA foreign_keys = ON;
+            PRAGMA case_sensitive_like = true;
+
+            UPDATE city SET city_name = "Ilhéus" WHERE city_name = "IlhÃ©us";
+
+            CREATE TABLE option (
+                key text,
+                value text,
+
+                PRIMARY KEY (key)
+            );
+            """)
+
+        final_version = 1
+        if cursor.execute("SELECT key FROM option WHERE key='version'").fetchone() is not None:
+            cursor.execute("UPDATE option SET value=? WHERE key='version'", (final_version,))
+        else:
+            cursor.execute("INSERT INTO option (key, value) VALUES ('version', ?)", (final_version,))
+
+        return final_version
+
+    def _upgrade_conn(self, conn: sqlite3.Connection) -> None:
+        cursor = conn.cursor()
+
+        has_option_table = cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='option';").fetchone() is not None
+
+        if has_option_table:
+            version = int(cursor.execute("SELECT value FROM option WHERE key='version'").fetchone())
+        else:
+            version = 0
+
+        log(f"Banco de dados está na versão {version}. Fazendo upgrades necessários...")
+        new_version = self._perform_conn_upgrade(cursor, version)
+        conn.commit()
+
+        if version == new_version:
+            log(f"Nenhum upgrade foi preciso.")
+        else:
+            log(f"Upgrade feito para a versão {new_version}.")
+
 
     def db_connection(self) -> DatabaseConnection:
         """Realiza a conexão com o banco de dados ou o povoa caso não exista."""
 
         if exists(DB_PATH):
             conn = sqlite3.connect(DB_PATH)
-            conn.execute("PRAGMA foreign_keys = ON")
         else:
-            self.db_start()
-            conn = sqlite3.connect(DB_PATH)
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute("PRAGMA case_sensitive_like = true")
-            self.update_city({"city_name": "Ilhéus", "primary_key": "IlhÃ©us"})
-
+            conn = self._init_conn()
             for estab_name in ("itabuna.json", "ilheus.json"):
                 with open(self.resource_path(estab_name), "r", encoding=ENCODING) as f:
                     estab_info = json.load(f)
                     for estab in estab_info:
                         self.save_estab(estab)
+
+        if self.conn_count == 0:
+            self._upgrade_conn(conn)
+        self.conn_count += 1
 
         return DatabaseConnection(conn)
 
@@ -203,7 +202,7 @@ class DatabaseManager:
             assert id_ is not None
             return id_
 
-    def save_estab(self, estab):
+    def save_estab(self, estab) -> None:
         """Salva os estabelecimentos no banco de dados."""
 
         with self.db_connection() as conn:
@@ -228,14 +227,14 @@ class DatabaseManager:
             cursor.execute(
                 query,
                 (
-                    str(backup["active"]),
-                    backup["city"],
-                    int(backup["done"]),
-                    backup["estab_info"],
-                    backup["product_info"],
-                    backup["search_id"],
-                    backup["duration"],
-                    backup["progress_value"],
+                    backup.active,
+                    backup.city,
+                    int(backup.done),
+                    json.dumps(backup.estab_info),
+                    json.dumps(backup.product_info),
+                    backup.search_id,
+                    backup.duration,
+                    backup.progress_value,
                 ),
             )
 
@@ -257,7 +256,6 @@ class DatabaseManager:
                 ),
             )
 
-    # query
     def delete(self, table, where, value):
         """Deleta um elemento do banco de dados."""
 
@@ -341,8 +339,22 @@ class DatabaseManager:
                 for (name, keywords) in res.fetchall()
             )
 
-    def get_estab(self):
+    def get_estabs(self) -> Iterable[Estab]:
+        with self.db_connection() as conn:
+            cursor = conn.get_cursor()
+            res = cursor.execute(
+                """SELECT city_name, estab_name, adress, web_name FROM estab"""
+            )
+            return (
+                Estab(
+                    city_name=city_name, name=name, address=address, web_name=web_name
+                )
+                for (city_name, name, address, web_name) in res.fetchall()
+            )
+
+    def get_estab_old(self):
         """Seleciona estabelecimentos do banco de dados."""
+        # FIXME: parar de usar isso (usar get_estabs)
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
@@ -385,26 +397,23 @@ class DatabaseManager:
             query = """UPDATE city SET city_name = ? WHERE city_name = ?"""
             cursor.execute(query, (city["city_name"], city["primary_key"]))
 
-    def update_backup(self, backup):
-        """Atualiza um backup de pesquisa do banco de dados."""
-
+    def update_backup(self, backup: Backup) -> None:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """UPDATE backup SET active = ?, city = ?, done = ?, estab_info = ?, product_info = ?, duration = ? WHERE search_id = ?"""
             cursor.execute(
                 query,
                 (
-                    str(backup["active"]),
-                    backup["city"],
-                    backup["done"],
-                    backup["estab_info"],
-                    backup["product_info"],
-                    backup["duration"],
-                    backup["search_id"],
+                    backup.active,
+                    backup.city,
+                    backup.done,
+                    json.dumps(backup.estab_info),
+                    json.dumps(backup.product_info),
+                    backup.duration,
+                    backup.search_id,
                 ),
             )
 
-    # query
     def update_search(self, search):
         """Atualiza uma pesquisa de pesquisa do banco de dados."""
 
@@ -470,3 +479,55 @@ class DatabaseManager:
             return None
 
         return result[0][0]
+
+
+def table_dump(conn: DatabaseConnection, table_name: str) -> Generator[str, None, None]:
+    """Importa um arquivo sql para ser injetado no banco de dados.
+
+    ```
+    Mimic the sqlite3 console shell's .dump command
+
+    Author: Paul Kippes <kippesp@gmail.com>
+
+    Returns an iterator to the dump of the database in an SQL text format.
+
+    Used to produce an SQL dump of the database.  Useful to save an in-memory
+    database for later restoration.  This function should not be called
+    directly but instead called from the Connection method, iterdump().
+    ```
+    """
+
+    cursor = conn.get_cursor()
+
+    yield "BEGIN TRANSACTION;"
+
+    # sqlite_master table contains the SQL CREATE statements for the database.
+    q = """
+        SELECT name, type, sql
+        FROM sqlite_master
+            WHERE sql NOT NULL AND
+            type == 'table' AND
+            name == :table_name
+        """
+    schema_res = cursor.execute(q, {"table_name": table_name})
+    for table_name, _type, sql in schema_res.fetchall():
+        if table_name == "sqlite_sequence":
+            yield "DELETE FROM sqlite_sequence;"
+        elif table_name == "sqlite_stat1":
+            yield "ANALYZE sqlite_master;"
+        elif table_name.startswith("sqlite_"):
+            continue
+        else:
+            yield f"{sql};"
+
+        # Build the insert statement for each row of the current table
+        res = cursor.execute("PRAGMA table_info('%s')" % table_name)
+        column_names = [str(table_info[1]) for table_info in res.fetchall()]
+        q = 'SELECT \'INSERT INTO "%(tbl_name)s" VALUES('
+        q += ",".join(["'||quote(" + col + ")||'" for col in column_names])
+        q += ")' FROM '%(tbl_name)s'"
+        query_res = cursor.execute(q % {"tbl_name": table_name})
+        for row in query_res:
+            yield f"{row[0]};"
+
+    yield "COMMIT;"

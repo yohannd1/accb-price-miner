@@ -1,10 +1,3 @@
-DROP TABLE IF EXISTS city;
-DROP TABLE IF EXISTS estab;
-DROP TABLE IF EXISTS product;
-DROP TABLE IF EXISTS search_item;
-DROP TABLE IF EXISTS search;
-DROP TABLE IF EXISTS backup;
-
 CREATE TABLE city (
 	city_name text,
 
@@ -18,8 +11,9 @@ CREATE TABLE search (
 	search_date date,
 	duration decimal,
 
-	PRIMARY KEY(id),
+	PRIMARY KEY (id),
 	FOREIGN KEY (city_name) REFERENCES city (city_name)
+
 	ON UPDATE CASCADE
 	ON DELETE CASCADE
 );
@@ -34,6 +28,7 @@ CREATE TABLE search_item (
 
 	PRIMARY KEY (search_id, product_name, web_name, adress, price),
 	FOREIGN KEY (search_id) REFERENCES search (id)
+
 	ON UPDATE CASCADE
 	ON DELETE CASCADE
 );
@@ -49,6 +44,7 @@ CREATE TABLE backup (
 	progress_value decimal,
 
 	FOREIGN KEY (search_id) REFERENCES search (id)
+
 	ON UPDATE CASCADE
 	ON DELETE CASCADE
 );
@@ -57,7 +53,7 @@ CREATE TABLE product (
 	product_name text,
 	keywords varchar,
 
-	PRIMARY KEY(product_name)
+	PRIMARY KEY (product_name)
 );
 
 CREATE TABLE keyword (
@@ -70,6 +66,7 @@ CREATE TABLE keyword (
 
 	PRIMARY KEY (id),
 	FOREIGN KEY (product_name) REFERENCES product (product_name)
+
 	ON UPDATE CASCADE
 );
 
@@ -81,6 +78,7 @@ CREATE TABLE estab (
 
 	PRIMARY KEY (estab_name),
 	FOREIGN KEY (city_name) REFERENCES city (city_name)
+
 	ON UPDATE CASCADE
 	ON DELETE CASCADE
 );

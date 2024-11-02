@@ -101,8 +101,8 @@ class ScraperOptions:
             active=self.active,
             city=self.city,
             done=is_done,
-            estab_info=json.dumps({"names": self.locals_name, "info": self.locals}),
-            product_info=json.dumps(self.product_info),
+            estab_info={"names": self.locals_name, "info": self.locals},
+            product_info=self.product_info,
             search_id=self.id,
             duration=0,
             progress_value=-1,
@@ -123,7 +123,7 @@ class Scraper:
         self.db = self.state.db_manager
 
         self.index, self.index_k = [int(x) for x in options.active.split(".")]
-        """Index dos produtos e palavras chaves (em caso de reinicialização através de backup);"""
+        """Index dos produtos e palavras chaves (em caso de reinicialização através de backup)"""
         # TODO: verificar isso e documentar melhor
 
         self.driver: Optional[Chrome] = None
@@ -310,7 +310,6 @@ class Scraper:
         self.send_logs(f"Aguardando por {value:.2f}s...")
         sleep(value)
 
-
     def captcha_wait_loop(self) -> None:  # FIXME: rename
         """Abre o captcha e aguarda o usuário resolver o captcha."""
 
@@ -430,21 +429,17 @@ class Scraper:
                 )
 
                 self.send_logs("Atualizando backup...")
+
                 self.db.update_backup(
-                    {
-                        "active": active,
-                        "city": self.options.city,
-                        "done": 0,
-                        "estab_info": json.dumps(
-                            {
-                                "names": self.options.locals_name,
-                                "info": self.options.locals,
-                            }
-                        ),
-                        "product_info": json.dumps(self.options.product_info),
-                        "search_id": self.options.id,
-                        "duration": duration,
-                    }
+                    Backup(
+                        active=active,
+                        city=self.options.city,
+                        done=False,
+                        estab_info=self.make_estab_info(),
+                        product_info=self.options.product_info,
+                        search_id=self.options.id,
+                        duration=duration,
+                    )
                 )
 
                 self.smart_sleep(1.5)
@@ -540,21 +535,27 @@ class Scraper:
         )
 
         self.send_logs("Atualizando backup...")
+
         self.db.update_backup(
-            {
-                "active": "0.0",
-                "city": self.options.city,
-                "done": 1,
-                "estab_info": json.dumps(
-                    {"names": self.options.locals_name, "info": self.options.locals}
-                ),
-                "product_info": json.dumps(self.options.product_info),
-                "search_id": self.options.id,
-                "duration": duration["minutes"] + self.options.duration,
-            }
+            Backup(
+                active="0.0",
+                city=self.options.city,
+                done=True,
+                estab_info=self.make_estab_info(),
+                product_info=self.options.product_info,
+                search_id=self.options.id,
+                duration=duration["minutes"] + self.options.duration,
+            )
         )
 
         driver.close()
         driver.quit()
 
         return True
+
+    def make_estab_info(self) -> dict:
+        # FIXME: parar de usar isso (não parece ser usado)
+        return {
+            "names": self.options.locals_name,
+            "info": self.options.locals,
+        }

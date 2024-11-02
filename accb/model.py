@@ -2,16 +2,16 @@ from dataclasses import dataclass
 from typing import TypedDict
 
 
-# TODO: portar para dataclass
-class Backup(TypedDict):
+@dataclass
+class Backup:
     active: str
     city: str
     done: bool
-    estab_info: str  # TODO: consertar isso (p/ n ser JSON cru)
-    product_info: str  # TODO: consertar isso (p/ n ser JSON cru)
+    estab_info: dict
+    product_info: dict
     search_id: str
     duration: int
-    progress_value: float
+    progress_value: float = -1  # FIXME: remover isso
 
 
 @dataclass
@@ -31,3 +31,12 @@ class Estab:
     address: str
     city_name: str
     web_name: str
+
+
+@dataclass
+class Search:
+    id: int
+    done: bool
+    city_name: str
+    search_date: str
+    duration: float
