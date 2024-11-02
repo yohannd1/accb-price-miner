@@ -452,13 +452,13 @@ class Scraper:
                 except Exception:
                     self.captcha_wait_loop()
                 finally:
-                    search = driver.find_element(By.ID, "top-sbar")
+                    search_bar = driver.find_element(By.ID, "top-sbar")
 
                 self.send_logs("Digitando palavra chave...")
                 for w in keyword:
-                    search.send_keys(w)
+                    search_bar.send_keys(w)
                     sleep(0.25)
-                search.send_keys(Keys.ENTER)
+                search_bar.send_keys(Keys.ENTER)
 
                 self.smart_sleep(3)
 
@@ -526,27 +526,22 @@ class Scraper:
         log("~~ 8")  # FIXME: remove(breakpoint)
 
         duration = get_time_hms(self.start_time)
-        self.db.update_search(
-            {
-                "id": self.options.id,
-                "done": 1,
-                "duration": duration["minutes"] + self.options.duration,
-            }
-        )
+
+        search = self.db.get_search_by_id(self.options.id)
+        assert search is not None
+        search._done = True
+        search.total_duration = duration["minutes"] + self.options.duration
+        self.db.update_search(search)
 
         self.send_logs("Atualizando backup...")
 
-        self.db.update_backup(
-            Backup(
-                active="0.0",
-                city=self.options.city,
-                done=True,
-                estab_info=self.make_estab_info(),
-                product_info=self.options.product_info,
-                search_id=self.options.id,
-                duration=duration["minutes"] + self.options.duration,
-            )
-        )
+        backup = self.db.get_backup_by_id(self.options.id)
+        assert backup is not None
+        backup.active = "0.0"
+        backup.city = self.options.city
+        backup.done = True
+        backup.duration = duration["minutes"] + self.options.duration
+        self.db.update_backup(backup)
 
         driver.close()
         driver.quit()

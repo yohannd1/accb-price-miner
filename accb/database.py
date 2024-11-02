@@ -13,7 +13,7 @@ import json
 
 from typing import Any, Sequence, Generator, Optional, Iterable
 
-from accb.model import Backup, Product, City, Estab
+from accb.model import Backup, Product, City, Estab, Search, SearchItem, OngoingSearch
 from accb.utils import log
 
 DB_PATH = "accb.sqlite"
@@ -109,11 +109,8 @@ class DatabaseManager:
     def _perform_conn_upgrade(self, cursor: sqlite3.Cursor, version: int) -> int:
         """Faz os upgrades necessários, e retorna a versão mais recente."""
 
-        def es(query: str) -> None:
-            cursor.executescript(query)
-
         if version <= 0:
-            es("""
+            query = """
             PRAGMA foreign_keys = ON;
             PRAGMA case_sensitive_like = true;
 
@@ -125,35 +122,55 @@ class DatabaseManager:
 
                 PRIMARY KEY (key)
             );
-            """)
+            """
+            cursor.executescript(query)
 
-        final_version = 1
-        if cursor.execute("SELECT key FROM option WHERE key='version'").fetchone() is not None:
-            cursor.execute("UPDATE option SET value=? WHERE key='version'", (final_version,))
+        if version <= 1:
+            # essa tabela parece não ser usada
+            if cursor.execute("SELECT * FROM keyword").fetchone() is None:
+                cursor.execute("DROP TABLE keyword")
+
+        final_version = 2
+        if (
+            cursor.execute("SELECT key FROM option WHERE key='version'").fetchone()
+            is not None
+        ):
+            cursor.execute(
+                "UPDATE option SET value=? WHERE key='version'", (final_version,)
+            )
         else:
-            cursor.execute("INSERT INTO option (key, value) VALUES ('version', ?)", (final_version,))
+            cursor.execute(
+                "INSERT INTO option (key, value) VALUES ('version', ?)",
+                (final_version,),
+            )
 
         return final_version
 
     def _upgrade_conn(self, conn: sqlite3.Connection) -> None:
         cursor = conn.cursor()
 
-        has_option_table = cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='option';").fetchone() is not None
+        has_option_table = (
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='option';"
+            ).fetchone()
+            is not None
+        )
 
         if has_option_table:
-            version = int(cursor.execute("SELECT value FROM option WHERE key='version'").fetchone())
+            (val,) = cursor.execute(
+                "SELECT value FROM option WHERE key='version'"
+            ).fetchone()
+            version = int(val)
         else:
             version = 0
 
         log(f"Banco de dados está na versão {version}. Fazendo upgrades necessários...")
         new_version = self._perform_conn_upgrade(cursor, version)
-        conn.commit()
 
         if version == new_version:
             log(f"Nenhum upgrade foi preciso.")
         else:
             log(f"Upgrade feito para a versão {new_version}.")
-
 
     def db_connection(self) -> DatabaseConnection:
         """Realiza a conexão com o banco de dados ou o povoa caso não exista."""
@@ -169,7 +186,13 @@ class DatabaseManager:
                         self.save_estab(estab)
 
         if self.conn_count == 0:
-            self._upgrade_conn(conn)
+            try:
+                self._upgrade_conn(conn)
+                conn.commit()
+            except sqlite3.Error as exc:
+                conn.rollback()
+                raise exc
+
         self.conn_count += 1
 
         return DatabaseConnection(conn)
@@ -202,19 +225,19 @@ class DatabaseManager:
             assert id_ is not None
             return id_
 
-    def save_estab(self, estab) -> None:
+    def save_estab(self, estab: Estab) -> None:
         """Salva os estabelecimentos no banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """INSERT INTO estab(city_name, estab_name, adress, web_name) VALUES(?, ?, ?, ?)"""
+            query = """INSERT INTO estab(estab_name, city_name, adress, web_name) VALUES(?, ?, ?, ?)"""
             cursor.execute(
                 query,
                 (
-                    estab["city_name"],
-                    estab["estab_name"],
-                    estab["adress"],
-                    estab["web_name"],
+                    estab.name,
+                    estab.city_name,
+                    estab.address,
+                    estab.web_name,
                 ),
             )
 
@@ -262,7 +285,7 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = self.safe_query_format(
-                """ DELETE FROM {} WHERE {} = ? """, table, where
+                """ DELETE FROM {} WHERE {}=? """, table, where
             )
             cursor.execute(query, (value,))
 
@@ -283,7 +306,7 @@ class DatabaseManager:
             args = ()
         else:
             query = self.safe_query_format(
-                """ SELECT * FROM search WHERE {} = ? ORDER BY id ASC """, where
+                """ SELECT * FROM search WHERE {}=? ORDER BY id ASC """, where
             )
             args = (equals,)
 
@@ -299,9 +322,7 @@ class DatabaseManager:
             query = "SELECT * FROM search_item ORDER BY search_id ASC"
             args = ()
         else:
-            query = (
-                "SELECT * FROM search_item WHERE search_id = ? ORDER BY search_id ASC"
-            )
+            query = "SELECT * FROM search_item WHERE search_id=? ORDER BY search_id ASC"
             args = (search_id,)
 
         with self.db_connection() as conn:
@@ -318,7 +339,7 @@ class DatabaseManager:
             query = "SELECT * FROM backup"
             args = ()
         else:
-            query = "SELECT * FROM backup WHERE search_id = ?"
+            query = "SELECT * FROM backup WHERE search_id=?"
             args = (id_,)
 
         with self.db_connection() as conn:
@@ -366,7 +387,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """UPDATE estab SET city_name=?, estab_name=?, adress=?, web_name=? WHERE estab_name = ?"""
+            query = """UPDATE estab SET city_name=?, estab_name=?, adress=?, web_name=? WHERE estab_name=?"""
             cursor.execute(
                 query,
                 (
@@ -383,7 +404,9 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """UPDATE product SET product_name = ?, keywords = ? WHERE product_name = ?"""
+            query = (
+                """UPDATE product SET product_name=?, keywords=? WHERE product_name=?"""
+            )
             cursor.execute(
                 query,
                 (product["product_name"], product["keywords"], product["primary_key"]),
@@ -394,13 +417,13 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """UPDATE city SET city_name = ? WHERE city_name = ?"""
+            query = """UPDATE city SET city_name=? WHERE city_name=?"""
             cursor.execute(query, (city["city_name"], city["primary_key"]))
 
     def update_backup(self, backup: Backup) -> None:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """UPDATE backup SET active = ?, city = ?, done = ?, estab_info = ?, product_info = ?, duration = ? WHERE search_id = ?"""
+            query = """UPDATE backup SET active=?, city=?, done=?, estab_info=?, product_info=?, duration=? WHERE search_id=?"""
             cursor.execute(
                 query,
                 (
@@ -414,13 +437,13 @@ class DatabaseManager:
                 ),
             )
 
-    def update_search(self, search):
+    def update_search(self, search: Search) -> None:
         """Atualiza uma pesquisa de pesquisa do banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """UPDATE search SET done = ?, duration = ? WHERE id = ?"""
-            cursor.execute(query, (search["done"], search["duration"], search["id"]))
+            query = """UPDATE search SET done=?, duration=? WHERE id=?"""
+            cursor.execute(query, (int(search._done), search.total_duration, search.id))
 
     def run_query(self, query: str, args: tuple = ()) -> list[Any]:
         """Roda uma query específica no banco de dados."""
@@ -428,33 +451,7 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             res = cursor.execute(query, args)
-            return res.fetchall()
-
-    def update_keyword(self, keyword):
-        """Atualiza uma palavra chave do banco de dados."""
-
-        with self.db_connection() as conn:
-            cursor = conn.get_cursor()
-            query = """UPDATE keyword SET keyword = ?, rate = ?, similarity = ? WHERE id = ?"""
-            cursor.execute(
-                query, (keyword["keyword"], keyword["rate"], keyword["similarity"])
-            )
-
-    def save_keyword(self, keyword) -> None:
-        """Salva uma palavra chave no banco de dados."""
-
-        with self.db_connection() as conn:
-            cursor = conn.get_cursor()
-            query = """INSERT INTO keyword(product_name, keyword, rate, similarity) VALUES(?, ?, ?, ?)"""
-            cursor.execute(
-                query,
-                (
-                    keyword["product_name"],
-                    keyword["keyword"],
-                    keyword["rate"],
-                    keyword["similarity"],
-                ),
-            )
+            return list(res)
 
     @staticmethod
     def safe_query_format(fmt: str, *args: str) -> str:
@@ -469,16 +466,50 @@ class DatabaseManager:
         return fmt.format(*args)
 
     def get_incomplete_search_id(self) -> Optional[int]:
-        # query = "SELECT id FROM search WHERE done = 0 AND search_date = ? ORDER BY city_name ASC"
-        # result = db.run_query(query, (str(date.today(),)))
-
         query = "SELECT id FROM search WHERE done = 0 ORDER BY search_date DESC"
         result = self.run_query(query)
 
         if len(result) == 0:
             return None
 
-        return result[0][0]
+        (id_,) = result[0]
+        return id_
+
+    def get_search_by_id(self, id: int) -> Optional[Search]:
+        result = self.run_query(
+            "SELECT done, city_name, search_date, duration FROM search WHERE id=?",
+            (id,),
+        )
+
+        if len(result) == 0:
+            return None
+
+        return Search(
+            id=id,
+            _done=bool(result[0]),
+            city_name=result[1],
+            start_date=result[2],
+            total_duration=result[3],
+        )
+
+    def get_backup_by_id(self, id: int) -> Optional[Backup]:
+        result = self.run_query(
+            "SELECT active, city, done, estab_info, product_info, search_id, duration FROM search WHERE id=?",
+            (id,),
+        )
+
+        if len(result) == 0:
+            return None
+
+        return Backup(
+            search_id=id,
+            active=result[0],
+            city=result[1],
+            done=bool(result[2]),
+            estab_info=json.loads(result[3]),
+            product_info=json.loads(result[4]),
+            duration=result[5],
+        )
 
 
 def table_dump(conn: DatabaseConnection, table_name: str) -> Generator[str, None, None]:

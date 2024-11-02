@@ -25,6 +25,7 @@ from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
+from accb.model import Estab
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager, table_dump
 from accb.bi_queue import BiQueue
@@ -323,16 +324,15 @@ def route_insert_estab() -> dict:
     city_name = request.args["city_name"]
     estab_name = request.args["estab_name"]
     web_name = request.args["web_name"]
-    adress = request.args["adress"]
+    address = request.args["adress"]
 
-    db.save_estab(
-        {
-            "city_name": city_name,
-            "estab_name": estab_name,
-            "web_name": web_name,
-            "adress": adress,
-        }
+    estab = Estab(
+        name=estab_name,
+        address=address,
+        city_name=city_name,
+        web_name=web_name,
     )
+    db.save_estab(estab)
 
     return {
         "status": "success",
