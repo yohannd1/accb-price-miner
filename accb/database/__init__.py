@@ -151,8 +151,13 @@ class DatabaseManager:
             conn = self._init_conn()
             for estab_name in ("itabuna.json", "ilheus.json"):
                 with open(self.resource_path(estab_name), "r", encoding=ENCODING) as f:
-                    estab_info = json.load(f)
-                    for estab in estab_info:
+                    for entry in json.load(f):
+                        estab = Estab(
+                            name=entry["estab_name"],
+                            city_name=entry["city_name"],
+                            web_name=entry["web_name"],
+                            address=entry["address"],
+                        )
                         self.save_estab(estab)
 
         if self.conn_count == 0:

@@ -2,79 +2,79 @@
     {
         "estab_name": "Bom de preço",
         "web_name": "BOM DE PRECO",
-        "adress": "RUA BARAO DO RIO BRANCO 203",
+        "address": "RUA BARAO DO RIO BRANCO 203",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Barateiro",
         "web_name": "ITAO",
-        "adress": "RUA JOSE BONIFACIO 226 ",
+        "address": "RUA JOSE BONIFACIO 226 ",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Bom preço",
         "web_name": "BOMPRECO",
-        "adress": "AVENIDA AZIZ MARON S/N",
+        "address": "AVENIDA AZIZ MARON S/N",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Compre aqui - Canal",
         "web_name": "SUPERMERCADOS COMPRE AQUI",
-        "adress": "PRACA DOS CAPUCHINHOS 238",
+        "address": "PRACA DOS CAPUCHINHOS 238",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Compre aqui",
         "web_name": "SUPERMERCADOS COMPRE AQUI",
-        "adress": "AVENIDA AMELIA AMADO 358 ",
+        "address": "AVENIDA AMELIA AMADO 358 ",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Tropical",
         "web_name": "MERCADO TROPICAL",
-        "adress": "RUA SANTURINO JOSE SOARES 695- A",
+        "address": "RUA SANTURINO JOSE SOARES 695- A",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Itão (CENTRO)",
         "web_name": "ITAO SUPERMERCADOS IMPORTACOES E EXPORTACOES S/A",
-        "adress": "VENIDA AMELIA AMADO 296",
+        "address": "VENIDA AMELIA AMADO 296",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Itão (S.C)",
         "web_name": "HIPER ITAO",
-        "adress": "AVENIDA PRINCESA ISABEL 775",
+        "address": "AVENIDA PRINCESA ISABEL 775",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Maxxi",
         "web_name": "MAXXI",
-        "adress": "RODOVIA ITABUNA - ILHEUS, KM 2, BR 415 S/N",
+        "address": "RODOVIA ITABUNA - ILHEUS, KM 2, BR 415 S/N",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Mattos",
         "web_name": "MERCADO MATOS",
-        "adress": "RUA C 390",
+        "address": "RUA C 390",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Meira",
         "web_name": "SUPERMERCADOS DALNORDES",
-        "adress": "AVENIDA JURACY MAGALHAES 426 ",
+        "address": "AVENIDA JURACY MAGALHAES 426 ",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Novo Barateiro",
         "web_name": "NOVO BARATEIRO",
-        "adress": "RUA GETULIO VARGAS 116",
+        "address": "RUA GETULIO VARGAS 116",
         "city_name": "Itabuna"
     },
     {
         "estab_name": "Rondelli",
         "web_name": "RONDELLI COMERCIO E TRANSPORTE LTDA",
-        "adress": "AVENIDA JOSE SOARES PINHEIRO 2700",
+        "address": "AVENIDA JOSE SOARES PINHEIRO 2700",
         "city_name": "Itabuna"
     }
 ]
