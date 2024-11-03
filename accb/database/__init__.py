@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 from __future__ import annotations
 
 import re
@@ -15,44 +12,11 @@ from typing import Any, Sequence, Generator, Optional, Iterable
 
 from accb.model import Backup, Product, City, Estab, Search, SearchItem, OngoingSearch
 from accb.utils import log
+from accb.database.connection import Connection
+from accb.database.upgrader import Upgrader
 
 DB_PATH = "accb.sqlite"
 ENCODING = "utf-8"  # or "latin-1"?
-
-
-class DatabaseConnection:
-    def __init__(self, conn: sqlite3.Connection) -> None:
-        self._closed: bool = False
-        self._conn = conn
-        self._cursor = conn.cursor()
-
-    def get_cursor(self) -> sqlite3.Cursor:
-        return self._cursor
-
-    def __enter__(self) -> DatabaseConnection:
-        return self
-
-    def _close(self, has_errored: bool) -> None:
-        if self._closed:
-            return
-
-        self._cursor.close()
-
-        if has_errored:
-            log("Ocorreu um erro - revertendo mudanças ao banco de dados")
-            self._conn.rollback()
-        else:
-            self._conn.commit()
-        self._conn.close()
-
-        self._closed = True
-
-    def __exit__(self, ext_type, exc_value, traceback) -> None:
-        has_errored = isinstance(exc_value, Exception)
-        self._close(has_errored)
-
-    def __del__(self) -> None:
-        self._close(has_errored=False)
 
 
 class DatabaseManager:
@@ -109,7 +73,10 @@ class DatabaseManager:
     def _perform_conn_upgrade(self, cursor: sqlite3.Cursor, version: int) -> int:
         """Faz os upgrades necessários, e retorna a versão mais recente."""
 
-        if version <= 0:
+        upgrader = Upgrader()
+
+        @upgrader.until_version(0)
+        def uv0():
             query = """
             PRAGMA foreign_keys = ON;
             PRAGMA case_sensitive_like = true;
@@ -125,24 +92,27 @@ class DatabaseManager:
             """
             cursor.executescript(query)
 
-        if version <= 1:
+        @upgrader.until_version(1)
+        def uv1():
             # essa tabela parece não ser usada
             if cursor.execute("SELECT * FROM keyword").fetchone() is None:
                 cursor.execute("DROP TABLE keyword")
 
-        final_version = 2
-        if (
-            cursor.execute("SELECT key FROM option WHERE key='version'").fetchone()
-            is not None
-        ):
-            cursor.execute(
-                "UPDATE option SET value=? WHERE key='version'", (final_version,)
-            )
-        else:
-            cursor.execute(
-                "INSERT INTO option (key, value) VALUES ('version', ?)",
-                (final_version,),
-            )
+        upgrader.upgrade(version)
+        final_version = upgrader.get_final_version()
+
+        def set_option(key: str, value: str) -> None:
+            if (
+                cursor.execute("SELECT key FROM option WHERE key=?", (key,)).fetchone()
+                is not None
+            ):
+                cursor.execute("UPDATE option SET value=? WHERE key=?", (value, key))
+            else:
+                cursor.execute(
+                    "INSERT INTO option (key, value) VALUES (?, ?)", (key, value)
+                )
+
+        set_option("version", str(final_version))
 
         return final_version
 
@@ -172,7 +142,7 @@ class DatabaseManager:
         else:
             log(f"Upgrade feito para a versão {new_version}.")
 
-    def db_connection(self) -> DatabaseConnection:
+    def db_connection(self) -> Connection:
         """Realiza a conexão com o banco de dados ou o povoa caso não exista."""
 
         if exists(DB_PATH):
@@ -195,7 +165,7 @@ class DatabaseManager:
 
         self.conn_count += 1
 
-        return DatabaseConnection(conn)
+        return Connection(conn)
 
     def save_city(self, city):
         """Salva as cidades no banco de dados."""
@@ -512,7 +482,7 @@ class DatabaseManager:
         )
 
 
-def table_dump(conn: DatabaseConnection, table_name: str) -> Generator[str, None, None]:
+def table_dump(conn: Connection, table_name: str) -> Generator[str, None, None]:
     """Importa um arquivo sql para ser injetado no banco de dados.
 
     ```

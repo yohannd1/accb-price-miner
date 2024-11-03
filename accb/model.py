@@ -42,6 +42,7 @@ class Search:
 
     _done: bool
 
+
 @dataclass
 class SearchItem:
     id: Optional[int]
