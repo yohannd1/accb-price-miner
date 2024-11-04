@@ -510,6 +510,17 @@ def route_clean_search() -> RequestDict:
 
     return response
 
+@app.route("/get_option")
+def route_get_option() -> RequestDict:
+    key = request.args["key"]
+    return {"status": "success", "value": state.db_manager.get_option(key)}
+
+@app.route("/set_option")
+def route_set_option() -> RequestDict:
+    key = request.args["key"]
+    value = request.args["value"]
+    state.db_manager.set_option(key, json.loads(value))
+    return {"status": "success"}
 
 @app.route("/generate_file")
 def route_generate_file() -> RequestDict:
@@ -604,8 +615,8 @@ def on_disconnect() -> None:
                 w_timer.start()
 
 
-@socketio.on("output_path_from_cookies")
-def on_path_from_cookies(args: RequestDict) -> None:
+@socketio.on("output_path_from_options")
+def on_path_from_options(args: RequestDict) -> None:
     path = args.get("path")
     is_valid = path is not None and Path(path).exists()
 

@@ -305,26 +305,6 @@ class DatabaseManager:
                 ),
             )
 
-    # def save_backup(self, backup: Backup) -> None:
-    #     """Salva o estado do backup no banco de dados."""
-
-    #     with self.db_connection() as conn:
-    #         cursor = conn.get_cursor()
-    #         query = """INSERT INTO backup(active, city, done, estab_info, product_info, search_id, duration, progress_value) VALUES(?,?,?,?,?,?,?,?)"""
-    #         cursor.execute(
-    #             query,
-    #             (
-    #                 backup.active,
-    #                 backup.city,
-    #                 int(backup.done),
-    #                 json.dumps(backup.estab_info),
-    #                 json.dumps(backup.product_info),
-    #                 backup.search_id,
-    #                 backup.duration,
-    #                 backup.progress_value,
-    #             ),
-    #         )
-
     def save_search_item(self, search_item):
         """Salva os itens da pesquisa no banco de dados."""
 
@@ -393,23 +373,6 @@ class DatabaseManager:
             cursor = conn.get_cursor()
             res = cursor.execute(query, args)
             return res.fetchall()
-
-    # def get_backup(self, id_: Optional[int] = None) -> Optional[tuple]:
-    #     """Seleciona um dos backups."""
-    #     # FIXME: o que acontece se tiver mais de um?
-
-    #     args: tuple
-    #     if id_ is None:
-    #         query = "SELECT * FROM backup"
-    #         args = ()
-    #     else:
-    #         query = "SELECT * FROM backup WHERE search_id=?"
-    #         args = (id_,)
-
-    #     with self.db_connection() as conn:
-    #         cursor = conn.get_cursor()
-    #         res = cursor.execute(query, args)
-    #         return res.fetchone()
 
     def get_products(self) -> Iterable[Product]:
         """Obtém a lista de produtos do banco de dados."""
@@ -493,23 +456,6 @@ class DatabaseManager:
             cursor = conn.get_cursor()
             query = """UPDATE city SET city_name=? WHERE city_name=?"""
             cursor.execute(query, (city["city_name"], city["primary_key"]))
-
-    # def update_backup(self, backup: Backup) -> None:
-    #     with self.db_connection() as conn:
-    #         cursor = conn.get_cursor()
-    #         query = """UPDATE backup SET active=?, city=?, done=?, estab_info=?, product_info=?, duration=? WHERE search_id=?"""
-    #         cursor.execute(
-    #             query,
-    #             (
-    #                 backup.active,
-    #                 backup.city,
-    #                 backup.done,
-    #                 json.dumps(backup.estab_info),
-    #                 json.dumps(backup.product_info),
-    #                 backup.duration,
-    #                 backup.search_id,
-    #             ),
-    #         )
 
     def update_search(self, search: Search) -> None:
         """Atualiza uma pesquisa de pesquisa do banco de dados."""
@@ -642,24 +588,24 @@ class DatabaseManager:
         ids = self.run_query("SELECT search_id FROM ongoing_search")
         return [unwrap(self.get_ongoing_search_by_id(id_)) for id_ in ids]
 
-    # def get_backup_by_id(self, id: int) -> Optional[Backup]:
-    #     result = self.run_query(
-    #         "SELECT active, city, done, estab_info, product_info, search_id, duration FROM search WHERE id=?",
-    #         (id,),
-    #     )
+    def get_option(self, key: str) -> Any:
+        result = self.run_query("SELECT value FROM option WHERE key=?", (key,))
 
-    #     if len(result) == 0:
-    #         return None
+        if len(result) == 0:
+            return None
 
-    #     return Backup(
-    #         search_id=id,
-    #         active=result[0],
-    #         city=result[1],
-    #         done=bool(result[2]),
-    #         estab_info=json.loads(result[3]),
-    #         product_info=json.loads(result[4]),
-    #         duration=result[5],
-    #     )
+        return json.loads(result[0][0])
+
+    def set_option(self, key: str, value: Any) -> None:
+        if self.run_query("SELECT * FROM option WHERE key=?", (key,)):
+            self.run_query(
+                "UPDATE option SET value=? WHERE key=?", (json.dumps(value), key)
+            )
+            return
+
+        self.run_query(
+            "INSERT INTO option (key, value) VALUES (?, ?)", (key, json.dumps(value))
+        )
 
 
 def table_dump(conn: Connection, table_name: str) -> Generator[str, None, None]:

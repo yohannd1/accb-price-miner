@@ -1,4 +1,3 @@
-import Cookies from "./cookie.min.mjs";
 import { showMessage } from "./misc.mjs";
 
 let ESTAB_DATA = undefined;
@@ -14,6 +13,26 @@ const updateProgressBar = (newValue) => {
     const encoded = newValue.toFixed(0).toString() + "%";
     pb.textContent = encoded;
     pb.style.width = encoded;
+};
+
+const setOption = (key, value) => {
+    $.ajax({
+        async: false,
+        type: "GET",
+        url: "/set_option",
+        data: { key: key, value: JSON.stringify(value) },
+    });
+};
+
+const getOption = (key) => {
+    const result = $.ajax({
+        async: false,
+        type: "GET",
+        url: "/get_option",
+        data: { key: key },
+    }).responseJSON;
+
+    return result.value;
 };
 
 /**
@@ -1703,9 +1722,9 @@ $(document).ready(() => {
         });
     });
 
-    if (Cookies.get("warning") === undefined) {
+    if (getOption("warning") === undefined) {
         $("#warning").modal({});
-        Cookies.set("warning", "seen", {expires: 1});
+        setOption("warning", "seen");
     } else {
         tryResumeBackup();
     }
@@ -1717,17 +1736,17 @@ $(document).ready(() => {
                 return;
             }
 
-            Cookies.set("path", response.path, { expires: 10 });
+            setOption("path", response.path);
             showMessage(`Diretório alterado para ${response.path}`, { notification: false });
         });
     };
 
-    const ck_path = Cookies.get("path");
-    if (ck_path === undefined) {
+    const path_option = getOption("path");
+    if (path_option === undefined) {
         alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
         setOutputPath();
     } else {
-        socket.emit("output_path_from_cookies", { path: ck_path });
+        socket.emit("output_path_from_options", { path: path_option });
     }
 
     socket.on("invalid_output_path", () => {
@@ -1738,8 +1757,7 @@ $(document).ready(() => {
     if (!is_chrome_installed)
         alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
 
-    if (has_backup)
-        $("body").on("click", "#backup-button", (_) => tryResumeBackup());
+    $("body").on("click", "#backup-button", tryResumeBackup);
 
     socket.connect("http://127.0.0.1:5000/");
 
@@ -1759,7 +1777,7 @@ $(document).ready(() => {
     });
 
     $("#open_folder").on("click", () => {
-        const path = Cookies.get("path");
+        const path = getOption("path");
         if (path)
             openFolder(path);
     });
