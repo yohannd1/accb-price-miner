@@ -30,6 +30,9 @@ from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager, table_dump
 from accb.bi_queue import BiQueue
 
+RequestDict = dict[str, Any]
+"""Tipo usado para requests (e respostas delas)."""
+
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
@@ -160,7 +163,7 @@ def route_home() -> str:
 
 
 @app.route("/insert_product")
-def route_insert_product() -> dict:
+def route_insert_product() -> RequestDict:
     """Rota de inserção de produtos no banco de dados."""
 
     product_name = request.args["product_name"]
@@ -177,7 +180,7 @@ def route_insert_product() -> dict:
 
 
 @app.route("/remove_product")
-def route_remove_product() -> dict:
+def route_remove_product() -> RequestDict:
     """Rota de remoção de produtos no banco de dados."""
 
     product_name = request.args.get("product_name")
@@ -216,7 +219,7 @@ def route_select_search_data() -> str:
 
 
 @app.route("/select_search_info")
-def route_select_search_info() -> dict:
+def route_select_search_info() -> RequestDict:
     """Rota de seleção de informação das pesquisas no banco de dados."""
 
     db = state.db_manager
@@ -240,7 +243,7 @@ def route_select_search_info() -> dict:
 
 
 @app.route("/update_product")
-def route_update_product() -> dict:
+def route_update_product() -> RequestDict:
     """Rota de atualização de produtos no banco de dados."""
 
     product_name = request.args.get("product_name")
@@ -273,7 +276,7 @@ def route_select_estab() -> str:
 
 
 @app.route("/remove_estab")
-def route_remove_estab() -> dict:
+def route_remove_estab() -> RequestDict:
     """Rota de remoção de estabelecimentos no banco de dados."""
 
     estab_name = request.args["estab_name"]
@@ -286,7 +289,7 @@ def route_remove_estab() -> dict:
 
 
 @app.route("/update_estab")
-def route_update_estab() -> dict:
+def route_update_estab() -> RequestDict:
     """Rota de atualização de estabelecimentos no banco de dados."""
 
     city_name = request.args["city_name"]
@@ -312,7 +315,7 @@ def route_update_estab() -> dict:
 
 
 @app.route("/insert_estab")
-def route_insert_estab() -> dict:
+def route_insert_estab() -> RequestDict:
     """Rota de inserção de estabelecimentos no banco de dados."""
 
     db = state.db_manager
@@ -344,7 +347,7 @@ def route_db_get_cities() -> str:
 
 
 @app.route("/insert_city")
-def route_insert_city() -> dict:
+def route_insert_city() -> RequestDict:
     """Rota de inserção de cidades no banco de dados."""
     db = state.db_manager
     city_name = request.args.get("city_name")
@@ -358,7 +361,7 @@ def route_insert_city() -> dict:
 
 
 @app.route("/update_city")
-def route_update_city() -> dict:
+def route_update_city() -> RequestDict:
     """Rota de atualização de cidades no banco de dados."""
 
     city_name = request.args["city_name"]
@@ -373,7 +376,7 @@ def route_update_city() -> dict:
 
 
 @app.route("/delete_city")
-def route_delete_city() -> dict:
+def route_delete_city() -> RequestDict:
     """Rota de deleção de cidades no banco de dados."""
 
     db = state.db_manager
@@ -388,7 +391,7 @@ def route_delete_city() -> dict:
 
 
 @app.route("/ask_output_path")
-def route_ask_output_path() -> dict:
+def route_ask_output_path() -> RequestDict:
     path = ask_user_directory()
     print(path)
     if path is None:
@@ -406,7 +409,7 @@ def route_ask_output_path() -> dict:
 
 # Gerando Arquivos
 @app.route("/delete_search")
-def route_delete_search() -> dict:
+def route_delete_search() -> RequestDict:
     """Rota de deleção de pesquisa no banco de dados."""
 
     search_id = request.args["search_id"]
@@ -417,7 +420,7 @@ def route_delete_search() -> dict:
 
 
 @app.route("/export_database")
-def route_export_database() -> dict:
+def route_export_database() -> RequestDict:
     """Rota responsável por exportar os dados do banco"""
 
     output_filename = "importar.sql"
@@ -437,7 +440,7 @@ def route_export_database() -> dict:
 
 
 @app.route("/import_database", methods=["POST"])
-def route_import_database() -> dict:
+def route_import_database() -> RequestDict:
     """Rota responsável por importar os dados do banco"""
 
     file = request.files["file"]
@@ -451,13 +454,13 @@ def route_import_database() -> dict:
 
 
 @app.route("/open_folder")
-def route_open_folder() -> dict:
+def route_open_folder() -> RequestDict:
     open_folder(Path(request.args["path"]))
     return {"status": "success"}
 
 
 @app.route("/clean_search")
-def route_clean_search() -> dict:
+def route_clean_search() -> RequestDict:
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
 
     assert state.output_path is not None
@@ -509,7 +512,7 @@ def route_clean_search() -> dict:
 
 
 @app.route("/generate_file")
-def route_generate_file() -> dict:
+def route_generate_file() -> RequestDict:
     """Gera arquivo(s) excel com os dados das pesquisas."""
 
     assert state.output_path is not None
@@ -537,7 +540,7 @@ def route_generate_file() -> dict:
 
 
 @socketio.on("pause")
-def on_pause() -> dict:
+def on_pause() -> RequestDict:
     """Pausa a pesquisa atual, mantendo seu estado no banco de dados."""
 
     state.wait_reload = True
@@ -552,7 +555,7 @@ def on_pause() -> dict:
 
 
 @socketio.on("cancel")
-def on_cancel() -> dict:
+def on_cancel() -> RequestDict:
     """Cancela a pesquisa atual e deleta os dados dela no banco de dados."""
 
     state.wait_reload = True
@@ -602,7 +605,7 @@ def on_disconnect() -> None:
 
 
 @socketio.on("output_path_from_cookies")
-def on_path_from_cookies(args: dict) -> None:
+def on_path_from_cookies(args: RequestDict) -> None:
     path = args.get("path")
     is_valid = path is not None and Path(path).exists()
 
@@ -619,7 +622,7 @@ def on_exit() -> None:
     os._exit(0)
 
 
-def attempt_search(args: dict) -> None:
+def attempt_search(args: RequestDict) -> None:
     """Inicia a pesquisa."""
 
     # TODO: suportar especificar qual o backup (ongoing_search)
@@ -688,7 +691,7 @@ def attempt_search(args: dict) -> None:
 
 
 @socketio.on("search")
-def on_search(args: dict) -> None:
+def on_search(args: RequestDict) -> None:
     error_count = 0
 
     while True:
@@ -716,16 +719,16 @@ def on_search(args: dict) -> None:
 
 
 @app.context_processor
-def utility_processor() -> dict:
+def utility_processor() -> RequestDict:
     """Insere a função para ser chamada em todos os templates a qualquer momento"""
 
-    def decode(text):
+    def decode(text: str) -> str:
         return text.encode("utf8").decode("utf8")
 
-    def replace(text, char):
+    def replace(text: str, char: str) -> str:
         return text.replace(char, "")
 
-    def json_stringfy(var):
+    def json_stringfy(var: Any) -> str:
         return json.dumps(var)
 
     return {
