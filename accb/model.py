@@ -2,16 +2,16 @@ from dataclasses import dataclass
 from typing import Optional
 
 
-@dataclass
-class Backup:
-    search_id: int
-    active: str
-    city: str
-    done: bool
-    estab_info: dict
-    product_info: dict
-    duration: int
-    progress_value: float = -1  # FIXME: remover isso
+# @dataclass
+# class Backup:
+#     search_id: int
+#     active: str
+#     city: str
+#     done: bool
+#     estab_info: dict
+#     product_info: dict
+#     duration: int
+#     progress_value: float = -1  # FIXME: remover isso
 
 
 @dataclass
@@ -23,7 +23,7 @@ class City:
 class Estab:
     name: str
     address: str
-    city_name: str
+    city: str
     web_name: str
 
 
@@ -38,7 +38,7 @@ class Search:
     id: Optional[int]
     city_name: str
     start_date: str
-    total_duration: float
+    total_duration_mins: float
 
     _done: bool
 
@@ -56,9 +56,8 @@ class SearchItem:
 @dataclass
 class OngoingSearch:
     search_id: int
-    city_name: str
+    city: str
     estabs: list[Estab]
     products: list[Product]
     current_product: int
     current_keyword: int
-    start_epoch: float

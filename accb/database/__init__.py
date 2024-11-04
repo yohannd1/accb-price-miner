@@ -7,10 +7,10 @@ from os.path import exists
 from datetime import date
 import os
 import json
-
+from dataclasses import asdict
 from typing import Any, Sequence, Generator, Optional, Iterable
 
-from accb.model import Backup, Product, City, Estab, Search, SearchItem, OngoingSearch
+from accb.model import Product, City, Estab, Search, SearchItem, OngoingSearch
 from accb.utils import log
 from accb.database.connection import Connection
 from accb.database.upgrader import Upgrader
@@ -76,7 +76,7 @@ class DatabaseManager:
         upgrader = Upgrader()
 
         @upgrader.until_version(0)
-        def uv0():
+        def uv0() -> None:
             query = """
             PRAGMA foreign_keys = ON;
             PRAGMA case_sensitive_like = true;
@@ -93,10 +93,95 @@ class DatabaseManager:
             cursor.executescript(query)
 
         @upgrader.until_version(1)
-        def uv1():
+        def uv1() -> None:
             # essa tabela parece não ser usada
             if cursor.execute("SELECT * FROM keyword").fetchone() is None:
                 cursor.execute("DROP TABLE keyword")
+
+        @upgrader.until_version(2)
+        def uv3() -> None:
+            query = """
+            CREATE TABLE ongoing_search (
+                search_id integer,
+                city text,
+                estabs_json text,
+                products_json text,
+                current_product integer,
+                current_keyword integer,
+
+                FOREIGN KEY (search_id) REFERENCES search (id),
+                FOREIGN KEY (city) REFERENCES city (city)
+
+                ON UPDATE CASCADE
+                ON DELETE CASCADE
+            );
+            """
+            cursor.executescript(query)
+
+            backups = cursor.execute(
+                """
+            SELECT
+                active, city, estab_info,
+                product_info, search_id, done
+            FROM backup
+            """
+            )
+
+            for b in backups:
+                done = b[5]
+                if done == 1:
+                    # ignorar backups de pesquisas já finalizadas
+                    continue
+
+                (current_product, current_keyword) = [int(x) for x in b[0].split(".")]
+                city = b[1]
+
+                estabs_old = json.loads(b[2])
+                estabs_new = []
+                for city, name, address, web_name in estabs_old["info"]:
+                    estabs_new.append(
+                        {
+                            "name": name,
+                            "city": city,
+                            "address": address,
+                            "web_name": web_name,
+                        }
+                    )
+                estabs_json = json.dumps(estabs_new)
+
+                products_old = json.loads(b[3])
+                products_new = []
+                for name, keywords in products_old:
+                    products_new.append(
+                        {
+                            "name": name,
+                            "keywords": keywords,
+                        }
+                    )
+                products_json = json.dumps(products_new)
+
+                search_id = int(b[4])
+
+                query = """
+                INSERT INTO ongoing_search
+                    (search_id, city, estabs_json, products_json, current_product, current_keyword)
+                VALUES
+                    (?, ?, ?, ?, ?, ?)
+                """
+
+                cursor.execute(
+                    query,
+                    (
+                        search_id,
+                        city,
+                        estabs_json,
+                        products_json,
+                        current_product,
+                        current_keyword,
+                    ),
+                )
+
+            cursor.execute("DROP TABLE backup")
 
         upgrader.upgrade(version)
         final_version = upgrader.get_final_version()
@@ -154,7 +239,7 @@ class DatabaseManager:
                     for entry in json.load(f):
                         estab = Estab(
                             name=entry["estab_name"],
-                            city_name=entry["city_name"],
+                            city=entry["city_name"],
                             web_name=entry["web_name"],
                             address=entry["address"],
                         )
@@ -188,6 +273,10 @@ class DatabaseManager:
             query = """INSERT INTO product(product_name, keywords) VALUES(?, ?)"""
             cursor.execute(query, (product_name, keywords))
 
+    def create_search(self, city: str) -> int:
+        """Cria uma pesquisa e retorna seu ID."""
+        return self.save_search(False, city, 0)
+
     def save_search(self, done: bool, city_name: str, duration: int) -> int:
         """Salva as pesquisas no banco de dados. Retorna o ID da última pesquisa"""
         # TODO: analisar isso direito - tá funcionando certo?
@@ -210,31 +299,31 @@ class DatabaseManager:
                 query,
                 (
                     estab.name,
-                    estab.city_name,
+                    estab.city,
                     estab.address,
                     estab.web_name,
                 ),
             )
 
-    def save_backup(self, backup: Backup) -> None:
-        """Salva o estado do backup no banco de dados."""
+    # def save_backup(self, backup: Backup) -> None:
+    #     """Salva o estado do backup no banco de dados."""
 
-        with self.db_connection() as conn:
-            cursor = conn.get_cursor()
-            query = """INSERT INTO backup(active, city, done, estab_info, product_info, search_id, duration, progress_value) VALUES(?,?,?,?,?,?,?,?)"""
-            cursor.execute(
-                query,
-                (
-                    backup.active,
-                    backup.city,
-                    int(backup.done),
-                    json.dumps(backup.estab_info),
-                    json.dumps(backup.product_info),
-                    backup.search_id,
-                    backup.duration,
-                    backup.progress_value,
-                ),
-            )
+    #     with self.db_connection() as conn:
+    #         cursor = conn.get_cursor()
+    #         query = """INSERT INTO backup(active, city, done, estab_info, product_info, search_id, duration, progress_value) VALUES(?,?,?,?,?,?,?,?)"""
+    #         cursor.execute(
+    #             query,
+    #             (
+    #                 backup.active,
+    #                 backup.city,
+    #                 int(backup.done),
+    #                 json.dumps(backup.estab_info),
+    #                 json.dumps(backup.product_info),
+    #                 backup.search_id,
+    #                 backup.duration,
+    #                 backup.progress_value,
+    #             ),
+    #         )
 
     def save_search_item(self, search_item):
         """Salva os itens da pesquisa no banco de dados."""
@@ -281,7 +370,7 @@ class DatabaseManager:
             args = ()
         else:
             query = self.safe_query_format(
-                """ SELECT * FROM search WHERE {}=? ORDER BY id ASC """, where
+                "SELECT * FROM search WHERE {}=? ORDER BY id ASC", where
             )
             args = (equals,)
 
@@ -305,22 +394,22 @@ class DatabaseManager:
             res = cursor.execute(query, args)
             return res.fetchall()
 
-    def get_backup(self, id_: Optional[int] = None) -> Optional[tuple]:
-        """Seleciona um dos backups."""
-        # FIXME: o que acontece se tiver mais de um?
+    # def get_backup(self, id_: Optional[int] = None) -> Optional[tuple]:
+    #     """Seleciona um dos backups."""
+    #     # FIXME: o que acontece se tiver mais de um?
 
-        args: tuple
-        if id_ is None:
-            query = "SELECT * FROM backup"
-            args = ()
-        else:
-            query = "SELECT * FROM backup WHERE search_id=?"
-            args = (id_,)
+    #     args: tuple
+    #     if id_ is None:
+    #         query = "SELECT * FROM backup"
+    #         args = ()
+    #     else:
+    #         query = "SELECT * FROM backup WHERE search_id=?"
+    #         args = (id_,)
 
-        with self.db_connection() as conn:
-            cursor = conn.get_cursor()
-            res = cursor.execute(query, args)
-            return res.fetchone()
+    #     with self.db_connection() as conn:
+    #         cursor = conn.get_cursor()
+    #         res = cursor.execute(query, args)
+    #         return res.fetchone()
 
     def get_products(self) -> Iterable[Product]:
         """Obtém a lista de produtos do banco de dados."""
@@ -342,9 +431,19 @@ class DatabaseManager:
                 """SELECT city_name, estab_name, adress, web_name FROM estab"""
             )
             return (
-                Estab(
-                    city_name=city_name, name=name, address=address, web_name=web_name
-                )
+                Estab(city=city_name, name=name, address=address, web_name=web_name)
+                for (city_name, name, address, web_name) in res.fetchall()
+            )
+
+    def get_estabs_for_city(self, city: str) -> Iterable[Estab]:
+        with self.db_connection() as conn:
+            cursor = conn.get_cursor()
+            res = cursor.execute(
+                """SELECT city_name, estab_name, adress, web_name FROM estab WHERE city_name=?""",
+                (city,),
+            )
+            return (
+                Estab(city=city_name, name=name, address=address, web_name=web_name)
                 for (city_name, name, address, web_name) in res.fetchall()
             )
 
@@ -395,22 +494,22 @@ class DatabaseManager:
             query = """UPDATE city SET city_name=? WHERE city_name=?"""
             cursor.execute(query, (city["city_name"], city["primary_key"]))
 
-    def update_backup(self, backup: Backup) -> None:
-        with self.db_connection() as conn:
-            cursor = conn.get_cursor()
-            query = """UPDATE backup SET active=?, city=?, done=?, estab_info=?, product_info=?, duration=? WHERE search_id=?"""
-            cursor.execute(
-                query,
-                (
-                    backup.active,
-                    backup.city,
-                    backup.done,
-                    json.dumps(backup.estab_info),
-                    json.dumps(backup.product_info),
-                    backup.duration,
-                    backup.search_id,
-                ),
-            )
+    # def update_backup(self, backup: Backup) -> None:
+    #     with self.db_connection() as conn:
+    #         cursor = conn.get_cursor()
+    #         query = """UPDATE backup SET active=?, city=?, done=?, estab_info=?, product_info=?, duration=? WHERE search_id=?"""
+    #         cursor.execute(
+    #             query,
+    #             (
+    #                 backup.active,
+    #                 backup.city,
+    #                 backup.done,
+    #                 json.dumps(backup.estab_info),
+    #                 json.dumps(backup.product_info),
+    #                 backup.duration,
+    #                 backup.search_id,
+    #             ),
+    #         )
 
     def update_search(self, search: Search) -> None:
         """Atualiza uma pesquisa de pesquisa do banco de dados."""
@@ -418,7 +517,9 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """UPDATE search SET done=?, duration=? WHERE id=?"""
-            cursor.execute(query, (int(search._done), search.total_duration, search.id))
+            cursor.execute(
+                query, (int(search._done), search.total_duration_mins, search.id)
+            )
 
     def run_query(self, query: str, args: tuple = ()) -> list[Any]:
         """Roda uma query específica no banco de dados."""
@@ -459,32 +560,106 @@ class DatabaseManager:
         if len(result) == 0:
             return None
 
+        (tup,) = result
+
         return Search(
             id=id,
-            _done=bool(result[0]),
-            city_name=result[1],
-            start_date=result[2],
-            total_duration=result[3],
+            _done=bool(tup[0]),
+            city_name=tup[1],
+            start_date=tup[2],
+            total_duration_mins=tup[3],
         )
 
-    def get_backup_by_id(self, id: int) -> Optional[Backup]:
+    def create_ongoing_search(self, o: OngoingSearch) -> None:
+        self.run_query(
+            "INSERT INTO ongoing_search (search_id, city, estabs_json, products_json, current_product, current_keyword) VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                o.search_id,
+                o.city,
+                json.dumps([asdict(e) for e in o.estabs]),
+                json.dumps(
+                    [
+                        {"name": p.name, "keywords": ",".join(p.keywords)}
+                        for p in o.products
+                    ]
+                ),
+                o.current_product,
+                o.current_keyword,
+            ),
+        )
+
+    def update_ongoing_search(self, o: OngoingSearch) -> None:
+        self.run_query(
+            "UPDATE ongoing_search SET search_id=?, city=?, estabs_json=?, products_json=?, current_product=?, current_keyword=? WHERE search_id=?",
+            (
+                o.search_id,
+                o.city,
+                json.dumps([asdict(e) for e in o.estabs]),
+                json.dumps(
+                    [
+                        {"name": p.name, "keywords": ",".join(p.keywords)}
+                        for p in o.products
+                    ]
+                ),
+                o.current_product,
+                o.current_keyword,
+                o.search_id,
+            ),
+        )
+
+    def get_ongoing_search_by_id(self, id_: int) -> Optional[OngoingSearch]:
         result = self.run_query(
-            "SELECT active, city, done, estab_info, product_info, search_id, duration FROM search WHERE id=?",
-            (id,),
+            "SELECT city, estabs_json, products_json, current_product, current_keyword FROM ongoing_search WHERE search_id = ?",
+            (id_,),
         )
 
         if len(result) == 0:
             return None
 
-        return Backup(
-            search_id=id,
-            active=result[0],
-            city=result[1],
-            done=bool(result[2]),
-            estab_info=json.loads(result[3]),
-            product_info=json.loads(result[4]),
-            duration=result[5],
+        (tup,) = result
+
+        estabs = [Estab(**e) for e in json.loads(tup[1])]
+
+        products = [
+            Product(name=e["name"], keywords=e["keywords"].split(","))
+            for e in json.loads(tup[2])
+        ]
+
+        return OngoingSearch(
+            search_id=id_,
+            city=tup[0],
+            estabs=estabs,
+            products=products,
+            current_product=tup[3],
+            current_keyword=tup[4],
         )
+
+    def get_ongoing_searches(self) -> list[OngoingSearch]:
+        def unwrap(x):
+            assert x is not None
+            return x
+
+        ids = self.run_query("SELECT search_id FROM ongoing_search")
+        return [unwrap(self.get_ongoing_search_by_id(id_)) for id_ in ids]
+
+    # def get_backup_by_id(self, id: int) -> Optional[Backup]:
+    #     result = self.run_query(
+    #         "SELECT active, city, done, estab_info, product_info, search_id, duration FROM search WHERE id=?",
+    #         (id,),
+    #     )
+
+    #     if len(result) == 0:
+    #         return None
+
+    #     return Backup(
+    #         search_id=id,
+    #         active=result[0],
+    #         city=result[1],
+    #         done=bool(result[2]),
+    #         estab_info=json.loads(result[3]),
+    #         product_info=json.loads(result[4]),
+    #         duration=result[5],
+    #     )
 
 
 def table_dump(conn: Connection, table_name: str) -> Generator[str, None, None]:

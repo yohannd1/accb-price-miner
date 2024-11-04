@@ -25,7 +25,7 @@ from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
-from accb.model import Estab
+from accb.model import Estab, OngoingSearch
 from accb.web_driver import is_chrome_installed
 from accb.database import DatabaseManager, table_dump
 from accb.bi_queue import BiQueue
@@ -115,12 +115,7 @@ def route_home() -> str:
     active = "0.0"
 
     search_id = db.get_incomplete_search_id()
-    backup_info = db.get_backup(search_id)
-    if backup_info is None:
-        has_backup = False
-    else:
-        (_, _, done, *_) = backup_info
-        has_backup = done == 0
+    has_backup = search_id is not None
 
     day = str(date.today()).split("-")[1]
     search_info = db.run_query(
@@ -329,7 +324,7 @@ def route_insert_estab() -> dict:
     estab = Estab(
         name=estab_name,
         address=address,
-        city_name=city_name,
+        city=city_name,
         web_name=web_name,
     )
     db.save_estab(estab)
@@ -627,59 +622,47 @@ def on_exit() -> None:
 def attempt_search(args: dict) -> None:
     """Inicia a pesquisa."""
 
+    # TODO: suportar especificar qual o backup (ongoing_search)
+
     db = state.db_manager
     assert state.output_path is not None
 
-    search_id = db.get_incomplete_search_id()
+    if args["is_backup"]:
+        search_id = db.get_incomplete_search_id()
+        assert search_id is not None
 
-    is_backup = args["is_backup"]
-    backup_info = db.get_backup(search_id) if is_backup else None
+        search = db.get_search_by_id(search_id)
+        assert search is not None
 
-    if backup_info is not None:
-        (_, _, done, *_) = backup_info
-        if done == 1:
-            emit(
-                "show_notification", "A pesquisa já estava finalizada.", broadcast=True
-            )
-            # TODO: salvar a pesquisa do backup?
-            return
-
-        emit("show_notification", "Retomando pesquisa...", broadcast=True)
-        opts = ScraperOptions.from_backup_info(backup_info)
-        scrap = Scraper(opts, state)
-
-        estab_data = opts.locals
-    else:
-        city = args["city"]
-        search_id = db.save_search(False, city, 0)
-        active = "0.0"
-        estab_names = json.loads(args["names"])
-        estabs = db.get_estab_old()
-
-        # TODO: parar de usar isso
-        product_info = [(p.name, str.join(",", p.keywords)) for p in db.get_products()]
-
-        duration = 0
-
-        estab_data = [
-            (e_city, e_estab, *e_rest)
-            for (e_city, e_estab, *e_rest) in estabs
-            if e_city == city and e_estab in estab_names
-        ]
+        ongoing = db.get_ongoing_search_by_id(search_id)
+        assert ongoing is not None
 
         opts = ScraperOptions(
-            locals=estab_data,
-            city=city,
-            locals_name=estab_names,
-            product_info=product_info,
-            active=active,
-            id=search_id,
-            backup=False,
-            duration=duration,
+            ongoing=ongoing,
+            duration_mins=search.total_duration_mins,
         )
-        opts.save_as_backup(db=db, is_done=False)
-        scrap = Scraper(opts, state)
+    else:
+        city = args["city"]
+        estab_names = set(json.loads(args["names"]))
 
+        search_id = db.create_search(city)
+
+        ongoing = OngoingSearch(
+            search_id=search_id,
+            city=city,
+            estabs=[e for e in db.get_estabs_for_city(city) if e.name in estab_names],
+            products=list(db.get_products()),
+            current_product=0,
+            current_keyword=0,
+        )
+        db.create_ongoing_search(ongoing)
+
+        opts = ScraperOptions(
+            ongoing=ongoing,
+            duration_mins=0.0,
+        )
+
+    scrap = Scraper(opts, state)
     state.scraper = scrap
     state.search_id = search_id
     state.cancel = False
@@ -701,7 +684,7 @@ def attempt_search(args: dict) -> None:
         state.wait_reload = True
 
         # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
-        db_to_xlsx(db, search_id, estab_data, city, state.output_path)
+        db_to_xlsx(db, search_id, opts.ongoing.estabs, city, state.output_path)
 
 
 @socketio.on("search")

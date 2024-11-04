@@ -9,6 +9,7 @@ from openpyxl.styles import Border, Side, Alignment
 
 from accb.database import DatabaseManager
 from accb.utils import get_time_hms, get_time_filename, log
+from accb.model import Estab
 
 
 def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
@@ -35,9 +36,9 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
 
 def db_to_xlsx(
     db: DatabaseManager,
-    search_id,
-    estab_data,
-    city,
+    search_id: int,
+    estabs: list[Estab],
+    city: str,
     path: Path,
     filter_by_address: bool = True,
 ) -> Path:
@@ -47,16 +48,16 @@ def db_to_xlsx(
     output_folder = path / f"{get_time_filename()} {city}"
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    for _city, name, adress, web_name in estab_data:
-        output_path = output_folder / f"{name}.xlsx"
+    for e in estabs:
+        output_path = output_folder / f"{e.name}.xlsx"
 
         export_to_xlsx(
             db=db,
             search_id=search_id,
             filter_by_address=filter_by_address,
             output_path=output_path,
-            web_name=web_name,
-            adress=adress,
+            web_name=e.web_name,
+            adress=e.address,
         )
 
     return output_folder
@@ -92,16 +93,16 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path: Path) -> Path:
 
 def export_to_xlsx(
     db: DatabaseManager,
-    search_id,
+    search_id: int,
     filter_by_address: bool,
     output_path: Path,
-    web_name,
-    adress,
+    web_name: str,
+    adress: str,
 ) -> None:
     log(f"Writing excel file to {output_path}...")
 
     products = db.run_query(
-        "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id = ? AND web_name = ? ORDER BY price ASC",
+        "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id=? AND web_name=? ORDER BY price ASC",
         (search_id, web_name),
     )
 

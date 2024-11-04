@@ -25,7 +25,7 @@ from selenium.webdriver import Chrome
 from accb.web_driver import open_chrome_driver
 from accb.utils import log, log_error, show_warning, get_time_hms
 from accb.state import State
-from accb.model import Backup
+from accb.model import Estab, Product, OngoingSearch
 from accb.database import DatabaseManager
 
 URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
@@ -35,79 +35,13 @@ URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
 class ScraperOptions:
     """Armazena informações que instruem a pesquisa feita pelo Scraper."""
 
-    # TODO: colocar tipos para os campos aqui
+    ongoing: OngoingSearch
 
-    # TODO: renomear isso
-    locals: Any
-    """Estabelecimentos onde a pesquisa será realizada."""
-
-    city: Any
-    """Nome da cidade onde a pesquisa será realizada."""
-
-    # TODO: qual a diferença entre isso e locals?
-    locals_name: Any
-    """Nomes dos estabelecimentos onde a pesquisa será realizada."""
-
-    product_info: Any
-    """Produtos a serem pesquisados."""
-
-    active: Any
-    """Valor decimal de indexes ativos 1.1, onde 1. é o index do produto e .1 é o index da palavra chave."""
-
-    id: Any
-    # TODO: renomear p/ search_id
-    """ID da pesquisa atual."""
-
-    # TODO: isso é usado? pelo jeito não. mas acho que seria bom usar...
-    backup: Any
-    """Se a pesquisa atual é ou não um backup."""
-
-    duration: Any
-    """A duração de execução da pesquisa atual (necessário para reinicialização através de backup)."""
+    duration_mins: float
+    """Estimação da duração da pesquisa (em minutos)."""
 
     url: str = URL_PRECODAHORA
     """URL do site a ser pesquisado"""
-
-    @staticmethod
-    def from_backup_info(backup_info: tuple) -> ScraperOptions:
-        (
-            active,
-            city,
-            _done,
-            estab_info,
-            product_info,
-            search_id,
-            duration,
-            _progress_value,
-        ) = backup_info
-        estab_info = json.loads(estab_info)
-        estab_names = estab_info["names"]
-        estab_data = estab_info["info"]
-        product = json.loads(product_info)
-
-        return ScraperOptions(
-            active=active,
-            city=city,
-            locals=estab_data,
-            locals_name=estab_names,
-            product_info=product,
-            id=search_id,
-            backup=False,
-            duration=duration,
-        )
-
-    def save_as_backup(self, db: DatabaseManager, is_done: bool) -> None:
-        data = Backup(
-            active=self.active,
-            city=self.city,
-            done=is_done,
-            estab_info={"names": self.locals_name, "info": self.locals},
-            product_info=self.product_info,
-            search_id=self.id,
-            duration=0,
-            progress_value=-1,
-        )
-        db.save_backup(data)
 
 
 class ScraperError(Exception):
@@ -121,10 +55,6 @@ class Scraper:
         self.options = options
         self.state = state
         self.db = self.state.db_manager
-
-        self.index, self.index_k = [int(x) for x in options.active.split(".")]
-        """Index dos produtos e palavras chaves (em caso de reinicialização através de backup)"""
-        # TODO: verificar isso e documentar melhor
 
         self.driver: Optional[Chrome] = None
         """Instância do navegador do selenium."""
@@ -243,7 +173,7 @@ class Scraper:
             try:
                 self.db.save_search_item(
                     {
-                        "search_id": self.options.id,
+                        "search_id": self.options.ongoing.search_id,
                         "web_name": product_local,
                         "adress": product_address,
                         "product_name": product_name,
@@ -335,6 +265,8 @@ class Scraper:
         # TODO: parar de usar isso (em favor do self.smart_sleep)
         times = self.time_coeff
 
+        ongoing = self.options.ongoing
+
         # TODO: usar isso em forma de Generator, que poderia ser feito cada vez que um sleep é usado, e um for loop em outro lugar poderia constantemente verificar se a pesquisa precisa ser pausada. E com isso talvez seja possível detectar captchas de maneira eficiente também!
 
         try:
@@ -387,9 +319,7 @@ class Scraper:
             self.smart_sleep(2)
 
         # Envia o MUNICIPIO desejado para o input
-        driver.find_element(By.CLASS_NAME, "sbar-municipio").send_keys(
-            self.options.city
-        )
+        driver.find_element(By.CLASS_NAME, "sbar-municipio").send_keys(ongoing.city)
         sleep(1)
 
         # Pressiona o botão que realiza a pesquisa por MUNICIPIO
@@ -399,15 +329,16 @@ class Scraper:
         driver.find_element(By.ID, "aplicar").click()
 
         self.smart_sleep(2)
-        product_count = len(self.options.product_info)
+        product_count = len(ongoing.products)
 
-        for index, (product, keywords) in enumerate(
-            self.options.product_info[self.index :]
-        ):
+        for index, p in enumerate(ongoing.products[ongoing.current_product :]):
+            product = p.name
+            keywords = p.keywords
+
             if self.stop:
                 break
 
-            progress_value = 100 * (self.index + index) / product_count
+            progress_value = 100 * (ongoing.current_product + index) / product_count
 
             self.send_logs(
                 f"Começando pesquisa do produto {product} (progresso: {progress_value:.0f}%)"
@@ -415,7 +346,7 @@ class Scraper:
             emit("search.began_searching_product", product)
             emit("search.update_progress_bar", progress_value, broadcast=True)
 
-            for index_k, keyword in enumerate(keywords.split(",")[self.index_k :]):
+            for index_k, keyword in enumerate(keywords[ongoing.current_keyword :]):
                 if self.stop:
                     self.exit = True
                     self.exit_thread()
@@ -423,24 +354,18 @@ class Scraper:
 
                 self.send_logs(f"Próxima palavra chave: {keyword}")
 
-                active = "{}.{}".format(index + self.index, index_k + self.index_k)
+                active = "{}.{}".format(
+                    index + ongoing.current_product,
+                    index_k + ongoing.current_keyword,
+                )
                 duration = (
-                    get_time_hms(self.start_time)["minutes"] + self.options.duration
+                    get_time_hms(self.start_time)["minutes"]
+                    + self.options.duration_mins
                 )
 
                 self.send_logs("Atualizando backup...")
 
-                self.db.update_backup(
-                    Backup(
-                        active=active,
-                        city=self.options.city,
-                        done=False,
-                        estab_info=self.make_estab_info(),
-                        product_info=self.options.product_info,
-                        search_id=self.options.id,
-                        duration=duration,
-                    )
-                )
+                self.db.update_ongoing_search(ongoing)
 
                 self.smart_sleep(1.5)
 
@@ -527,30 +452,17 @@ class Scraper:
 
         duration = get_time_hms(self.start_time)
 
-        search = self.db.get_search_by_id(self.options.id)
+        search = self.db.get_search_by_id(ongoing.search_id)
         assert search is not None
         search._done = True
-        search.total_duration = duration["minutes"] + self.options.duration
+        search.total_duration_mins = duration["minutes"] + self.options.duration_mins
         self.db.update_search(search)
 
         self.send_logs("Atualizando backup...")
 
-        backup = self.db.get_backup_by_id(self.options.id)
-        assert backup is not None
-        backup.active = "0.0"
-        backup.city = self.options.city
-        backup.done = True
-        backup.duration = duration["minutes"] + self.options.duration
-        self.db.update_backup(backup)
+        self.db.update_ongoing_search(ongoing)
 
         driver.close()
         driver.quit()
 
         return True
-
-    def make_estab_info(self) -> dict:
-        # FIXME: parar de usar isso (não parece ser usado)
-        return {
-            "names": self.options.locals_name,
-            "info": self.options.locals,
-        }
