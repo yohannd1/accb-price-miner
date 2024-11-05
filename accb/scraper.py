@@ -175,7 +175,7 @@ class Scraper:
                     {
                         "search_id": self.options.ongoing.search_id,
                         "web_name": product_local,
-                        "adress": product_address,
+                        "address": product_address,
                         "product_name": product_name,
                         "price": product_price,
                         "keyword": keyword,
@@ -251,8 +251,8 @@ class Scraper:
 
         self.send_logs("Aguardando usuário resolver o captcha...")
         while self.is_in_captcha():
+            # TODO: isso aqui só roda uma vez
             self.open_captcha_and_warn()
-        self.send_logs("Captcha resolvido!")
 
     def run(self) -> bool:
         """Realiza a pesquisa na plataforma do Preço da Hora Bahia. Retorna se a pesquisa funcionou."""

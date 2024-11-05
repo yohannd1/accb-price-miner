@@ -99,7 +99,7 @@ class DatabaseManager:
                 cursor.execute("DROP TABLE keyword")
 
         @upgrader.until_version(2)
-        def uv3() -> None:
+        def uv2() -> None:
             query = """
             CREATE TABLE ongoing_search (
                 search_id integer,
@@ -182,6 +182,14 @@ class DatabaseManager:
                 )
 
             cursor.execute("DROP TABLE backup")
+
+        @upgrader.until_version(3)
+        def uv3() -> None:
+            query = """
+            ALTER TABLE estab RENAME COLUMN adress TO address;
+            ALTER TABLE search_item RENAME COLUMN adress TO address;
+            """
+            cursor.executescript(query)
 
         upgrader.upgrade(version)
         final_version = upgrader.get_final_version()
@@ -294,7 +302,7 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """INSERT INTO estab(estab_name, city_name, adress, web_name) VALUES(?, ?, ?, ?)"""
+            query = """INSERT INTO estab(estab_name, city_name, address, web_name) VALUES(?, ?, ?, ?)"""
             cursor.execute(
                 query,
                 (
@@ -315,17 +323,17 @@ class DatabaseManager:
                 search_item["search_id"],
                 search_item["product_name"],
                 search_item["web_name"],
-                search_item["adress"],
+                search_item["address"],
                 search_item["price"],
                 search_item["keyword"],
             )
 
-            sql_query = """SELECT search_id FROM search_item WHERE search_id=? AND product_name=? AND web_name=? AND adress=? AND price=? LIMIT 1"""
+            sql_query = """SELECT search_id FROM search_item WHERE search_id=? AND product_name=? AND web_name=? AND address=? AND price=? LIMIT 1"""
             if cursor.execute(sql_query, tup[:-1]).fetchone() is not None:
                 log(f"Item de pesquisa a ser inserido já existe - ignorando")
                 return
 
-            sql_query = """INSERT INTO search_item(search_id, product_name, web_name, adress, price, keyword) VALUES(?,?,?,?,?,?)"""
+            sql_query = """INSERT INTO search_item(search_id, product_name, web_name, address, price, keyword) VALUES(?,?,?,?,?,?)"""
             cursor.execute(sql_query, tup)
 
     def delete(self, table, where, value):
@@ -396,7 +404,7 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             res = cursor.execute(
-                """SELECT city_name, estab_name, adress, web_name FROM estab"""
+                """SELECT city_name, estab_name, address, web_name FROM estab"""
             )
             return (
                 Estab(city=city_name, name=name, address=address, web_name=web_name)
@@ -407,7 +415,7 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             res = cursor.execute(
-                """SELECT city_name, estab_name, adress, web_name FROM estab WHERE city_name=?""",
+                """SELECT city_name, estab_name, address, web_name FROM estab WHERE city_name=?""",
                 (city,),
             )
             return (
@@ -429,13 +437,13 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """UPDATE estab SET city_name=?, estab_name=?, adress=?, web_name=? WHERE estab_name=?"""
+            query = """UPDATE estab SET city_name=?, estab_name=?, address=?, web_name=? WHERE estab_name=?"""
             cursor.execute(
                 query,
                 (
                     estab["city_name"],
                     estab["estab_name"],
-                    estab["adress"],
+                    estab["address"],
                     estab["web_name"],
                     estab["primary_key"],
                 ),

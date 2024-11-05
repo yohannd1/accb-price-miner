@@ -90,7 +90,7 @@ def export_to_xlsx(*args, **kwargs):
     return export_bq.exchange(("export_to_xlsx", args, kwargs))
 
 
-def is_port_in_use(port) -> bool:
+def is_port_in_use(port: int) -> bool:
     """Confere se uma dada porta port está em uso pelo sistema."""
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -296,7 +296,7 @@ def route_update_estab() -> RequestDict:
     estab_name = request.args["estab_name"]
     primary_key = request.args["primary_key"]
     web_name = request.args["web_name"]
-    adress = request.args["adress"]
+    address = request.args["address"]
 
     state.db_manager.update_estab(
         {
@@ -304,7 +304,7 @@ def route_update_estab() -> RequestDict:
             "city_name": city_name,
             "estab_name": estab_name,
             "web_name": web_name,
-            "adress": adress,
+            "address": address,
         }
     )
 
@@ -322,7 +322,7 @@ def route_insert_estab() -> RequestDict:
     city_name = request.args["city_name"]
     estab_name = request.args["estab_name"]
     web_name = request.args["web_name"]
-    address = request.args["adress"]
+    address = request.args["address"]
 
     estab = Estab(
         name=estab_name,
@@ -486,7 +486,7 @@ def route_clean_search() -> RequestDict:
                 output_folder = limpeza_path / search_date
                 output_folder.mkdir(parents=True, exist_ok=True)
 
-                for _, name, adress, web_name in estab_data:
+                for _, name, address, web_name in estab_data:
                     output_path = output_folder / f"{name}.xlsx"
 
                     export_to_xlsx(
@@ -495,7 +495,7 @@ def route_clean_search() -> RequestDict:
                         filter_by_address=False,
                         output_path=output_path,
                         web_name=web_name,
-                        adress=adress,
+                        address=address,
                     )
 
         response["message"] = (
@@ -510,10 +510,12 @@ def route_clean_search() -> RequestDict:
 
     return response
 
+
 @app.route("/get_option")
 def route_get_option() -> RequestDict:
     key = request.args["key"]
     return {"status": "success", "value": state.db_manager.get_option(key)}
+
 
 @app.route("/set_option")
 def route_set_option() -> RequestDict:
@@ -521,6 +523,7 @@ def route_set_option() -> RequestDict:
     value = request.args["value"]
     state.db_manager.set_option(key, json.loads(value))
     return {"status": "success"}
+
 
 @app.route("/generate_file")
 def route_generate_file() -> RequestDict:
@@ -542,11 +545,9 @@ def route_generate_file() -> RequestDict:
     assert names is not None
 
     estab_names = json.loads(names)
-    estabs = db.get_estab_old()
+    estabs = [e for e in db.get_estabs_for_city(city) if e.name in estab_names]
 
-    estab_data = [e for e in estabs if e[0] == city and e[1] in estab_names]
-
-    output_folder = db_to_xlsx(db, search_id, estab_data, city, state.output_path)
+    output_folder = db_to_xlsx(db, search_id, estabs, city, state.output_path)
     return {"status": "success", "path": str(output_folder)}
 
 

@@ -394,7 +394,7 @@ const list_search = (search_id = undefined) => {
             var time = 0;
 
 
-            // 4 = city , 5 = product , 6 = local, 7 = adress, 8 = price, 9 = keyword
+            // 4 = city , 5 = product , 6 = local, 7 = address, 8 = price, 9 = keyword
             // console.table(response);
             response.map((value, index) => {
                 time = value[4];
@@ -495,8 +495,8 @@ const get_modal_content = (estab_name, cities) => {
                         <label class="active" for="web_name">Nome na Plataforma</label>
                     </div>
                     <div class="input-field col s6">
-                        <input value="${filtered_estab[2]}" placeholder="Endereço" id="adress" type="text" class="validate">
-                        <label class="active" for="adress">Endereço</label>
+                        <input value="${filtered_estab[2]}" placeholder="Endereço" id="address" type="text" class="validate">
+                        <label class="active" for="address">Endereço</label>
                     </div>
                 </div>
                 </div>
@@ -1062,10 +1062,10 @@ $(document).ready(() => {
         var city_name = $("#city_name-save").val();
         var estab_name = $("#estab_name-save").val();
         var web_name = $("#web_name-save").val().toUpperCase();
-        var adress = $("#adress-save").val().toUpperCase();
+        var address = $("#address-save").val().toUpperCase();
 
-        if (validateForm([city_name, estab_name, web_name, adress]))
-            $.get("/insert_estab", { city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
+        if (validateForm([city_name, estab_name, web_name, address]))
+            $.get("/insert_estab", { city_name: city_name, estab_name: estab_name, web_name: web_name, address: address }, (response) => {
                 if (response.status !== "success") {
                     showMessage("O estabelecimento não pôde ser adicionado", { notification: false });
                     return;
@@ -1077,7 +1077,7 @@ $(document).ready(() => {
                 modal.closeModal();
                 $(".jquery-modal").fadeOut(500);
 
-                ESTAB_DATA.push([city_name, estab_name, adress, web_name]);
+                ESTAB_DATA.push([city_name, estab_name, address, web_name]);
                 createEstabElement(estab_name);
             });
     });
@@ -1151,10 +1151,10 @@ $(document).ready(() => {
         var estab_name = $("#estab_name").val();
         var primary_key = $("primary_key").attr("value");
         var web_name = $("#web_name").val().toUpperCase();
-        var adress = $("#adress").val().toUpperCase();
+        var address = $("#address").val().toUpperCase();
 
-        if (validateForm([city_name, estab_name, web_name, adress]))
-            $.get("/update_estab", { primary_key: primary_key, city_name: city_name, estab_name: estab_name, web_name: web_name, adress: adress }, (response) => {
+        if (validateForm([city_name, estab_name, web_name, address]))
+            $.get("/update_estab", { primary_key: primary_key, city_name: city_name, estab_name: estab_name, web_name: web_name, address: address }, (response) => {
                 if (response.status !== "success") {
                     showMessage(`O estabelecimento ${estab_name} não pôde ser atualizado com sucesso.`, { notification: false });
                     return;

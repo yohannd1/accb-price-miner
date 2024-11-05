@@ -19,12 +19,12 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
     search_id = db.save_search(True, city_name, duration["minutes"])
 
     for _index, row in df.iterrows():
-        (name, local, keyword, adress, price) = row
+        (name, local, keyword, address, price) = row
 
         info = {
             "search_id": search_id,
             "web_name": local,
-            "adress": adress,
+            "address": address,
             "product_name": name,
             "price": price,
             "keyword": keyword,
@@ -57,7 +57,7 @@ def db_to_xlsx(
             filter_by_address=filter_by_address,
             output_path=output_path,
             web_name=e.web_name,
-            adress=e.address,
+            address=e.address,
         )
 
     return output_folder
@@ -76,7 +76,7 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path: Path) -> Path:
     output_folder = path / "Todos" / f"{get_time_filename()} {city}"
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    for _id, _product, web_name, adress, _price, _keyword in result:
+    for _id, _product, web_name, address, _price, _keyword in result:
         output_path = output_folder / f"{web_name}.xlsx"
 
         export_to_xlsx(
@@ -85,7 +85,7 @@ def db_to_xlsx_all(city, search_id, db: DatabaseManager, path: Path) -> Path:
             filter_by_address=True,
             output_path=output_path,
             web_name=web_name,
-            adress=adress,
+            address=address,
         )
 
     return output_folder
@@ -97,12 +97,12 @@ def export_to_xlsx(
     filter_by_address: bool,
     output_path: Path,
     web_name: str,
-    adress: str,
+    address: str,
 ) -> None:
     log(f"Writing excel file to {output_path}...")
 
     products = db.run_query(
-        "SELECT product_name, web_name, keyword, adress, price FROM search_item WHERE search_id=? AND web_name=? ORDER BY price ASC",
+        "SELECT product_name, web_name, keyword, address, price FROM search_item WHERE search_id=? AND web_name=? ORDER BY price ASC",
         (search_id, web_name),
     )
 
@@ -118,10 +118,10 @@ def export_to_xlsx(
     )
 
     if filter_by_address:
-        pattern = "|".join(adress.upper().split(" "))
+        pattern = "|".join(address.upper().split(" "))
         df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
 
-    # df = df[df.ENDEREÇO.str.contains(adress.upper())]
+    # df = df[df.ENDEREÇO.str.contains(address.upper())]
     writer = pd.ExcelWriter(str(output_path), engine="openpyxl")
 
     # TODO: use `with` statement
