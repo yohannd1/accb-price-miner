@@ -305,23 +305,28 @@ class DatabaseManager:
                 ),
             )
 
-    def save_search_item(self, search_item):
+    def save_search_item(self, search_item) -> None:
         """Salva os itens da pesquisa no banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            sql_query = """INSERT INTO search_item(search_id, product_name, web_name, adress, price, keyword) VALUES(?,?,?,?,?,?)"""
-            cursor.execute(
-                sql_query,
-                (
-                    search_item["search_id"],
-                    search_item["product_name"],
-                    search_item["web_name"],
-                    search_item["adress"],
-                    search_item["price"],
-                    search_item["keyword"],
-                ),
+
+            tup = (
+                search_item["search_id"],
+                search_item["product_name"],
+                search_item["web_name"],
+                search_item["adress"],
+                search_item["price"],
+                search_item["keyword"],
             )
+
+            sql_query = """SELECT search_id FROM search_item WHERE search_id=? AND product_name=? AND web_name=? AND adress=? AND price=? LIMIT 1"""
+            if cursor.execute(sql_query, tup[:-1]).fetchone() is not None:
+                log(f"Item de pesquisa a ser inserido já existe - ignorando")
+                return
+
+            sql_query = """INSERT INTO search_item(search_id, product_name, web_name, adress, price, keyword) VALUES(?,?,?,?,?,?)"""
+            cursor.execute(sql_query, tup)
 
     def delete(self, table, where, value):
         """Deleta um elemento do banco de dados."""
