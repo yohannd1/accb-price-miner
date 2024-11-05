@@ -354,10 +354,6 @@ class Scraper:
 
                 self.send_logs(f"Próxima palavra chave: {keyword}")
 
-                active = "{}.{}".format(
-                    index + ongoing.current_product,
-                    index_k + ongoing.current_keyword,
-                )
                 duration = (
                     get_time_hms(self.start_time)["minutes"]
                     + self.options.duration_mins

@@ -534,8 +534,8 @@ def route_generate_file() -> RequestDict:
     db = state.db_manager
 
     format_type = request.args.get("format")
-    city = request.args.get("city_name")
-    search_id = request.args.get("search_id")
+    city = request.args["city_name"]
+    search_id = request.args["search_id"]
 
     if format_type == "all":
         output_folder = db_to_xlsx_all(city, search_id, db, state.output_path)
