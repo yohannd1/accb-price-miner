@@ -734,7 +734,7 @@ $(document).ready(() => {
                 $(window).off();
 
                 $(".log_item").remove();
-                alert("Pesquisa finalizada!");
+                alert("Pesquisa finalizada.");
                 window.location.reload(true);
             }
         } else if (msg.type == 'captcha') {

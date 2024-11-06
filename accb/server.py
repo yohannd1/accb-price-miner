@@ -14,19 +14,16 @@ from flask import Flask, render_template, request, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
 
+from selenium.webdriver import Chrome
+
 from accb.scraper import Scraper, ScraperOptions, ScraperError
-from accb.utils import (
-    log,
-    log_error,
-    ask_user_directory,
-    open_folder,
-)
+from accb.utils import log, log_error, ask_user_directory, open_folder, Defer
 from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.model import Estab, OngoingSearch
-from accb.web_driver import is_chrome_installed
+from accb.web_driver import is_chrome_installed, open_chrome_driver
 from accb.database import DatabaseManager, table_dump
 from accb.bi_queue import BiQueue
 
@@ -555,13 +552,10 @@ def route_generate_file() -> RequestDict:
 def on_pause() -> RequestDict:
     """Pausa a pesquisa atual, mantendo seu estado no banco de dados."""
 
-    state.wait_reload = True
-
-    state.pause = True
-    state.cancel = False
-
     assert state.scraper is not None
-    state.scraper.pause(cancel=False)
+    state.scraper.pause()
+
+    state.wait_reload = True
 
     return {"status": "success"}
 
@@ -574,11 +568,8 @@ def on_cancel() -> RequestDict:
 
     state.db_manager.run_query("DELETE FROM search WHERE id = ?", (state.search_id,))
 
-    state.pause = False
-    state.cancel = True
-
     assert state.scraper is not None
-    state.scraper.pause(cancel=True)
+    state.scraper.cancel()
 
     if state.search_id is None:
         return {"status": "error"}
@@ -634,7 +625,7 @@ def on_exit() -> None:
     os._exit(0)
 
 
-def attempt_search(args: RequestDict) -> None:
+def attempt_search(args: RequestDict, driver: Chrome) -> None:
     """Inicia a pesquisa."""
 
     # TODO: suportar especificar qual o backup (ongoing_search)
@@ -679,11 +670,9 @@ def attempt_search(args: RequestDict) -> None:
             duration_mins=0.0,
         )
 
-    scraper = Scraper(opts, state)
+    scraper = Scraper(opts, state, driver)
     state.scraper = scraper
     state.search_id = search_id
-    state.cancel = False
-    state.pause = False
 
     try:
         scraper.run()
@@ -695,25 +684,29 @@ def attempt_search(args: RequestDict) -> None:
         )
         state.wait_reload = True
 
-        if not scraper.exit:
+        if scraper.mode == "default":
             emit("show_notification", "Pesquisa concluída.", broadcast=True)
             db_to_xlsx(db, search_id, opts.ongoing.estabs, city, state.output_path)
 
-    except ScraperError:
-        state.cancel = True
-        state.pause = True
-        emit(
-            "show_notification", "Ocorreu um erro ao rodar a pesquisa.", broadcast=True
-        )
+    except ScraperError as _exc:
+        scraper.mode = "errored"
+
+    finally:
+        scraper.finalize_search()
 
 
 @socketio.on("search")
 def on_search(args: RequestDict) -> None:
     error_count = 0
 
+    def close_driver(driver: Chrome) -> None:
+        driver.close()
+        driver.quit()
+
     while True:
         try:
-            attempt_search(args)
+            with Defer(open_chrome_driver(), deinit=close_driver) as driver:
+                attempt_search(args, driver=driver)
             break
         except Exception as exc:
             log_error(exc)

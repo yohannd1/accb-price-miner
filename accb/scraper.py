@@ -9,7 +9,7 @@ from time import sleep, time
 import webbrowser
 import traceback
 import random
-from typing import Any, Optional, assert_never, Generator
+from typing import Any, Optional, Generator, Literal, assert_never
 from dataclasses import dataclass
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -20,11 +20,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver import Chrome
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver import Chrome
 
-from accb.web_driver import open_chrome_driver
-from accb.utils import log, log_error, show_warning, get_time_hms
+from accb.utils import log, log_error, show_warning, get_time_hms, enumerate_skip
 from accb.state import State
 from accb.model import Estab, Product, OngoingSearch
 from accb.database import DatabaseManager
@@ -51,6 +50,10 @@ class ScraperError(Exception):
 
 class SearchResponse:
     @dataclass
+    class Default:
+        pass
+
+    @dataclass
     class Error:
         message: str
 
@@ -58,35 +61,22 @@ class SearchResponse:
     class Sleep:
         duration: float
 
-    @dataclass
-    class Dummy:
-        pass
+    All = Default | Sleep | Error
 
-    All = Sleep | Dummy | Error
+
+Mode = Literal["default", "errored", "cancelled", "paused"]
 
 
 class Scraper:
     """Realiza o scraping na página do Preço da Hora Bahia."""
 
-    def __init__(self, options: ScraperOptions, state: State) -> None:
+    def __init__(self, options: ScraperOptions, state: State, driver: Chrome) -> None:
         self.options = options
         self.state = state
+        self.driver = driver
         self.db = self.state.db_manager
 
-        self.driver: Optional[Chrome] = None
-        """Instância do navegador do selenium."""
-        # TODO: fazer isso não ser opcional
-
-        # TODO: mesclar stop,exit,cancel em uma variável só (enum)
-
-        self.stop = False
-        """Variável de controle para parar a execução da pesquisa."""
-
-        self.exit = False
-        """Variável de controle para sair a execução da pesquisa."""
-
-        self.cancel = False
-        """Variável de controle para cancelar a execução da pesquisa."""
+        self.mode: Mode = "default"
 
         self.start_time = time()
         """Valor do tempo no inicio da pesquisa."""
@@ -105,59 +95,57 @@ class Scraper:
         except URLError:
             return False
 
-    def pause(self, cancel: bool = False) -> None:
-        """Seta as variáveis de controle do programa (parada, cancelar e saída)."""
+    def pause(self) -> None:
+        self.mode = "paused"
 
-        self.cancel = cancel
-        self.exit = True
-        self.stop = True
+    def cancel(self) -> None:
+        self.mode = "cancelled"
 
-    def exit_thread(self, error: bool = False) -> None:
-        """Pausa a pesquisa caso aconteça um erro de rede ou o usuário pause-a ou cancele manualmente."""
+    def _delete_related_search(self) -> None:
+        db = self.state.db_manager
+        id_ = self.options.ongoing.search_id
+        db.delete_ongoing_search_by_id(id_)
+        db.delete_search_by_id(id_)
 
-        if error:
-            emit(
-                "search",
-                {
-                    "type": "error",
-                    "message": "Ocorreu um erro de rede durante a pesquisa e não foi possível reinicia-la automaticamente, inicie a pesquisa manualmente !",
-                },
-                broadcast=True,
-            )
+    def finalize_search(self) -> None:
+        match self.mode:
+            case "default":
+                pass
 
-            assert self.driver is not None
-            self.driver.close()
-            self.driver.quit()
+            case "errored":
+                # FIXME: isso aqui faz com que a pesquisa seja cancelada e tenha que ser reiniciada. Talvez seja melhor tentar resumir ela por backup?
+                self._delete_related_search()
 
-        elif self.cancel:
-            self.state.db_manager.delete_ongoing_search(self.options.ongoing)
+                emit(
+                    "search",
+                    {
+                        "type": "error",
+                        "message": "Ocorreu um erro de rede durante a pesquisa.",
+                    },
+                    broadcast=True,
+                )
+            case "cancelled":
+                self._delete_related_search()
 
-            emit(
-                "search",
-                {
-                    "type": "cancel",
-                    "message": "A pesquisa foi cancelada, todos os dados foram excluídos.",
-                },
-                broadcast=True,
-            )
-
-            assert self.driver is not None
-            self.driver.close()
-            self.driver.quit()
-
-        elif self.exit:
-            emit(
-                "search",
-                {
-                    "type": "pause",
-                    "message": "A pesquisa foi parada, todos os dados foram salvos no banco de dados local.",
-                },
-                broadcast=True,
-            )
-
-            assert self.driver is not None
-            self.driver.close()
-            self.driver.quit()
+                emit(
+                    "search",
+                    {
+                        "type": "cancel",
+                        "message": "A pesquisa foi cancelada, todos os dados foram excluídos.",
+                    },
+                    broadcast=True,
+                )
+            case "paused":
+                emit(
+                    "search",
+                    {
+                        "type": "pause",
+                        "message": "A pesquisa foi parada, todos os dados foram salvos no banco de dados local.",
+                    },
+                    broadcast=True,
+                )
+            case _ as unreachable:
+                assert_never(unreachable)
 
     def send_logs(self, *messages: str) -> None:
         log(f"[Scraper.send_logs]: {str.join('\n  ', messages)}")
@@ -167,7 +155,6 @@ class Scraper:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
         # FIXME: tirar argumento `_product`? ele não é usado
 
-        assert self.driver is not None
         elements = self.driver.page_source
         soup = BeautifulSoup(elements, "html.parser")
         logs = []
@@ -187,9 +174,6 @@ class Scraper:
                 item.find(attrs={"data-original-title": "Estabelecimento"}).parent.text
             )
             product_price = item.find(text=money_patt).lstrip()
-
-            if self.stop:
-                return
 
             try:
                 self.db.save_search_item(
@@ -217,7 +201,6 @@ class Scraper:
         # FIXME: confirmar: ela retorna True se precisar, ou se não precisar?
 
         try:
-            assert self.driver is not None
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "flash"))
             )
@@ -229,8 +212,6 @@ class Scraper:
 
     def open_captcha_and_warn(self) -> None:
         """Abre a URL de captcha, avisa e aguarda o aviso ser fechado."""
-
-        assert self.driver is not None
 
         webbrowser.open(self.options.url)
 
@@ -267,7 +248,6 @@ class Scraper:
         """Abre o captcha e aguarda o usuário resolver o captcha."""
 
         if not self.is_connected():
-            self.exit_thread(True)
             raise ScraperError("Sem conexão com a rede!")
 
         self.send_logs("Aguardando usuário resolver o captcha...")
@@ -280,9 +260,7 @@ class Scraper:
             # TODO: método eficiente para detectar captchas
             # TODO: exception handling aqui mesmo?
 
-            if self.stop:
-                self.exit = True
-                self.exit_thread()
+            if self.mode != "default":
                 break
 
             match response:
@@ -291,23 +269,23 @@ class Scraper:
                 case SearchResponse.Sleep(duration=duration):
                     # TODO: talvez, ao invés de um sleep grande, fazer sleeps de 0.5s para poder periodicamente verificar se self.stop é verdadeiro.
                     self.smart_sleep(duration)
-                case SearchResponse.Dummy():
+                case SearchResponse.Default():
                     pass
                 case _ as unreachable:
                     assert_never(unreachable)
 
-    def begin_search(self) -> Generator[SearchResponse.All]:
+    def begin_search(self) -> Generator[SearchResponse.All, None, None]:
         Sleep = SearchResponse.Sleep
-        Dummy = SearchResponse.Dummy
+        Default = SearchResponse.Default
         Error = SearchResponse.Error
 
         times = self.time_coeff  # TODO: parar de usar isso (em favor do smart_sleep)
         ongoing = self.options.ongoing
+        driver = self.driver
 
         emit("search.began", broadcast=True)
 
         try:
-            driver = self.driver = open_chrome_driver()
             driver.get(self.options.url)
         except Exception:
             yield Error("não foi possível abrir o ChromeDriver")
@@ -367,13 +345,13 @@ class Scraper:
 
         product_count = len(ongoing.products)
 
-        for index, p in enumerate(ongoing.products[ongoing.current_product :]):
-            yield Dummy()
+        for p_idx, p in enumerate_skip(ongoing.products, start=ongoing.current_product):
+            yield Default()
 
             product = p.name
             keywords = p.keywords
 
-            progress_value = 100 * (ongoing.current_product + index) / product_count
+            progress_value = 100 * p_idx / product_count
 
             self.send_logs(
                 f"Começando pesquisa do produto {product} (progresso: {progress_value:.0f}%)"
@@ -381,8 +359,10 @@ class Scraper:
             emit("search.began_searching_product", product)
             emit("search.update_progress_bar", progress_value, broadcast=True)
 
-            for index_k, keyword in enumerate(keywords[ongoing.current_keyword :]):
-                yield Dummy()
+            for k_idx, keyword in enumerate_skip(
+                keywords, start=ongoing.current_keyword
+            ):
+                yield Default()
 
                 self.send_logs(f"Próxima palavra chave: {keyword}")
 
@@ -429,7 +409,7 @@ class Scraper:
 
                 flag = 0
                 while True:
-                    yield Dummy()
+                    yield Default()
 
                     try:
                         WebDriverWait(driver, 2 * times).until(
@@ -447,11 +427,11 @@ class Scraper:
                             break
                         self.captcha_wait_loop()
 
-                yield Dummy()
+                yield Default()
 
                 self.get_data(product, keyword)
 
-        yield Dummy()
+        yield Default()
 
         duration = get_time_hms(self.start_time)
 
@@ -461,10 +441,5 @@ class Scraper:
         search.total_duration_mins = duration["minutes"] + self.options.duration_mins
         self.db.update_search(search)
 
-        self.send_logs("Atualizando backup...")
-
-        self.db.update_ongoing_search(ongoing)
-
-        # FIXME: só tá fechando se  a pesquisa não tiver sido interrompida
-        driver.close()
-        driver.quit()
+        self.send_logs("Deletando backup...")
+        self.db.delete_ongoing_search_by_id(ongoing.search_id)

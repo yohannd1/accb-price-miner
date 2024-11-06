@@ -529,8 +529,11 @@ class DatabaseManager:
             total_duration_mins=tup[3],
         )
 
-    def delete_ongoing_search(self, o: OngoingSearch) -> None:
-        self.run_query("DELETE FROM ongoing_search WHERE search_id=?", (o.search_id,))
+    def delete_search_by_id(self, id_: int) -> None:
+        self.run_query("DELETE FROM search WHERE id=?", (id_,))
+
+    def delete_ongoing_search_by_id(self, id_: int) -> None:
+        self.run_query("DELETE FROM ongoing_search WHERE search_id=?", (id_,))
 
     def create_ongoing_search(self, o: OngoingSearch) -> None:
         self.run_query(

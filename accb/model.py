@@ -2,18 +2,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 
-# @dataclass
-# class Backup:
-#     search_id: int
-#     active: str
-#     city: str
-#     done: bool
-#     estab_info: dict
-#     product_info: dict
-#     duration: int
-#     progress_value: float = -1  # FIXME: remover isso
-
-
 @dataclass
 class City:
     name: str
@@ -55,6 +43,13 @@ class SearchItem:
 
 @dataclass
 class OngoingSearch:
+    """Uma pesquisa que não foi ainda finalizada.
+
+    A ideia é armazenar todo o estado possível dentro disso, para que modificações no banco de dados não afetem a pesquisa.
+
+    Substitui o antigo conceito de Backup, mas tal nome ainda é usado na interface.
+    """
+
     search_id: int
     city: str
     estabs: list[Estab]

@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import sys
 import os
 from time import strftime, asctime, time
-from typing import Iterable, Optional
+from typing import Iterable, Optional, TypeVar, Generator, Sequence, Generic, Callable
+from dataclasses import dataclass
 from datetime import datetime
 from tkinter import filedialog, messagebox, Tk
 from subprocess import Popen
@@ -9,6 +12,8 @@ from pathlib import Path
 import traceback
 
 _log_file = sys.stderr
+
+T = TypeVar("T")
 
 
 def _curtime_str() -> str:
@@ -101,3 +106,25 @@ def open_folder(path: Path) -> None:
         Popen(["open", str(path)])
     else:
         raise NotImplementedError("unsupported operating system")
+
+
+def enumerate_skip(seq: Sequence[T], start: int = 0) -> Generator[tuple[int, T], None, None]:
+    i = start
+    while i < len(seq):
+        yield (i, seq[i])
+        i += 1
+
+
+@dataclass
+class Defer(Generic[T]):
+    resource: T
+    """Recurso para repassar para o `with`"""
+
+    deinit: Callable[[T], None]
+    """Função para chamar com o recurso ao fim do `with"""
+
+    def __enter__(self) -> T:
+        return self.resource
+
+    def __exit__(self, *_args, **_kwargs) -> None:
+        self.deinit(self.resource)
