@@ -690,6 +690,10 @@ $(document).ready(() => {
 
     socket.on("show_notification", (msg) => showMessage(msg));
 
+    socket.on("search.began", () => {
+        updateProgressBar(0.0);
+    });
+
     socket.on("search.error", (msg) => {
         $("#progress_bar").css("width", "0%");
         $("#progress_bar").html("0%");
@@ -936,19 +940,14 @@ $(document).ready(() => {
     });
 
     // Mascara para keywords
-    // ACUCAR CRISTAL, ACUCAR CRISTAL 1KG, A
-
     $('body').on('keyup', '#keywords', function (e) {
         var pattern = new RegExp(',+(?=[/\s])', 'i');
         var keywords = $('#keywords').val().toUpperCase();
         var result = keywords.replace(pattern, "");
-        // console.log({ keywords, result });
         $("#keywords").val(result);
-
     });
 
     // Salvar deleção de cidade
-
     $('#save-delete-city').click(function (e) {
         e.preventDefault();
         var city_name = $("#city-delete-select").val();

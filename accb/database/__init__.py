@@ -529,6 +529,9 @@ class DatabaseManager:
             total_duration_mins=tup[3],
         )
 
+    def delete_ongoing_search(self, o: OngoingSearch) -> None:
+        self.run_query("DELETE FROM ongoing_search WHERE search_id=?", (o.search_id,))
+
     def create_ongoing_search(self, o: OngoingSearch) -> None:
         self.run_query(
             "INSERT INTO ongoing_search (search_id, city, estabs_json, products_json, current_product, current_keyword) VALUES (?, ?, ?, ?, ?, ?)",

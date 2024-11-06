@@ -14,7 +14,7 @@ from flask import Flask, render_template, request, Response
 from flask_material import Material
 from flask_socketio import SocketIO, emit
 
-from accb.scraper import Scraper, ScraperOptions
+from accb.scraper import Scraper, ScraperOptions, ScraperError
 from accb.utils import (
     log,
     log_error,
@@ -652,6 +652,8 @@ def attempt_search(args: RequestDict) -> None:
         ongoing = db.get_ongoing_search_by_id(search_id)
         assert ongoing is not None
 
+        city = ongoing.city
+
         opts = ScraperOptions(
             ongoing=ongoing,
             duration_mins=search.total_duration_mins,
@@ -677,19 +679,14 @@ def attempt_search(args: RequestDict) -> None:
             duration_mins=0.0,
         )
 
-    scrap = Scraper(opts, state)
-    state.scraper = scrap
+    scraper = Scraper(opts, state)
+    state.scraper = scraper
     state.search_id = search_id
     state.cancel = False
     state.pause = False
 
-    success = scrap.run()
-    if not success:
-        state.cancel = True
-        state.pause = True
-
-    if not state.cancel and not state.pause:
-        emit("show_notification", "Pesquisa concluída.", broadcast=True)
+    try:
+        scraper.run()
 
         emit(
             "captcha",
@@ -698,8 +695,16 @@ def attempt_search(args: RequestDict) -> None:
         )
         state.wait_reload = True
 
-        # comentar o outro processo de aquisição de id para realizar a injeção de dados de pesquisa.
-        db_to_xlsx(db, search_id, opts.ongoing.estabs, city, state.output_path)
+        if not scraper.exit:
+            emit("show_notification", "Pesquisa concluída.", broadcast=True)
+            db_to_xlsx(db, search_id, opts.ongoing.estabs, city, state.output_path)
+
+    except ScraperError:
+        state.cancel = True
+        state.pause = True
+        emit(
+            "show_notification", "Ocorreu um erro ao rodar a pesquisa.", broadcast=True
+        )
 
 
 @socketio.on("search")
