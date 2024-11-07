@@ -33,8 +33,7 @@ RequestDict = dict[str, Any]
 app = Flask(__name__)
 Material(app)
 socketio = SocketIO(app, manage_session=False, async_mode="threading")
-
-state = State(db_manager=DatabaseManager())
+state = State()
 
 SERVER_URL = "http://127.0.0.1"
 PORT = 5000
@@ -566,13 +565,8 @@ def on_cancel() -> RequestDict:
 
     state.wait_reload = True
 
-    state.db_manager.run_query("DELETE FROM search WHERE id = ?", (state.search_id,))
-
     assert state.scraper is not None
     state.scraper.cancel()
-
-    if state.search_id is None:
-        return {"status": "error"}
 
     return {"status": "success"}
 
@@ -672,7 +666,6 @@ def attempt_search(args: RequestDict, driver: Chrome) -> None:
 
     scraper = Scraper(opts, state, driver)
     state.scraper = scraper
-    state.search_id = search_id
 
     try:
         scraper.run()

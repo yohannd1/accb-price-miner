@@ -175,20 +175,16 @@ class Scraper:
             )
             product_price = item.find(text=money_patt).lstrip()
 
-            try:
-                self.db.save_search_item(
-                    {
-                        "search_id": self.options.ongoing.search_id,
-                        "web_name": product_local,
-                        "address": product_address,
-                        "product_name": product_name,
-                        "price": product_price,
-                        "keyword": keyword,
-                    }
-                )
-            except Exception as exc:  # FIXME: parar de usar esse except?
-                log_error(exc)
-                return
+            self.db.save_search_item(
+                {
+                    "search_id": self.options.ongoing.search_id,
+                    "web_name": product_local,
+                    "address": product_address,
+                    "product_name": product_name,
+                    "price": product_price,
+                    "keyword": keyword,
+                }
+            )
 
             logs.append(
                 f"Produto: '{product_name}' em '{product_local}' a {product_price} (palavra chave: {keyword}, endereço: {product_address})"
@@ -258,7 +254,6 @@ class Scraper:
     def run(self) -> None:
         for response in self.begin_search():
             # TODO: método eficiente para detectar captchas
-            # TODO: exception handling aqui mesmo?
 
             if self.mode != "default":
                 break
@@ -319,6 +314,13 @@ class Scraper:
         finally:
             driver.find_element(By.CLASS_NAME, "location-box").click()
         yield Sleep(0.25)
+
+        # TODO: algo assim:
+        # def elem_with_id(id_: str):
+        #     return EC.presence_of_element_located((By.ID, id_))
+        # def elem_with_class(class_: str):
+        #     return EC.presence_of_element_located((By.CLASS_NAME, class_))
+        # if elem := self.wd_wait_until(2.0, elem_with_id("add-center")):
 
         # Botão que abre a opção de inserir o CEP
         try:

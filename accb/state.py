@@ -3,34 +3,34 @@ from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 from pathlib import Path
 
+from accb.utils import log
+from accb.database import DatabaseManager
+
 if TYPE_CHECKING:
-    from accb.database import DatabaseManager
     from accb.scraper import Scraper
 
 
-@dataclass
 class State:
     """Dados utilizados ao longo do programa"""
 
-    db_manager: DatabaseManager
-
-    wait_reload: bool = False
-    """Se o servidor deve esperar uma nova conexão (a página conetada está recarregando)."""
-
-    connected_count: int = 0
-    """Conta a quantidade de clientes conectados."""
-
-    scraper: Optional[Scraper] = None
-    """Scraper utilizado para pesquisar."""
-
-    cancel: bool = False
-    # TODO: explicação
-
-    pause: bool = False
-    # TODO: explicação
-
-    search_id: Optional[int] = None
-    """O ID da pesquisa atualmente ocorrendo (None se nenhuma pesquisa estiver ocorrendo)"""
-
-    output_path: Optional[Path] = None
+    output_path: Optional[Path]
     """Caminho de saída dos dados (Excel)."""
+
+    def __init__(self) -> None:
+        self.wait_reload: bool = False
+        """Se o servidor deve esperar uma nova conexão (a página conetada está recarregando)."""
+
+        self.connected_count: int = 0
+        """Conta a quantidade de clientes conectados."""
+
+        self.scraper: Optional[Scraper] = None
+        """Scraper utilizado para pesquisar."""
+
+        self.db_manager = DatabaseManager()
+
+        out_path = self.db_manager.get_option("path")
+        if isinstance(out_path, str):
+            self.output_path = Path(out_path)
+        else:
+            log(f"Caminho de saída de dados inválido!")
+            self.output_path = None
