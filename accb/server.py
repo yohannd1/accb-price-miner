@@ -9,6 +9,7 @@ import socket
 from threading import Timer
 from queue import Queue
 from typing import Any
+from time import sleep
 
 from flask import Flask, render_template, request, Response
 from flask_material import Material
@@ -24,7 +25,7 @@ from accb.state import State
 from accb.consts import MONTHS_PT_BR
 from accb.model import Estab, OngoingSearch
 from accb.web_driver import is_chrome_installed, open_chrome_driver
-from accb.database import DatabaseManager, table_dump
+from accb.database import table_dump
 from accb.bi_queue import BiQueue
 
 RequestDict = dict[str, Any]
@@ -110,7 +111,6 @@ def route_home() -> str:
     db = state.db_manager
 
     product_names = db.run_query("SELECT product_name FROM product")
-    search = False
     active = "0.0"
 
     search_id = db.get_incomplete_search_id()
@@ -729,6 +729,8 @@ def on_search(args: RequestDict) -> None:
                 broadcast=True,
             )
 
+            sleep(1)
+
 
 @app.context_processor
 def utility_processor() -> RequestDict:
@@ -753,7 +755,7 @@ def utility_processor() -> RequestDict:
 
 
 def main() -> None:
-    log(f"Iniciando o servidor...")
+    log("Iniciando o servidor...")
 
     force_debug = os.environ.get("ACCB_FORCE_DEBUG") is not None
 

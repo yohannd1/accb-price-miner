@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import os
-from time import strftime, asctime, time
+from time import strftime, time
 from typing import Iterable, Optional, TypeVar, Generator, Sequence, Generic, Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -72,8 +72,7 @@ def ask_user_directory() -> Optional[Path]:
 
     if result == () or (is_windows() and result == "."):
         return None
-    else:
-        return Path(result)
+    return Path(result)
 
 
 def get_time_hms(start_time_sec: float) -> dict:
@@ -100,10 +99,10 @@ def open_folder(path: Path) -> None:
         os.startfile(str(path))  # type: ignore
     elif is_linux():
         # https://commandmasters.com/commands/xdg-open-linux/
-        Popen(["xdg-open", str(path)])
+        _ = Popen(["xdg-open", str(path)])
     elif is_macos():
         # https://scriptingosx.com/2017/02/the-macos-open-command/
-        Popen(["open", str(path)])
+        _ = Popen(["open", str(path)])
     else:
         raise NotImplementedError("unsupported operating system")
 

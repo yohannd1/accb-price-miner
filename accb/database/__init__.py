@@ -224,7 +224,7 @@ class DatabaseManager:
         new_version = self._perform_conn_upgrade(cursor, version)
 
         if version == new_version:
-            log(f"Nenhum upgrade foi preciso.")
+            log("Nenhum upgrade foi preciso.")
         else:
             log(f"Upgrade feito para a versão {new_version}.")
 
@@ -323,7 +323,7 @@ class DatabaseManager:
 
             sql_query = """SELECT search_id FROM search_item WHERE search_id=? AND product_name=? AND web_name=? AND address=? AND price=? LIMIT 1"""
             if cursor.execute(sql_query, tup[:-1]).fetchone() is not None:
-                log(f"Item de pesquisa a ser inserido já existe - ignorando")
+                log("Item de pesquisa a ser inserido já existe - ignorando")
                 return
 
             sql_query = """INSERT INTO search_item(search_id, product_name, web_name, address, price, keyword) VALUES(?,?,?,?,?,?)"""
@@ -503,10 +503,10 @@ class DatabaseManager:
         (id_,) = result[0]
         return id_
 
-    def get_search_by_id(self, id: int) -> Optional[Search]:
+    def get_search_by_id(self, id_: int) -> Optional[Search]:
         result = self.run_query(
             "SELECT done, city_name, search_date, duration FROM search WHERE id=?",
-            (id,),
+            (id_,),
         )
 
         if len(result) == 0:
@@ -515,7 +515,7 @@ class DatabaseManager:
         (tup,) = result
 
         return Search(
-            id=id,
+            id=id_,
             _done=bool(tup[0]),
             city_name=tup[1],
             start_date=tup[2],
@@ -649,23 +649,23 @@ def table_dump(conn: Connection, table_name: str) -> Generator[str, None, None]:
             name == :table_name
         """
     schema_res = cursor.execute(q, {"table_name": table_name})
-    for table_name, _type, sql in schema_res.fetchall():
-        if table_name == "sqlite_sequence":
+    for name, _type, sql in schema_res.fetchall():
+        if name == "sqlite_sequence":
             yield "DELETE FROM sqlite_sequence;"
-        elif table_name == "sqlite_stat1":
+        elif name == "sqlite_stat1":
             yield "ANALYZE sqlite_master;"
-        elif table_name.startswith("sqlite_"):
+        elif name.startswith("sqlite_"):
             continue
         else:
             yield f"{sql};"
 
         # Build the insert statement for each row of the current table
-        res = cursor.execute("PRAGMA table_info('%s')" % table_name)
+        res = cursor.execute("PRAGMA table_info('%s')" % name)
         column_names = [str(table_info[1]) for table_info in res.fetchall()]
         q = 'SELECT \'INSERT INTO "%(tbl_name)s" VALUES('
         q += ",".join(["'||quote(" + col + ")||'" for col in column_names])
         q += ")' FROM '%(tbl_name)s'"
-        query_res = cursor.execute(q % {"tbl_name": table_name})
+        query_res = cursor.execute(q % {"tbl_name": name})
         for row in query_res:
             yield f"{row[0]};"
 

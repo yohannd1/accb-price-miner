@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import re
-import sys
-import json
 from time import sleep, time
 import webbrowser
-import traceback
 import random
-from typing import Any, Optional, Generator, Literal, assert_never
+from typing import Generator, Literal, assert_never
 from dataclasses import dataclass
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -23,10 +20,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import Chrome
 
-from accb.utils import log, log_error, show_warning, get_time_hms, enumerate_skip
+from accb.utils import log, show_warning, get_time_hms, enumerate_skip
 from accb.state import State
-from accb.model import Estab, Product, OngoingSearch
-from accb.database import DatabaseManager
+from accb.model import OngoingSearch
 
 URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
 
@@ -374,7 +370,8 @@ class Scraper:
                 )
 
                 self.send_logs("Atualizando backup...")
-
+                ongoing.current_product = p_idx
+                ongoing.current_keyword = k_idx
                 self.db.update_ongoing_search(ongoing)
 
                 yield Sleep(1)

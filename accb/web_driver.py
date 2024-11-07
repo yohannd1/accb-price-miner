@@ -1,6 +1,4 @@
-import sys
 from functools import lru_cache
-import traceback
 
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 from pathlib import Path
 
@@ -32,5 +31,5 @@ class State:
         if isinstance(out_path, str):
             self.output_path = Path(out_path)
         else:
-            log(f"Caminho de saída de dados inválido!")
+            log("Caminho de saída de dados inválido!")
             self.output_path = None
