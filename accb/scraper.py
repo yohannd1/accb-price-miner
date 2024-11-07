@@ -144,7 +144,15 @@ class Scraper:
                 assert_never(unreachable)
 
     def send_logs(self, *messages: str) -> None:
-        log(f"[Scraper.send_logs]: {str.join('\n  ', messages)}")
+        if len(messages) == 0:
+            return
+
+        if len(messages) == 1:
+            final = messages[0]
+        else:
+            final = str.join('\n', [f"  {msg}" for msg in messages])
+
+        log(f"[Scraper.send_logs]: {final}")
         emit("search.log", list(messages), broadcast=True)
 
     def get_data(self, _product: str, keyword: str) -> None:
