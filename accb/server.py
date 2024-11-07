@@ -117,10 +117,13 @@ def route_home() -> str:
     has_backup = search_id is not None
 
     day = str(date.today()).split("-")[1]
-    search_info = db.run_query(
+
+    searches_r = db.run_query(
         "SELECT * FROM search WHERE done = 1 AND search_date LIKE ?",
         (f"%%-{day}-%%",),
     )
+
+    searches = [(id_, city_name, search_date) for (id_, _done, city_name, search_date, *_) in searches_r]
 
     search_years = db.run_query(
         "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
@@ -148,9 +151,9 @@ def route_home() -> str:
         has_backup=has_backup,
         city_names=city_names,
         active=active,
-        search_info=search_info,
+        searches=searches,
         product_len=len(product_names),
-        month=MONTHS_PT_BR,
+        months=MONTHS_PT_BR,
         active_month=day,
         active_year=str(date.today()).split("-", maxsplit=1)[0],
         chrome_installed=str(is_chrome_installed()),

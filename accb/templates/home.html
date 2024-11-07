@@ -47,7 +47,7 @@
       {{ top_logos() }}
 
       <div style="margin-top: 2em;">
-        {% if search %}
+        {% if has_backup %}
           <a style="background: #fea621 !important; margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
         {% else %}
           <a  style="margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
@@ -199,38 +199,27 @@
           <div>
             <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa" >
               <select id="search-select" class="browser-default">
-                {% if len(search_info) == 0 %}
+                {% if len(searches) == 0 %}
                   <option value="null">Nenhuma Pesquisa</option>
                 {% endif %}
-                {% for search in search_info %}
-                  <option city="{{search[2]}}" value="{{search[0]}}">{{search[2]}} {{search[3]}}</option>
+
+                {% for id, city_name, search_date in searches %}
+                  <option city="{{ city_name }}" value="{{ id }}">{{ city_name }} {{ search_date }}</option>
                 {% endfor %}
               </select>
             </div>
             <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês" >
               <select id="month-picker" class="browser-default">
-                {% for index,mont in enumerate(month) %}
-                  {% if index + 1 == active_month %}
-                    <option selected value="{{index}}">{{mont}}</option>
+                {% for i, m in enumerate(months) %}
+                  {% if i + 1 == active_month %}
+                    <option selected value="{{i}}">{{ m }}</option>
                   {% else %}
-                    <option value="{{index}}">{{mont}}</option>
+                    <option value="{{i}}">{{ m }}</option>
                   {% endif %}
                 {% endfor %}
               </select>
             </div>
-            <!-- <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Ano" >
-              <select id="year-picker" class="browser-default">
-                {% for index,year in enumerate(years) %}
-                  {% if year == active_year %}
-                    <option selected value="{{year[0]}}">{{year[0]}}</option>
-                  {% else %}
-                    <option value="{{year[0]}}">{{year[0]}}</option>
-                  {% endif %}
-                {% endfor %}
-              </select>
-            </div> -->
           </div>
-          <!-- <a style="margin-left: 10px; margin-right: 10px;" id="month-picker" type="text" class="btn-floating btn-large primary_color"><i class="fa fa-calendar"></i></a> -->
           <div>
             <a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
             <a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
