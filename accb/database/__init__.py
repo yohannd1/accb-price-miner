@@ -24,21 +24,14 @@ class DatabaseManager:
         self.conn_count = 0
         """A quantidade de vezes que uma conexão foi criada."""
 
-    def import_database(self, file_path=None) -> None:
+    def import_database_from_script(self, script: str) -> None:
         """Importa um arquivo sql e injeta ele no banco de dados."""
-
-        if file_path is not None:
-            sql_script = file_path.read().decode(ENCODING)
-        else:
-            schema_path = self.resource_path("importar.sql")
-            with open(schema_path, "r", encoding=ENCODING) as file:
-                sql_script = file.read()
 
         # FIXME: evitar isso - é melhor limpar o banco de dados ou serializar p/ um arquivo JSON o conteúdo
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
 
-            for command in sql_script.split(";"):
+            for command in script.split(";"):
                 # XXX: se tiver um texto com SQL, isso quebra
                 try:
                     cursor.execute(command)

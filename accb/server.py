@@ -123,7 +123,10 @@ def route_home() -> str:
         (f"%%-{day}-%%",),
     )
 
-    searches = [(id_, city_name, search_date) for (id_, _done, city_name, search_date, *_) in searches_r]
+    searches = [
+        (id_, city_name, search_date)
+        for (id_, _done, city_name, search_date, *_) in searches_r
+    ]
 
     search_years = db.run_query(
         "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
@@ -422,15 +425,18 @@ def route_delete_search() -> RequestDict:
 def route_export_database() -> RequestDict:
     """Rota responsável por exportar os dados do banco"""
 
-    output_filename = "importar.sql"
+    assert state.output_path is not None
+    output_filename = state.output_path / "importar.sql"
+
     tables_to_dump = ("city", "estab", "product")
 
-    db = state.db_manager
-    with open(output_filename, "w+", encoding=ENCODING) as f:
-        with state.db_manager.db_connection() as conn:
-            for table in tables_to_dump:
-                for line in table_dump(conn, table):
-                    f.write(f"{line}\n")
+    with (
+        output_filename.open("w+", encoding=ENCODING) as f,
+        state.db_manager.db_connection() as conn,
+    ):
+        for table in tables_to_dump:
+            for line in table_dump(conn, table):
+                f.write(f"{line}\n")
 
     return {
         "status": "success",
@@ -442,8 +448,8 @@ def route_export_database() -> RequestDict:
 def route_import_database() -> RequestDict:
     """Rota responsável por importar os dados do banco"""
 
-    file = request.files["file"]
-    state.db_manager.import_database(file)
+    script = request.files["file"].read().decode(ENCODING)
+    state.db_manager.import_database_from_script(script)
 
     state.wait_reload = True
     return {
