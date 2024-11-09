@@ -1,4 +1,4 @@
-import { showMessage } from "./misc.mjs";
+import { showMessage, similarity } from "./misc.mjs";
 
 let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
@@ -71,44 +71,13 @@ function filter_search(month) {
 }
 
 /**
- * Função de ajuda para a similarity, retorna a distancia entre as palavras.
- * @param  {string} s1
- * @param  {string} s2
- */
-function distance(s1, s2) {
-    s1 = s1.toLowerCase();
-    s2 = s2.toLowerCase();
-
-    var costs = new Array();
-    for (var i = 0; i <= s1.length; i++) {
-        var lastValue = i;
-        for (var j = 0; j <= s2.length; j++) {
-            if (i == 0)
-                costs[j] = j;
-            else {
-                if (j > 0) {
-                    var newValue = costs[j - 1];
-                    if (s1.charAt(i - 1) != s2.charAt(j - 1))
-                        newValue = Math.min(Math.min(newValue, lastValue),
-                            costs[j]) + 1;
-                    costs[j - 1] = lastValue;
-                    lastValue = newValue;
-                }
-            }
-        }
-        if (i > 0)
-            costs[s2.length] = lastValue;
-    }
-    return costs[s2.length];
-}
-/**
  * Cria um input customizado select na página de configuração.
  */
 const custom_select = () => {
     $('.config-menu select').each(function () {
         // Cache the number of options
-        var $this = $(this),
-            numberOfOptions = $(this).children('option').length;
+        const $this = $(this);
+        const numberOfOptions = $this.children('option').length;
 
         // Hides the select element
         $this.addClass('s-hidden');
@@ -132,7 +101,7 @@ const custom_select = () => {
 
         // Insert a list item into the unordered list for each select option
         for (var i = 0; i < numberOfOptions; i++) {
-            $('<li />', {
+            $('<li/>', {
                 text: $this.children('option').eq(i).text(),
                 rel: $this.children('option').eq(i).val()
             }).appendTo($list);
@@ -316,7 +285,6 @@ const custom_select_search = () => {
     });
 }
 
-// Listagem de cidades
 /**
  * Lista todos os estabelecimentos para uma cidade de id CITY, na pagina de configuração.
  * @param  {integer} city=undefined
@@ -353,7 +321,6 @@ const list_estab = (city = undefined) => {
 
 }
 
-// Lista Pesquisas
 /**
  * Lista todos os dados de pesquisas para uma pesquisa de id search_id, na pagina de pesquisas.
  * @param  {integer} search_id=undefined
@@ -362,63 +329,54 @@ const list_search = (search_id = undefined) => {
     $("#search-loader").show();
 
     if (search_id == undefined) {
-
         search_id = $("#search-select").val();
-
-    }
-    else if (search_id == null) {
+    } else if (search_id == null) {
         $(".no-result").fadeIn(500);
         $("#search-loader").fadeOut(500);
         return;
     } else {
         $(".no-result").hide();
-        // $("#search-tbody tr").remove();
     }
 
     $(".tr-item").remove();
-    // console.log(search_id);
 
     $.get("/select_search_data", { search_id: search_id }, (response) => {
-
         response = JSON.parse(response);
-        // console.table(response);
         $("#search-loader").fadeOut(500);
         if (response.length == 0) {
-
             $(".no-result").show();
-
         } else {
+            const $duration = $(".duration");
+            $duration.fadeOut(200);
 
-            var duration = $(".duration").html();
-            duration = duration.split(":")[0];
-            var time = 0;
+            let time = 0;
 
-
-            // 4 = city , 5 = product , 6 = local, 7 = address, 8 = price, 9 = keyword
-            // console.table(response);
             response.map((value, index) => {
                 time = value[4];
-                $(`
+                const estab = value[7];
+                const address = value[8];
+                const keyword = value[10];
+                const produto = value[6];
+                const preco = value[9];
+
+                const html = `
                     <tr class="tr-item flow-text">
-                        <td title="${value[7]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[7]}</td>
-                        <td title="${value[8]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[8]}</td>
-                        <td title="${value[10]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${value[10]}</td>
-                        <td title="${value[6]}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${value[6]}</td>
-                        <td title="${value[9]}">${value[9]}</td>
+                        <td title="${estab}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${estab}</td>
+                        <td title="${address}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${address}</td>
+                        <td title="${keyword}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${keyword}</td>
+                        <td title="${produto}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${produto}</td>
+                        <td title="${preco}">${preco}</td>
                     </tr>
-                `).appendTo("#search-tbody");
+                `;
+
+                $(html).appendTo("#search-tbody");
             });
 
-            $(".duration").fadeOut(200);
-            if (time == 1)
-                $(".duration").html(`${duration} : ${time} minuto`).fadeIn(100);
-            else
-                $(".duration").html(`${duration} : ${time} minutos`).fadeIn(100);
+            $duration
+                .html(`Tempo de duração da pesquisa: ${time} minuto(s)`)
+                .fadeIn(100);
         }
-
     });
-
-
 }
 
 // Listagem de produtos
@@ -430,13 +388,10 @@ const list_product = () => {
         response = JSON.parse(response);
         PRODUCT_DATA = response;
         if (response.length == 0) {
-
             $("#no-result-product").fadeIn(500);
-
         } else {
-
             response.map((value, index) => {
-                $(`
+                const html = `
                     <div class="z-depth-3 product-config edit-product" id="ed-${value[0]}" value="${value[0]}">
                         <p>${value[0]}</p>
                         <div class="right">
@@ -444,7 +399,12 @@ const list_product = () => {
                             <a  value="${value[0]}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
                         </div>
                     </div>
-                `).appendTo("#list-product").hide().slideDown("slow");
+                `;
+
+                $(html)
+                    .appendTo("#list-product")
+                    .hide()
+                    .slideDown("slow");
             });
         }
 
@@ -823,6 +783,7 @@ $(document).ready(() => {
             $("#progress_log").css("height", "100%");
             $('#main-navigation li a').removeClass("disabled");
             $(window).off();
+
             alert("Instale uma versão do Google Chrome para prosseguir com a pesquisa.");
             window.location.reload(true);
         } else if (msg['type'] == 'done') {
@@ -834,6 +795,7 @@ $(document).ready(() => {
             $("#progress_log").css("height", "100%");
             $('#main-navigation li a').removeClass("disabled");
             $(window).off();
+
             window.location.reload(true);
         } else if (msg['type'] == 'cancel') {
             $("#progress_bar").css("width", "0%");
@@ -849,6 +811,7 @@ $(document).ready(() => {
             });
             $(".pause-overlay").fadeOut(500);
             $("#pause-loader").fadeOut(500);
+
             socket.emit('reload');
             window.location.reload(true);
         } else if (msg['type'] == 'pause') {
@@ -972,14 +935,14 @@ $(document).ready(() => {
     // Salvar edição de cidade
 
     $('#save-edit-city').click(function (e) {
-
         e.preventDefault();
+
         var old_name = $("#city-edit-select").val();
         var new_name = $("#city-edit").val();
+
         if (validateForm([old_name, new_name]) && (new_name !== old_name))
 
-            if (window.confirm(`Realmente deseja alterar o nome  da cidade ${old_name} para ${new_name} ?`)) {
-
+            if (window.confirm(`Realmente deseja alterar o nome da cidade ${old_name} para ${new_name} ?`)) {
                 $.get("/update_city", { city_name: new_name, primary_key: old_name }, (response) => {
                     if (response.status !== "success") {
                         showMessage(`Falha ao mudar o nome da cidade.`, { notification: false });
@@ -1020,7 +983,6 @@ $(document).ready(() => {
                     // TODO: não reiniciar a janela. é muito desorientador
                 });
             }
-
     });
 
     // Macro para fechar modal
@@ -1193,7 +1155,7 @@ $(document).ready(() => {
                 $(`#${id}`).removeClass('select-item-active');
                 city = undefined;
             } else {
-                Materialize.toast('Você só pode selecionar um municipio por vez ...', 1000, 'rounded');
+                showMessage('Você só pode selecionar um município por vez.', { notification: false });
             }
         }
     });
@@ -1203,9 +1165,8 @@ $(document).ready(() => {
         e.preventDefault();
 
         if (!$('.estab').hasClass("select-item-active")) {
-            Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
+            showMessage('Selecione pelo menos um item para prosseguir.', { notification: false });
         } else {
-            // Materialize.toast('Pesquisa iniciada ...', 3000, 'rounded');
             var local_city = $($(".select-item-active")[0]).attr("value");
             $('.city').removeClass("select-item-active")
             city = undefined;
@@ -1225,36 +1186,27 @@ $(document).ready(() => {
             });
             $("#backup-button").addClass("disable");
             $("#config_path").addClass("disable");
-
         }
-
     });
 
     // Botão de ir para seleção de estabelecimentos
-
     $("#select").click(() => {
-
         $("#loader").show();
 
         if (!$('.city').hasClass("select-item-active")) {
-            Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
+            showMessage('Selecione pelo menos um item para prosseguir.', { notification: false });
         } else {
-            // Materialize.toast('Pesquisa iniciada ...', 1000);
             $('ul.tabs').tabs('select', 'listagem');
         }
         let city_name = $('.select-item-active').html();
 
         $.get("/select_estab", { city: city_name }, (response) => {
-
             response = JSON.parse(response);
             if (response.length == 0) {
-
                 $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
                 $("#select-all").addClass("disabled");
                 $("#start").addClass("disabled");
-
             } else {
-
                 $("#select-all").removeClass("disabled");
                 $("#start").removeClass("disabled");
 
@@ -1265,39 +1217,29 @@ $(document).ready(() => {
                     $("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay))
                 });
                 $("#loader").hide();
-
             }
-
         });
-
     });
 
     // Botão selecionar todos
-
     $("#select-all").click(() => {
-
         if (!$('.estab').hasClass("select-item-active")) {
             $(`.estab`).addClass('select-item-active');
         } else {
             $(`.estab`).removeClass('select-item-active');
         }
-
     });
 
     $("#select-all-file").click(() => {
-
         if (!$('.estab').hasClass("select-item-active")) {
             $(`.estab`).addClass('select-item-active');
         } else {
             $(`.estab`).removeClass('select-item-active');
         }
-
     });
 
     // Voltar da seleção
-
     $("#back").click(() => {
-
         $('.city').removeClass("select-item-active")
         city = undefined;
 
@@ -1352,7 +1294,7 @@ $(document).ready(() => {
                 }
 
                 $(this).parent().parent().remove();
-                Materialize.toast(response.message, 2000, 'rounded');
+                showMessage(response.message, { notification: false });
                 if ($(".product-config .edit-product").length == 0) {
                     $("#no-result-product").fadeIn(500);
                 }
@@ -1437,18 +1379,16 @@ $(document).ready(() => {
             } else {
                 $(".no-result").hide();
             }
-
         }
     });
 
     // Botão ao lado da barra de pesquisa
-
     $('#do_search').on("click", function (e) {
-
         var row_len = $("#list-search table tr").length;
         var value = $('#search_bar').val().toUpperCase();
+
         if ($("#search-select").val() == "null")
-            return
+            return;
 
         if (row_len == 0)
             return;
@@ -1473,16 +1413,13 @@ $(document).ready(() => {
                 var found = false;
 
                 $(this).find("td").each(function (index) {
-
                     var id = $(this).text().toUpperCase();
 
                     if (id.includes(value) || similarity(id, value) >= 0.6) {
-                        // console.log(`${index} ${id} == ${value}`);
                         found = true;
                         return false;
                     }
                     else {
-                        // console.log(`${index} ${id} == ${value}`);
                         found = false;
                     }
 
@@ -1509,33 +1446,28 @@ $(document).ready(() => {
         } else {
             $(".no-result").hide();
         }
-
     });
 
-    // Botão da tab de navegação que leva para a aba de pesquisa
+    // Botão da aba de navegação que leva para a aba de pesquisa
     $("#search_check").one("click", (e) => {
         e.preventDefault();
-        if ($("#search-select").val() == "null")
-            showMessage("Nenhuma pesquisa encontrada - realize uma pesquisa para utilizar essa função.", { notification: false });
     });
 
     // Abre o modal para gerar a coleção de arquivos para uma pesquisa existente (aba de pesquisas).
     $("#open-search-file").on("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
+
         $(".estab").remove();
 
-        var search_value = $("#search-select").val();
-
-        if (search_value == "null") {
-            alert("Nenhuma pesquisa encontrada, realize uma pesquisa para utilizar essa função.");
+        const selected = $("#search-select option:selected");
+        if (selected.val() === "null") {
+            alert("Não foi possível prosseguir - nenhuma pesquisa selecionada.");
             return;
         }
+        const city = selected.attr("city");
 
-        var city_name = $("#search-select option:selected").attr("city");
-        // console.log();
-
-        $.get("/select_estab", { city: city_name }, (response) => {
+        $.get("/select_estab", { city: city }, (response) => {
             response = JSON.parse(response);
             if (response.length == 0) {
 
@@ -1597,7 +1529,7 @@ $(document).ready(() => {
         const format_type = $("#file_format").val();
 
         if (!$('.estab').hasClass("select-item-active") && format_type != "all") {
-            Materialize.toast('Selecione pelo menos um item para prosseguir.', 2000, 'rounded');
+            showMessage('Selecione pelo menos um item para prosseguir.', { notification: false });
             return;
         }
 
