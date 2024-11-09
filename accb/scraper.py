@@ -340,7 +340,7 @@ class Scraper:
 
         # Envia o MUNICIPIO desejado para o input
         driver.find_element(By.CLASS_NAME, "sbar-municipio").send_keys(ongoing.city)
-        yield Sleep(0.25)
+        yield Sleep(0.6)
 
         # Pressiona o botão que realiza a pesquisa por MUNICIPIO
         driver.find_element(By.CLASS_NAME, "set-mun").click()

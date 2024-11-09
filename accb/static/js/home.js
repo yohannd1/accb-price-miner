@@ -616,8 +616,21 @@ const copyToClipboard = (value) => {
 $(document).ready(() => {
     requestNotificationPermission();
 
+    const resumeOngoingSearch = (search_id) => {
+        // $("#backup-button").addClass("disable");
+        $("#config_path").addClass("disable");
+        $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
+
+        socket.emit("search.resume_ongoing", { search_id: parseInt(search_id) });
+
+        $("#main-navigation").tabs("select", "progress");
+        $("#main-navigation a").addClass("disabled");
+    };
+    document.querySelectorAll("button.resume-ongoing-search").forEach(btn => {
+        btn.addEventListener("click", () => resumeOngoingSearch(btn.getAttribute("data-search-id")));
+    });
+
     const hjs_data = document.querySelector("#home-js-data");
-    const active = hjs_data.getAttribute("data-active");
     const has_backup = hjs_data.getAttribute("data-has-backup") === "True";
 
     const is_chrome_installed = hjs_data.getAttribute("data-is-chrome-installed") === "True";
@@ -633,14 +646,8 @@ $(document).ready(() => {
             return;
 
         if (confirm("Uma pesquisa foi encontrada em progresso - deseja retomá-la?")) {
-            $("#backup-button").addClass("disable");
-            $("#config_path").addClass("disable");
-            $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
             updateProgressBar(0.0);
             socket.emit("search", { is_backup: true });
-
-            $("#main-navigation").tabs("select", "progress");
-            $("#main-navigation a").addClass("disabled");
         }
     }
 
@@ -1178,13 +1185,13 @@ $(document).ready(() => {
                 names.push($(this).attr("value"));
             });
 
-            socket.emit('search', { names: JSON.stringify(names), city: local_city, is_backup: false });
+            socket.emit("search", { names: JSON.stringify(names), city: local_city, is_backup: false });
             $('ul.tabs').tabs('select', 'progress');
             $("#main-navigation a").addClass("disable");
             $(window).on('unload', function (event) {
                 return "Realmente deseja sair ? Existe uma pesquisa em andamento.";
             });
-            $("#backup-button").addClass("disable");
+            // $("#backup-button").addClass("disable");
             $("#config_path").addClass("disable");
         }
     });
@@ -1656,8 +1663,6 @@ $(document).ready(() => {
     if (getOption("warning") === undefined) {
         $("#warning").modal({});
         setOption("warning", "seen");
-    } else {
-        tryResumeBackup();
     }
 
     const setOutputPath = () => {
@@ -1688,7 +1693,7 @@ $(document).ready(() => {
     if (!is_chrome_installed)
         alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
 
-    $("body").on("click", "#backup-button", tryResumeBackup);
+    // $("body").on("click", "#backup-button", tryResumeBackup);
 
     socket.connect("http://127.0.0.1:5000/");
 

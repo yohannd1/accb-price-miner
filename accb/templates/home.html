@@ -14,7 +14,6 @@
 
   <div hidden id="home-js-data"
       data-has-backup="{{ has_backup }}"
-      data-active="{{ active }}"
       data-is-chrome-installed="{{ chrome_installed }}"
       >
   </div>
@@ -47,11 +46,11 @@
       {{ top_logos() }}
 
       <div style="margin-top: 2em;">
-        {% if has_backup %}
-          <a style="background: #fea621 !important; margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
-        {% else %}
-          <a  style="margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a>
-        {% endif %}
+        <!-- {% if has_backup %} -->
+        <!--   <a style="background: #fea621 !important; margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a> -->
+        <!-- {% else %} -->
+        <!--   <a  style="margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a> -->
+        <!-- {% endif %} -->
 
         <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
         <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
@@ -82,9 +81,11 @@
     <div id="pesquisar" class="tab">
         <div class="tab-content" style="display: flex; flex-direction:column; justify-content: center; align-items: center;">
           <h5>{{ initial_message }}</h5>
+
           <div class="select-wrapper-main" style="flex-direction: colunm;">
             {% if chrome_installed == 'False' %}
               <a class="select-item city z-depth-2" >Indisponível</a>
+              <button id="select" class="disable btn-large" style="background-color: gray !important;">Indisponível</button>
             {% elif len(city_names) == 0 %}
                 <a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
             {% else %}
@@ -99,12 +100,25 @@
               {% endif %}
             {% endif %}
           </div>
+
           {% if chrome_installed == 'False' %}
-            <button id="select" class="disable btn-large" style="background-color: gray !important;">Indisponível</button>
           {% elif len(city_names) == 0 or product_len == 0 %}
             <button id="select" class="disable btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
           {% else %}
             <button id="select" class="btn-large">Selecionar Estabelecimentos</button>
+          {% endif %}
+
+          {% if len(ongoing_searches_pairs) > 0 %}
+            <h5>Ou selecione uma das pesquisas interrompidas (backups):</h5>
+
+            {% for ong, sch in ongoing_searches_pairs %}
+              <button
+                class="resume-ongoing-search btn-large"
+                data-search-id="{{ ong.search_id }}"
+              >
+                Pesquisa em {{ ong.city }} (~{{ 100 * ong.current_product / len(ong.products) }}%) ({{ sch.start_date }})
+              </button>
+            {% endfor %}
           {% endif %}
         </div>
     </div>

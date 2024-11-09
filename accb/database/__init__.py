@@ -601,7 +601,7 @@ class DatabaseManager:
             return x
 
         ids = self.run_query("SELECT search_id FROM ongoing_search")
-        return [unwrap(self.get_ongoing_search_by_id(id_)) for id_ in ids]
+        return [unwrap(self.get_ongoing_search_by_id(id_)) for (id_,) in ids]
 
     def get_option(self, key: str) -> Any:
         result = self.run_query("SELECT value FROM option WHERE key=?", (key,))

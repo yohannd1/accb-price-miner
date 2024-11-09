@@ -8,7 +8,7 @@ from pathlib import Path
 import socket
 from threading import Timer
 from queue import Queue
-from typing import Any
+from typing import Any, Optional
 from time import sleep
 
 from flask import Flask, render_template, request, Response
@@ -23,7 +23,7 @@ from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
-from accb.model import Estab, OngoingSearch
+from accb.model import Estab, OngoingSearch, Search
 from accb.web_driver import is_chrome_installed, open_chrome_driver
 from accb.database import table_dump
 from accb.bi_queue import BiQueue
@@ -111,10 +111,13 @@ def route_home() -> str:
     db = state.db_manager
 
     product_names = db.run_query("SELECT product_name FROM product")
-    active = "0.0"
 
     search_id = db.get_incomplete_search_id()
     has_backup = search_id is not None
+
+    ongoing_searches_pairs = [
+        (o, db.get_search_by_id(o.search_id)) for o in db.get_ongoing_searches()
+    ]
 
     day = str(date.today()).split("-")[1]
 
@@ -153,7 +156,7 @@ def route_home() -> str:
         initial_message=initial_message,
         has_backup=has_backup,
         city_names=city_names,
-        active=active,
+        ongoing_searches_pairs=ongoing_searches_pairs,
         searches=searches,
         product_len=len(product_names),
         months=MONTHS_PT_BR,
@@ -627,33 +630,56 @@ def on_exit() -> None:
     os._exit(0)
 
 
-def attempt_search(args: RequestDict, driver: Chrome) -> None:
-    """Inicia a pesquisa."""
+@socketio.on("search.resume_ongoing")
+def on_search_resume_ongoing(args: RequestDict) -> None:
+    search_id = args["search_id"]
+    assert isinstance(search_id, int)
 
-    # TODO: suportar especificar qual o backup (ongoing_search)
+    search(resume_id=search_id)
 
+
+@socketio.on("search")
+def on_search(args: RequestDict) -> None:
+    db = state.db_manager
+
+    if args["is_backup"]:
+        resume_id = db.get_incomplete_search_id()
+        assert resume_id is not None
+        search(resume_id=resume_id)
+    else:
+        city = args["city"]
+        assert isinstance(city, str)
+
+        estab_names = json.loads(args["names"])
+        assert isinstance(estab_names, list)
+
+        search(city=city, estab_names=estab_names)
+
+
+def search(
+    resume_id: Optional[int] = None,
+    city: Optional[str] = None,
+    estab_names: Optional[list[str]] = None,
+    max_error_count: int = 3,
+) -> None:
     db = state.db_manager
     assert state.output_path is not None
 
-    if args["is_backup"]:
-        search_id = db.get_incomplete_search_id()
-        assert search_id is not None
-
-        search = db.get_search_by_id(search_id)
+    opts: ScraperOptions
+    if resume_id is not None:
+        search = db.get_search_by_id(resume_id)
         assert search is not None
 
-        ongoing = db.get_ongoing_search_by_id(search_id)
+        ongoing = db.get_ongoing_search_by_id(resume_id)
         assert ongoing is not None
-
-        city = ongoing.city
 
         opts = ScraperOptions(
             ongoing=ongoing,
             duration_mins=search.total_duration_mins,
         )
     else:
-        city = args["city"]
-        estab_names = set(json.loads(args["names"]))
+        assert city is not None
+        assert estab_names is not None
 
         search_id = db.create_search(city)
 
@@ -672,8 +698,47 @@ def attempt_search(args: RequestDict, driver: Chrome) -> None:
             duration_mins=0.0,
         )
 
-    scraper = Scraper(opts, state, driver)
-    state.scraper = scraper
+    error_count = 0
+
+    def close_driver(driver: Chrome) -> None:
+        driver.close()
+        driver.quit()
+
+    while True:
+        try:
+            with Defer(open_chrome_driver(), deinit=close_driver) as driver:
+                scraper = Scraper(opts, state, driver)
+                state.scraper = scraper
+                attempt_search(scraper)
+            break
+        except Exception as exc:
+            log_error(exc)
+
+            error_count += 1
+
+            if error_count > max_error_count:
+                emit(
+                    "search.error",
+                    "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.",
+                    broadcast=True,
+                )
+                break
+
+            emit(
+                "show_notification",
+                "Ocorreu um erro durante a pesquisa; ela será reiniciada, aguarde um instante.",
+                broadcast=True,
+            )
+
+            sleep(1)
+
+    state.scraper = None
+
+
+def attempt_search(scraper: Scraper) -> None:
+    """Inicia a pesquisa."""
+
+    db = state.db_manager
 
     try:
         scraper.run()
@@ -686,49 +751,17 @@ def attempt_search(args: RequestDict, driver: Chrome) -> None:
         state.wait_reload = True
 
         if scraper.mode == "default":
+            # FIXME: é pra exportar automaticamente mesmo?
+            ongoing = scraper.options.ongoing
+            db_to_xlsx(db, ongoing.search_id, ongoing.estabs, ongoing.city, state.output_path)
+
             emit("show_notification", "Pesquisa concluída.", broadcast=True)
-            db_to_xlsx(db, search_id, opts.ongoing.estabs, city, state.output_path)
 
     except ScraperError as _exc:
         scraper.mode = "errored"
 
     finally:
         scraper.finalize_search()
-
-
-@socketio.on("search")
-def on_search(args: RequestDict) -> None:
-    error_count = 0
-
-    def close_driver(driver: Chrome) -> None:
-        driver.close()
-        driver.quit()
-
-    while True:
-        try:
-            with Defer(open_chrome_driver(), deinit=close_driver) as driver:
-                attempt_search(args, driver=driver)
-            break
-        except Exception as exc:
-            log_error(exc)
-
-            error_count += 1
-
-            if error_count >= 4:
-                emit(
-                    "search.error",
-                    "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.",
-                    broadcast=True,
-                )
-                return
-
-            emit(
-                "show_notification",
-                "Ocorreu um erro durante a pesquisa; ela será reiniciada, aguarde um instante.",
-                broadcast=True,
-            )
-
-            sleep(1)
 
 
 @app.context_processor
