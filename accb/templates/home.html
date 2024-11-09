@@ -106,7 +106,7 @@
                 class="resume-ongoing-search btn-large"
                 data-search-id="{{ ong.search_id }}"
               >
-                Pesquisa em {{ ong.city }} (~{{ 100 * ong.current_product / len(ong.products) }}%) ({{ sch.start_date }})
+                Pesquisa em {{ ong.city }} ({{ as_percentage(ong.current_product, len(ong.products)) }}) ({{ sch.start_date }})
               </button>
             {% endfor %}
           {% endif %}

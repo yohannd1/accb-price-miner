@@ -323,6 +323,7 @@ class Scraper:
         except TimeoutException:
             self.captcha_wait_loop()
         finally:
+            yield Sleep(0.25)
             driver.find_element(By.CLASS_NAME, "location-box").click()
         yield Sleep(0.25)
 
@@ -346,7 +347,10 @@ class Scraper:
             yield Sleep(0.5)
 
         # Envia o MUNICIPIO desejado para o input
-        driver.find_element(By.CLASS_NAME, "sbar-municipio").send_keys(ongoing.city)
+        sbar_municipio = driver.find_element(By.CLASS_NAME, "sbar-municipio")
+        for w in ongoing.city:
+            sbar_municipio.send_keys(w)
+            sleep(0.05)
         yield Sleep(0.6)
 
         # Pressiona o botão que realiza a pesquisa por MUNICIPIO
@@ -404,7 +408,7 @@ class Scraper:
                 self.send_logs("Digitando palavra chave...")
                 for w in keyword:
                     search_bar.send_keys(w)
-                    sleep(0.25)
+                    sleep(0.05)
                 search_bar.send_keys(Keys.ENTER)
 
                 yield Sleep(2)
@@ -429,7 +433,7 @@ class Scraper:
                         WebDriverWait(driver, 2 * times).until(
                             EC.presence_of_element_located((By.ID, "updateResults"))
                         )
-                        yield Sleep(2)
+                        yield Sleep(0.15)
 
                         driver.find_element(By.ID, "updateResults").click()
                         flag += 1

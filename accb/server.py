@@ -696,7 +696,8 @@ def search(
 
     while True:
         try:
-            with Defer(open_chrome_driver(), deinit=close_driver) as driver:
+            is_headless = False
+            with Defer(open_chrome_driver(is_headless=is_headless), deinit=close_driver) as driver:
                 scraper = Scraper(opts, state, driver)
                 state.scraper = scraper
                 attempt_search(scraper)
@@ -769,12 +770,17 @@ def utility_processor() -> RequestDict:
     def json_stringfy(var: Any) -> str:
         return json.dumps(var)
 
+    def as_percentage(idx: int, total: int) -> str:
+        perc = 100.0 * idx / total
+        return f"{perc:.0f}%"
+
     return {
         "enumerate": enumerate,
         "decode": decode,
         "len": len,
         "replace": replace,
         "json_stringfy": json_stringfy,
+        "as_percentage": as_percentage,
     }
 
 
