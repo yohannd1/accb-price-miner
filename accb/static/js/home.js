@@ -617,7 +617,6 @@ $(document).ready(() => {
     requestNotificationPermission();
 
     const resumeOngoingSearch = (search_id) => {
-        // $("#backup-button").addClass("disable");
         $("#config_path").addClass("disable");
         $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
 
@@ -630,26 +629,11 @@ $(document).ready(() => {
         btn.addEventListener("click", () => resumeOngoingSearch(btn.getAttribute("data-search-id")));
     });
 
-    const hjs_data = document.querySelector("#home-js-data");
-    const has_backup = hjs_data.getAttribute("data-has-backup") === "True";
-
-    const is_chrome_installed = hjs_data.getAttribute("data-is-chrome-installed") === "True";
-
     const socket = io();
 
     socket.on("connect", () => {
         console.log(`Conectado - id do socket: ${socket.id}`);
     });
-
-    const tryResumeBackup = () => {
-        if (!has_backup || !is_chrome_installed)
-            return;
-
-        if (confirm("Uma pesquisa foi encontrada em progresso - deseja retomá-la?")) {
-            updateProgressBar(0.0);
-            socket.emit("search", { is_backup: true });
-        }
-    }
 
     socket.on("search.update_progress_bar", (val) => {
         updateProgressBar(parseFloat(val));
@@ -659,6 +643,7 @@ $(document).ready(() => {
 
     socket.on("search.began", () => {
         updateProgressBar(0.0);
+        $(window).on("unload", _ => "Realmente deseja sair? Existe uma pesquisa em andamento.");
     });
 
     socket.on("search.error", (msg) => {
@@ -1178,20 +1163,17 @@ $(document).ready(() => {
             $('.city').removeClass("select-item-active")
             city = undefined;
 
-            var estabs = $(".select-item-active");
-            var names = [];
+            const active_selections = document
+                .querySelector("div.tab-content-listagem")
+                .querySelectorAll(".select-item-active");
 
-            estabs.each(function (estab) {
-                names.push($(this).attr("value"));
-            });
+            const names = Array.from(active_selections)
+                .map(x => x.getAttribute("value"));
 
-            socket.emit("search", { names: JSON.stringify(names), city: local_city, is_backup: false });
+            socket.emit("search.begin", { names: names, city: local_city });
+
             $('ul.tabs').tabs('select', 'progress');
             $("#main-navigation a").addClass("disable");
-            $(window).on('unload', function (event) {
-                return "Realmente deseja sair ? Existe uma pesquisa em andamento.";
-            });
-            // $("#backup-button").addClass("disable");
             $("#config_path").addClass("disable");
         }
     });
@@ -1562,14 +1544,19 @@ $(document).ready(() => {
             return;
         }
 
-        var estabs = $(".select-item-active");
-        var names = [];
+        const active_selections = document
+            .querySelector("div#file-list")
+            .querySelectorAll(".select-item-active");
 
-        estabs.each(function (estab) {
-            names.push($(this).attr("value"));
-        });
+        const names = Array.from(active_selections)
+            .map(x => x.getAttribute("value"));
 
-        $.get("/generate_file", { names: JSON.stringify(names), city_name: city_name, search_id: search_id, format: format_type }, processResponse);
+        $.get("/generate_file", {
+            names: JSON.stringify(names),
+            city_name: city_name,
+            search_id: search_id,
+            format: format_type,
+        }, processResponse);
     });
 
     $("#file_format").on("change", function () {
@@ -1689,11 +1676,6 @@ $(document).ready(() => {
         alert("O diretório de arquivos registrado é inválido! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
         setOutputPath();
     });
-
-    if (!is_chrome_installed)
-        alert("Instale uma versão do Google Chrome para realizar uma pesquisa.");
-
-    // $("body").on("click", "#backup-button", tryResumeBackup);
 
     socket.connect("http://127.0.0.1:5000/");
 

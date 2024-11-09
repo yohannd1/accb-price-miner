@@ -112,9 +112,6 @@ def route_home() -> str:
 
     product_names = db.run_query("SELECT product_name FROM product")
 
-    search_id = db.get_incomplete_search_id()
-    has_backup = search_id is not None
-
     ongoing_searches_pairs = [
         (o, db.get_search_by_id(o.search_id)) for o in db.get_ongoing_searches()
     ]
@@ -154,15 +151,13 @@ def route_home() -> str:
     return render_template(
         template,
         initial_message=initial_message,
-        has_backup=has_backup,
         city_names=city_names,
         ongoing_searches_pairs=ongoing_searches_pairs,
         searches=searches,
         product_len=len(product_names),
         months=MONTHS_PT_BR,
         active_month=day,
-        active_year=str(date.today()).split("-", maxsplit=1)[0],
-        chrome_installed=str(is_chrome_installed()),
+        chrome_installed=is_chrome_installed(),
         years=search_years,
     )
 
@@ -638,22 +633,17 @@ def on_search_resume_ongoing(args: RequestDict) -> None:
     search(resume_id=search_id)
 
 
-@socketio.on("search")
-def on_search(args: RequestDict) -> None:
+@socketio.on("search.begin")
+def on_search_begin(args: RequestDict) -> None:
     db = state.db_manager
 
-    if args["is_backup"]:
-        resume_id = db.get_incomplete_search_id()
-        assert resume_id is not None
-        search(resume_id=resume_id)
-    else:
-        city = args["city"]
-        assert isinstance(city, str)
+    city = args["city"]
+    assert isinstance(city, str)
 
-        estab_names = json.loads(args["names"])
-        assert isinstance(estab_names, list)
+    estab_names = args["names"]
+    assert isinstance(estab_names, list)
 
-        search(city=city, estab_names=estab_names)
+    search(city=city, estab_names=estab_names)
 
 
 def search(
@@ -753,7 +743,9 @@ def attempt_search(scraper: Scraper) -> None:
         if scraper.mode == "default":
             # FIXME: é pra exportar automaticamente mesmo?
             ongoing = scraper.options.ongoing
-            db_to_xlsx(db, ongoing.search_id, ongoing.estabs, ongoing.city, state.output_path)
+            db_to_xlsx(
+                db, ongoing.search_id, ongoing.estabs, ongoing.city, state.output_path
+            )
 
             emit("show_notification", "Pesquisa concluída.", broadcast=True)
 

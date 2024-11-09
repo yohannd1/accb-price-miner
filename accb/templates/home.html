@@ -6,17 +6,15 @@
 
 {% block scripts %}
   {{ super() }}
-  <script type="module" src="{{ url_for('static', filename='js/cookie.min.mjs') }}"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+    integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+    crossorigin="anonymous"
+    >
+  </script>
   <script type='text/javascript' src="{{ url_for('static', filename='js/materialize.js') }}"></script>
   <script type='text/javascript' src="{{ url_for('static', filename='js/modal.js') }}"></script>
   <script type="module" src="{{ url_for('static', filename='js/home.js') }}"></script>
-
-  <div hidden id="home-js-data"
-      data-has-backup="{{ has_backup }}"
-      data-is-chrome-installed="{{ chrome_installed }}"
-      >
-  </div>
 {% endblock %}
 
 {% macro img(src,alt) %}
@@ -46,12 +44,6 @@
       {{ top_logos() }}
 
       <div style="margin-top: 2em;">
-        <!-- {% if has_backup %} -->
-        <!--   <a style="background: #fea621 !important; margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Retomar Pesquisa - Backup" id="backup-button" ><i class="fa fa-shopping-cart"></i></a> -->
-        <!-- {% else %} -->
-        <!--   <a  style="margin-right: 10px;" class=" round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Nenhum backup disponível" id="backup-button" ><i class="fa fa-shopping-cart"></i></a> -->
-        <!-- {% endif %} -->
-
         <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
         <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
         <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder" ><i class="fa fa-folder"></i></a>
@@ -66,7 +58,7 @@
           Estabelecimentos</a></li>
         <li class="tab col s3"><a class="disable  " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
         <li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
-          Configurar</a></li>
+          Estabelecimentos</a></li>
         <li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
           Produtos</a></li>
         <li class="tab col s3"></i><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar Pesquisas"> <i class="fa fa-database"> </i>
@@ -79,13 +71,11 @@
   </header>
   <main class="main-content row z-depth-5">
     <div id="pesquisar" class="tab">
-        <div class="tab-content" style="display: flex; flex-direction:column; justify-content: center; align-items: center;">
+        <div class="tab-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
           <h5>{{ initial_message }}</h5>
 
-          <div class="select-wrapper-main" style="flex-direction: colunm;">
-            {% if chrome_installed == 'False' %}
-              <a class="select-item city z-depth-2" >Indisponível</a>
-              <button id="select" class="disable btn-large" style="background-color: gray !important;">Indisponível</button>
+          <div class="select-wrapper-main" style="flex-direction: row;">
+            {% if not chrome_installed %}
             {% elif len(city_names) == 0 %}
                 <a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
             {% else %}
@@ -101,7 +91,7 @@
             {% endif %}
           </div>
 
-          {% if chrome_installed == 'False' %}
+          {% if not chrome_installed %}
           {% elif len(city_names) == 0 or product_len == 0 %}
             <button id="select" class="disable btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
           {% else %}
@@ -187,7 +177,6 @@
             <p>Nenhum estabelecimento cadastrado, pressione para adicionar.</p>
             </a>
           </div>
-
         </div>
       </div>
     </div>
