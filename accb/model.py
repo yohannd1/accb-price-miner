@@ -43,7 +43,7 @@ class SearchItem:
 
 @dataclass
 class OngoingSearch:
-    """Uma pesquisa que não foi ainda finalizada.
+    """Uma pesquisa que ainda não foi finalizada.
 
     A ideia é armazenar todo o estado possível dentro disso, para que modificações no banco de dados não afetem a pesquisa.
 

@@ -546,8 +546,7 @@ def route_generate_file() -> RequestDict:
         output_folder = db_to_xlsx_all(city, search_id, db, state.output_path)
         return {"status": "success", "path": str(output_folder)}
 
-    names = request.args.get("names")
-    assert names is not None
+    names = request.args["names"]
 
     estab_names = json.loads(names)
     estabs = [e for e in db.get_estabs_for_city(city) if e.name in estab_names]

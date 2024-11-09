@@ -9,6 +9,7 @@ import os
 import json
 from dataclasses import asdict
 from typing import Any, Sequence, Generator, Optional, Iterable
+from threading import Lock
 
 from accb.model import Product, City, Estab, Search, SearchItem, OngoingSearch
 from accb.utils import log
@@ -21,8 +22,10 @@ ENCODING = "utf-8"  # or "latin-1"?
 
 class DatabaseManager:
     def __init__(self) -> None:
-        self.conn_count = 0
+        self._conn_count = 0
         """A quantidade de vezes que uma conexão foi criada."""
+
+        self._lock = Lock()
 
     def import_database_from_script(self, script: str) -> None:
         """Importa um arquivo sql e injeta ele no banco de dados."""
@@ -246,7 +249,7 @@ class DatabaseManager:
                         )
                         self.save_estab(estab)
 
-        if self.conn_count == 0:
+        if self._conn_count == 0:
             try:
                 self._upgrade_conn(conn)
                 conn.commit()
@@ -254,9 +257,9 @@ class DatabaseManager:
                 conn.rollback()
                 raise exc
 
-        self.conn_count += 1
+        self._conn_count += 1
 
-        return Connection(conn)
+        return Connection(conn, self._lock)
 
     def save_city(self, city):
         """Salva as cidades no banco de dados."""
