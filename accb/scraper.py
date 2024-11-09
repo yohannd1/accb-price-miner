@@ -234,15 +234,23 @@ class Scraper:
 
         self.driver.back()
 
-    def smart_sleep(self, base: float) -> None:
-        """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo."""
+    def smart_sleep(self, base: float, unit_size: float = 1.0) -> None:
+        """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo.
+
+        A cada `unit_size` segundos, verifica se a pesquisa foi cancelada, e para se este for o caso.
+        """
 
         min_time = 0.2
         value = max(min_time, base * self.time_coeff + random.uniform(-1.0, 1.0))
         self.send_logs(
             f"Aguardando por {value:.2f}s..."
         )  # TODO: ao invés de enviar um log, enviar um sinal específico que mostra quando está aguardando algo. Tipo, emit("search.sleeping_for", value), e depois emit("search.finished_sleep")
-        sleep(value)
+
+        to_sleep = value
+        while to_sleep > 0.0 and self.mode == "default":
+            amount = min(to_sleep, unit_size)
+            sleep(amount)
+            to_sleep -= amount
 
     def captcha_wait_loop(self) -> None:  # FIXME: rename
         """Abre o captcha e aguarda o usuário resolver o captcha."""
@@ -266,7 +274,6 @@ class Scraper:
                 case SearchResponse.Error(message=message):
                     raise ScraperError(message)
                 case SearchResponse.Sleep(duration=duration):
-                    # TODO: talvez, ao invés de um sleep grande, fazer sleeps de 0.5s para poder periodicamente verificar se self.stop é verdadeiro.
                     self.smart_sleep(duration)
                 case SearchResponse.Default():
                     pass
