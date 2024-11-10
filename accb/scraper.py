@@ -44,6 +44,9 @@ class ScraperOptions:
 class ScraperError(Exception):
     pass
 
+class ScraperRestart(Exception):
+    pass
+
 
 class SearchResponse:
     @dataclass
@@ -151,14 +154,13 @@ class Scraper:
         if len(messages) == 1:
             final = messages[0]
         else:
-            final = str.join('\n', [f"  {msg}" for msg in messages])
+            final = str.join("\n", [f"  {msg}" for msg in messages])
 
         log(f"[Scraper.send_logs]: {final}")
         emit("search.log", list(messages), broadcast=True)
 
     def extract_and_save_data(self, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
-        # FIXME: tirar argumento `_product`? ele não é usado
 
         elements = self.driver.page_source
         soup = BeautifulSoup(elements, "html.parser")
@@ -211,30 +213,6 @@ class Scraper:
 
         return True
 
-    def open_captcha_and_warn(self) -> None:
-        """Abre a URL de captcha, avisa e aguarda o aviso ser fechado."""
-
-        webbrowser.open(self.options.url)
-
-        message = "O Captcha foi ativado. Foi aberta uma aba no seu navegador - resolva-o lá e depois pressione OK nesta mensagem."
-
-        # FIXME: acho que não precisa mandar a mensagem para o front-end também...
-        emit(
-            "captcha",
-            {
-                "type": "captcha",
-                "message": message,
-            },
-            broadcast=True,
-        )
-
-        show_warning(
-            title="CAPTCHA",
-            message=message,
-        )
-
-        self.driver.back()
-
     def smart_sleep(self, base: float, unit_size: float = 1.0) -> None:
         """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo.
 
@@ -243,9 +221,8 @@ class Scraper:
 
         min_time = 0.2
         value = max(min_time, base * self.time_coeff + random.uniform(-1.0, 1.0))
-        self.send_logs(
-            f"Aguardando por {value:.2f}s..."
-        )  # TODO: ao invés de enviar um log, enviar um sinal específico que mostra quando está aguardando algo. Tipo, emit("search.sleeping_for", value), e depois emit("search.finished_sleep")
+
+        emit("search.started_waiting", value, broadcast=True)
 
         to_sleep = value
         while to_sleep > 0.0 and self.mode == "default":
@@ -253,23 +230,31 @@ class Scraper:
             sleep(amount)
             to_sleep -= amount
 
-    def captcha_wait_loop(self) -> None:  # FIXME: rename
-        """Abre o captcha e aguarda o usuário resolver o captcha."""
+        emit("search.finished_waiting", broadcast=True)
 
-        # TODO: rc-container-challenge é a classe p/ o captcha
+    def _is_in_captcha(self) -> bool:
+        return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
+
+    def _wait_for_captcha(self) -> None:  # FIXME: rename
+        """Abre o captcha e aguarda o usuário resolver o captcha."""
 
         if not self.is_connected():
             raise ScraperError("Sem conexão com a rede!")
 
-        self.send_logs("Aguardando usuário resolver o captcha...")
-        while self.is_in_captcha():
-            # TODO: isso aqui só roda uma vez
-            self.open_captcha_and_warn()
+        while self._is_in_captcha():
+            # a página inicial redireciona automaticamente p/ a URL de captcha
+            webbrowser.open(self.options.url)
+            self.send_logs("Aguardando usuário resolver o captcha...")
+
+            show_warning(
+                title="CAPTCHA",
+                message="O captcha foi ativado. Foi aberta uma aba no seu navegador - resolva-o lá e depois pressione OK nesta mensagem.",
+            )
+
+            raise ScraperRestart()
 
     def run(self) -> None:
         for response in self.begin_search():
-            # TODO: método eficiente para detectar captchas
-
             if self.mode != "default":
                 break
 
@@ -283,12 +268,33 @@ class Scraper:
                 case _ as unreachable:
                     assert_never(unreachable)
 
+    def _wait_for_element(
+        self, by: str, value: str, timeout: float
+    ) -> WebElement | None:
+        try:
+            ec = EC.presence_of_element_located((by, value))
+            WebDriverWait(self.driver, timeout).until(ec)
+            return self.driver.find_element(by, value)
+        except TimeoutException:
+            return None
+
+    def _wait_for_element_or_captcha(
+        self, by: str, value: str, timeout: float
+    ) -> WebElement:
+        elem = self._wait_for_element(by, value, timeout)
+        if elem is not None:
+            return elem
+        self._wait_for_captcha()
+
+        elem = self._wait_for_element(by, value, timeout)
+        assert elem is not None
+        return elem
+
     def begin_search(self) -> Generator[SearchResponse.All, None, None]:
         Sleep = SearchResponse.Sleep
         Default = SearchResponse.Default
         Error = SearchResponse.Error
 
-        times = self.time_coeff  # TODO: parar de usar isso (em favor do smart_sleep)
         ongoing = self.options.ongoing
         driver = self.driver
 
@@ -296,23 +302,10 @@ class Scraper:
 
         driver.get(self.options.url)
 
-        def wait_for_element(by: str, value: str, timeout: float) -> WebElement | None:
-            try:
-                ec = EC.presence_of_element_located((by, value))
-                WebDriverWait(driver, timeout).until(ec)
-                return driver.find_element(by, value)
-            except TimeoutException:
-                return None
+        wait_for_element = self._wait_for_element
+        wait_for_element_or_captcha = self._wait_for_element_or_captcha
 
-        def wait_for_element_or_captcha(by: str, value: str, timeout: float) -> WebElement:
-            elem = wait_for_element(by, value, timeout)
-            if elem is not None:
-                return elem
-            self.captcha_wait_loop()
-            return driver.find_element(by, value)
-
-
-        if elem := wait_for_element(By.ID, "informe-sefaz-valor", 3.5):
+        if elem := wait_for_element(By.ID, "informe-sefaz-valor", 2.5):
             elem.click()
 
         # * Processo para definir a região desejada para ser realizada a pesquisa
@@ -385,6 +378,11 @@ class Scraper:
                 e_top_sbar = wait_for_element_or_captcha(By.ID, "top-sbar", 12.0)
 
                 self.send_logs("Digitando palavra chave...")
+
+                # FIXME: por que que isso tá dando errado??
+                if keyword == "CARNE BOVINA CHA DE DENTRO":
+                    keyword = "CARNE CHA DE DENTRO"
+
                 for w in keyword:
                     e_top_sbar.send_keys(w)
                     sleep(0.05)
@@ -404,7 +402,9 @@ class Scraper:
                     yield Default()
 
                     try:
-                        e_update_results = wait_for_element_or_captcha(By.ID, "updateResults", 8.0)
+                        e_update_results = wait_for_element_or_captcha(
+                            By.ID, "updateResults", 8.0
+                        )
                         e_update_results.click()
                         yield Sleep(0.2)
                         update_counter += 1
@@ -414,7 +414,7 @@ class Scraper:
                     except Exception:
                         if not self.is_in_captcha():
                             break
-                        self.captcha_wait_loop()
+                        self._wait_for_captcha()
 
                 self.extract_and_save_data(keyword)
 

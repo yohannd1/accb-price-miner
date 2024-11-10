@@ -635,15 +635,26 @@ $(document).ready(() => {
         console.log(`Conectado - id do socket: ${socket.id}`);
     });
 
-    socket.on("search.update_progress_bar", (val) => {
-        updateProgressBar(parseFloat(val));
-    });
-
     socket.on("show_notification", (msg) => showMessage(msg));
 
     socket.on("search.began", () => {
         updateProgressBar(0.0);
         $(window).on("unload", _ => "Realmente deseja sair? Existe uma pesquisa em andamento.");
+    });
+
+    socket.on("search.update_progress_bar", (val) => {
+        updateProgressBar(parseFloat(val));
+    });
+
+    const wait_log = document.querySelector("div#progress p#wait-log");
+
+    socket.on("search.started_waiting", (time) => {
+        const fmt = time.toFixed(2);
+        wait_log.innerText = `Aguardando por ${fmt}s...`;
+    });
+
+    socket.on("search.finished_waiting", () => {
+        wait_log.innerText = "...";
     });
 
     socket.on("search.error", (msg) => {

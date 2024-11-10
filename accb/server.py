@@ -17,7 +17,7 @@ from flask_socketio import SocketIO, emit
 
 from selenium.webdriver import Chrome
 
-from accb.scraper import Scraper, ScraperOptions, ScraperError
+from accb.scraper import Scraper, ScraperOptions, ScraperError, ScraperRestart
 from accb.utils import log, log_error, ask_user_directory, open_folder, Defer
 from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
@@ -702,6 +702,11 @@ def search(
                 state.scraper = scraper
                 attempt_search(scraper)
             break
+
+        except ScraperRestart as _exc:
+            # não é tecnicamente um erro, então vamos só fingir que nada aconteceu e ele vai reiniciar automaticamente
+            pass
+
         except Exception as exc:
             log_error(exc)
 
@@ -710,7 +715,7 @@ def search(
             if error_count > max_error_count:
                 emit(
                     "search.error",
-                    "Ocorreram muitos erros em sucessão. Para segurança do processo, a pesquisa será parada - inicie manualmente para tentar novamente.",
+                    "Ocorreram muitos erros em sucessão. A pesquisa será parada - inicie-a manualmente para tentar novamente.",
                     broadcast=True,
                 )
                 break
@@ -730,6 +735,7 @@ def attempt_search(scraper: Scraper) -> None:
     """Inicia a pesquisa."""
 
     db = state.db_manager
+    exc: Optional[Exception] = None
 
     try:
         scraper.run()
@@ -750,11 +756,19 @@ def attempt_search(scraper: Scraper) -> None:
 
             emit("show_notification", "Pesquisa concluída.", broadcast=True)
 
-    except ScraperError as _exc:
+    except ScraperRestart as err:
+        exc = err
+        scraper.mode = "paused"
+
+    except ScraperError as err:
+        exc = err
         scraper.mode = "errored"
 
     finally:
         scraper.finalize_search()
+
+    if exc is not None:
+        raise exc
 
 
 @app.context_processor
@@ -801,10 +815,7 @@ def main() -> None:
     # TODO: configurar o arquivo de log
 
     # TODO: rodar isso quando o servidor tiver carregado, ao invés de usar um timer...
-    def callback() -> None:
-        webbrowser.open(f"{SERVER_URL}:{PORT}")
-
-    Timer(1, callback).start()
+    Timer(1, lambda: webbrowser.open(f"{SERVER_URL}:{PORT}")).start()
 
     if is_port_in_use(PORT):
         log(f"Porta {PORT} já em uso - o programa já está rodando?")
