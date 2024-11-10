@@ -6,7 +6,7 @@ import re
 from time import sleep, time
 import webbrowser
 import random
-from typing import Generator, Literal, assert_never
+from typing import Generator, Literal, Optional, assert_never
 from dataclasses import dataclass
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -19,6 +19,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import Chrome
+from selenium.webdriver.remote.webelement import WebElement
 
 from accb.utils import log, show_warning, get_time_hms, enumerate_skip
 from accb.state import State
@@ -155,7 +156,7 @@ class Scraper:
         log(f"[Scraper.send_logs]: {final}")
         emit("search.log", list(messages), broadcast=True)
 
-    def get_data(self, _product: str, keyword: str) -> None:
+    def extract_and_save_data(self, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
         # FIXME: tirar argumento `_product`? ele não é usado
 
@@ -255,6 +256,8 @@ class Scraper:
     def captcha_wait_loop(self) -> None:  # FIXME: rename
         """Abre o captcha e aguarda o usuário resolver o captcha."""
 
+        # TODO: rc-container-challenge é a classe p/ o captcha
+
         if not self.is_connected():
             raise ScraperError("Sem conexão com a rede!")
 
@@ -291,19 +294,26 @@ class Scraper:
 
         emit("search.began", broadcast=True)
 
-        try:
-            driver.get(self.options.url)
-        except Exception:
-            yield Error("não foi possível abrir o ChromeDriver")
+        driver.get(self.options.url)
 
-        try:
-            # TODO: encontrar uma maneira de usar o self.smart_sleep para isso
-            WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.ID, "informe-sefaz-error"))
-            )
-            driver.find_element(By.ID, "informe-sefaz-error").click()
-        except TimeoutException:
-            pass
+        def wait_for_element(by: str, value: str, timeout: float) -> WebElement | None:
+            try:
+                ec = EC.presence_of_element_located((by, value))
+                WebDriverWait(driver, timeout).until(ec)
+                return driver.find_element(by, value)
+            except TimeoutException:
+                return None
+
+        def wait_for_element_or_captcha(by: str, value: str, timeout: float) -> WebElement:
+            elem = wait_for_element(by, value, timeout)
+            if elem is not None:
+                return elem
+            self.captcha_wait_loop()
+            return driver.find_element(by, value)
+
+
+        if elem := wait_for_element(By.ID, "informe-sefaz-valor", 3.5):
+            elem.click()
 
         # * Processo para definir a região desejada para ser realizada a pesquisa
         # emit(
@@ -315,48 +325,26 @@ class Scraper:
         #     broadcast=True,
         # )
 
-        # Botão que abre o modal referente a localização
-        try:
-            WebDriverWait(driver, 4 * times).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "location-box"))
-            )
-        except TimeoutException:
-            self.captcha_wait_loop()
-        finally:
-            yield Sleep(0.25)
-            driver.find_element(By.CLASS_NAME, "location-box").click()
-        yield Sleep(0.25)
+        # botão que abre o modal referente a localização
+        wait_for_element_or_captcha(By.CLASS_NAME, "location-box", 12.0).click()
+        yield Sleep(0.5)
 
-        # TODO: algo assim:
-        # def elem_with_id(id_: str):
-        #     return EC.presence_of_element_located((By.ID, id_))
-        # def elem_with_class(class_: str):
-        #     return EC.presence_of_element_located((By.CLASS_NAME, class_))
-        # if elem := self.wd_wait_until(2.0, elem_with_id("add-center")):
+        # botão que abre a opção de inserir o CEP
+        wait_for_element_or_captcha(By.ID, "add-center", 8.0).click()
+        yield Sleep(0.5)
 
-        # Botão que abre a opção de inserir o CEP
-        try:
-            WebDriverWait(driver, 2 * times).until(
-                EC.presence_of_element_located((By.ID, "add-center"))
-            )
-        except TimeoutException:
-            self.captcha_wait_loop()
-            yield Sleep(0.25)
-        finally:
-            driver.find_element(By.ID, "add-center").click()
-            yield Sleep(0.5)
-
-        # Envia o MUNICIPIO desejado para o input
+        # envia o município desejado para a barra de pesquisa
         sbar_municipio = driver.find_element(By.CLASS_NAME, "sbar-municipio")
         for w in ongoing.city:
             sbar_municipio.send_keys(w)
             sleep(0.05)
-        yield Sleep(0.6)
+        yield Sleep(0.5)
 
-        # Pressiona o botão que realiza a pesquisa por MUNICIPIO
+        # seleciona o município na lista
         driver.find_element(By.CLASS_NAME, "set-mun").click()
         yield Sleep(0.25)
 
+        # confirma a escolha
         driver.find_element(By.ID, "aplicar").click()
         yield Sleep(0.25)
 
@@ -393,61 +381,42 @@ class Scraper:
                 ongoing.current_keyword = k_idx
                 self.db.update_ongoing_search(ongoing)
 
-                yield Sleep(1)
-
-                # Barra de pesquisa superior (produtos)
-                try:
-                    WebDriverWait(driver, 3 * times).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "sbar-input"))
-                    )
-                except Exception:
-                    self.captcha_wait_loop()
-                finally:
-                    search_bar = driver.find_element(By.ID, "top-sbar")
+                # barra de pesquisa superior (produtos)
+                e_top_sbar = wait_for_element_or_captcha(By.ID, "top-sbar", 12.0)
 
                 self.send_logs("Digitando palavra chave...")
                 for w in keyword:
-                    search_bar.send_keys(w)
+                    e_top_sbar.send_keys(w)
                     sleep(0.05)
-                search_bar.send_keys(Keys.ENTER)
-
-                yield Sleep(2)
+                e_top_sbar.send_keys(Keys.ENTER)
+                yield Sleep(1)
 
                 driver.page_source.encode("utf-8")
 
-                self.send_logs("Aguardando a pesquisa da palavra chave terminar...")
                 # o processo é reconhecido como terminado quando a classe flex-item2 está presente, que é uma classe de estilo dos elementos listados.
-                try:
-                    WebDriverWait(driver, 4 * times).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "flex-item2"))
-                    )
-                except Exception:
-                    self.captcha_wait_loop()
-                    yield Sleep(1)
+                self.send_logs("Aguardando a pesquisa da palavra chave terminar...")
+                _ = wait_for_element_or_captcha(By.CLASS_NAME, "flex-item2", 16.0)
 
-                flag = 0
+                # apertar algumas vezes o botão de mostrar mais resultados na lista
+                max_update_count = 3
+                update_counter = 0
                 while True:
                     yield Default()
 
                     try:
-                        WebDriverWait(driver, 2 * times).until(
-                            EC.presence_of_element_located((By.ID, "updateResults"))
-                        )
-                        yield Sleep(0.15)
+                        e_update_results = wait_for_element_or_captcha(By.ID, "updateResults", 8.0)
+                        e_update_results.click()
+                        yield Sleep(0.2)
+                        update_counter += 1
 
-                        driver.find_element(By.ID, "updateResults").click()
-                        flag += 1
-
-                        if flag == 3:
+                        if update_counter == max_update_count:
                             break
                     except Exception:
                         if not self.is_in_captcha():
                             break
                         self.captcha_wait_loop()
 
-                yield Default()
-
-                self.get_data(product, keyword)
+                self.extract_and_save_data(keyword)
 
         yield Default()
 
