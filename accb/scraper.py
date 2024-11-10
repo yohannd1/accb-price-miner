@@ -21,7 +21,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import Chrome
 from selenium.webdriver.remote.webelement import WebElement
 
-from accb.utils import log, show_warning, get_time_hms, enumerate_skip
+from accb.utils import log, show_warning, get_time_hms, enumerate_skip, Defer
 from accb.state import State
 from accb.model import OngoingSearch
 
@@ -44,13 +44,14 @@ class ScraperOptions:
 class ScraperError(Exception):
     pass
 
+
 class ScraperRestart(Exception):
     pass
 
 
 class SearchResponse:
     @dataclass
-    class Default:
+    class DefaultChecks:
         pass
 
     @dataclass
@@ -61,7 +62,7 @@ class SearchResponse:
     class Sleep:
         duration: float
 
-    All = Default | Sleep | Error
+    All = DefaultChecks | Sleep | Error
 
 
 Mode = Literal["default", "errored", "cancelled", "paused"]
@@ -199,20 +200,6 @@ class Scraper:
 
         self.send_logs(*logs)
 
-    def is_in_captcha(self) -> bool:
-        """Confere se o usuário precisa resolver o captcha."""
-        # FIXME: confirmar: ela retorna True se precisar, ou se não precisar?
-
-        try:
-            WebDriverWait(self.driver, 5).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "flash"))
-            )
-        except Exception:
-            sleep(1)
-            return False
-
-        return True
-
     def smart_sleep(self, base: float, unit_size: float = 1.0) -> None:
         """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo.
 
@@ -235,13 +222,13 @@ class Scraper:
     def _is_in_captcha(self) -> bool:
         return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
 
-    def _wait_for_captcha(self) -> None:  # FIXME: rename
+    def _handle_captcha(self) -> None:
         """Abre o captcha e aguarda o usuário resolver o captcha."""
 
         if not self.is_connected():
             raise ScraperError("Sem conexão com a rede!")
 
-        while self._is_in_captcha():
+        if self._is_in_captcha():
             # a página inicial redireciona automaticamente p/ a URL de captcha
             webbrowser.open(self.options.url)
             self.send_logs("Aguardando usuário resolver o captcha...")
@@ -255,6 +242,8 @@ class Scraper:
 
     def run(self) -> None:
         for response in self.begin_search():
+            self._handle_captcha()
+
             if self.mode != "default":
                 break
 
@@ -263,7 +252,7 @@ class Scraper:
                     raise ScraperError(message)
                 case SearchResponse.Sleep(duration=duration):
                     self.smart_sleep(duration)
-                case SearchResponse.Default():
+                case SearchResponse.DefaultChecks():
                     pass
                 case _ as unreachable:
                     assert_never(unreachable)
@@ -271,12 +260,17 @@ class Scraper:
     def _wait_for_element(
         self, by: str, value: str, timeout: float
     ) -> WebElement | None:
-        try:
-            ec = EC.presence_of_element_located((by, value))
-            WebDriverWait(self.driver, timeout).until(ec)
-            return self.driver.find_element(by, value)
-        except TimeoutException:
-            return None
+        def deinit(_) -> None:
+            emit("search.finished_waiting", broadcast=True)
+
+        emit("search.started_waiting", timeout, broadcast=True)
+        with Defer(None, deinit=deinit):
+            try:
+                ec = EC.presence_of_element_located((by, value))
+                WebDriverWait(self.driver, timeout).until(ec)
+                return self.driver.find_element(by, value)
+            except TimeoutException:
+                return None
 
     def _wait_for_element_or_captcha(
         self, by: str, value: str, timeout: float
@@ -284,7 +278,7 @@ class Scraper:
         elem = self._wait_for_element(by, value, timeout)
         if elem is not None:
             return elem
-        self._wait_for_captcha()
+        self._handle_captcha()
 
         elem = self._wait_for_element(by, value, timeout)
         assert elem is not None
@@ -292,7 +286,7 @@ class Scraper:
 
     def begin_search(self) -> Generator[SearchResponse.All, None, None]:
         Sleep = SearchResponse.Sleep
-        Default = SearchResponse.Default
+        DefaultChecks = SearchResponse.DefaultChecks
         Error = SearchResponse.Error
 
         ongoing = self.options.ongoing
@@ -307,16 +301,6 @@ class Scraper:
 
         if elem := wait_for_element(By.ID, "informe-sefaz-valor", 2.5):
             elem.click()
-
-        # * Processo para definir a região desejada para ser realizada a pesquisa
-        # emit(
-        #     "captcha",
-        #     {
-        #         "type": "notification",
-        #         "message": "Pesquisando Localização",
-        #     },
-        #     broadcast=True,
-        # )
 
         # botão que abre o modal referente a localização
         wait_for_element_or_captcha(By.CLASS_NAME, "location-box", 12.0).click()
@@ -344,7 +328,7 @@ class Scraper:
         product_count = len(ongoing.products)
 
         for p_idx, p in enumerate_skip(ongoing.products, start=ongoing.current_product):
-            yield Default()
+            yield DefaultChecks()
 
             product = p.name
             keywords = p.keywords
@@ -360,7 +344,7 @@ class Scraper:
             for k_idx, keyword in enumerate_skip(
                 keywords, start=ongoing.current_keyword
             ):
-                yield Default()
+                yield DefaultChecks()
 
                 self.send_logs(f"Próxima palavra chave: {keyword}")
 
@@ -396,29 +380,25 @@ class Scraper:
                 _ = wait_for_element_or_captcha(By.CLASS_NAME, "flex-item2", 16.0)
 
                 # apertar algumas vezes o botão de mostrar mais resultados na lista
-                max_update_count = 3
-                update_counter = 0
+                yield DefaultChecks()
+                update_threshold = 3.0
+                update_counter = 0.0
                 while True:
-                    yield Default()
-
-                    try:
-                        e_update_results = wait_for_element_or_captcha(
-                            By.ID, "updateResults", 8.0
-                        )
+                    if e_update_results := wait_for_element(By.ID, "updateResults", 8.0):
                         e_update_results.click()
-                        yield Sleep(0.2)
                         update_counter += 1
+                    else:
+                        # se falhou, aumentar menos, para dar mais chances de procurar mais vezes
+                        update_counter += 0.5
 
-                        if update_counter == max_update_count:
-                            break
-                    except Exception:
-                        if not self.is_in_captcha():
-                            break
-                        self._wait_for_captcha()
+                    yield Sleep(0.2)
+
+                    if update_counter >= update_threshold:
+                        break
 
                 self.extract_and_save_data(keyword)
 
-        yield Default()
+        yield DefaultChecks()
 
         duration = get_time_hms(self.start_time)
 

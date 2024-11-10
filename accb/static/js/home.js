@@ -650,7 +650,7 @@ $(document).ready(() => {
 
     socket.on("search.started_waiting", (time) => {
         const fmt = time.toFixed(2);
-        wait_log.innerText = `Aguardando por ${fmt}s...`;
+        wait_log.innerText = `Aguardando por até ${fmt}s...`;
     });
 
     socket.on("search.finished_waiting", () => {
