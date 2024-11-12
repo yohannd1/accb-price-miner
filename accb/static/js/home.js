@@ -633,6 +633,14 @@ $(document).ready(() => {
 
     socket.on("connect", () => {
         console.log(`Conectado - id do socket: ${socket.id}`);
+
+        const path_option = getOption("path");
+        if (path_option === undefined) {
+            alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
+            setOutputPath();
+        } else {
+            socket.emit("output_path_from_options", { path: path_option });
+        }
     });
 
     socket.on("show_notification", (msg) => showMessage(msg));
@@ -657,98 +665,35 @@ $(document).ready(() => {
         wait_log.innerText = "...";
     });
 
-    socket.on("search.error", (msg) => {
+    const finalizeSearch = () => {
+        $('ul.tabs').tabs('select', 'pesquisar');
         $("#progress_bar").css("width", "0%");
         $("#progress_bar").html("0%");
-        $('ul.tabs').tabs('select', 'pesquisar');
-        $("#progress h5").html(`Iniciando Pesquisa`);
-        $(".tabs a").addClass('enable');
-        $(".log_item").remove();
         $("#progress_log").css("height", "100%");
+        $("#progress h5").html(`Iniciando Pesquisa`);
+        $(".log_item").remove();
+
+        $(window).off();
+    };
+
+    socket.on("search.finished_from_error", (msg) => {
+        // finalizeSearch();
+        // $(".tabs a").addClass('enable');
+
         showMessage(msg, { notification: true });
         alert(msg);
+        window.location.reload(true);
     });
 
-    /**
-     * Função responsável por tratar todas as emisões do tipo catpcha vinda do servidor.
-     * @param  {route} 'captcha'
-     * @param  {json} msg
-     */
-    socket.on('captcha', (msg) => {
-        if (msg.type == 'notification') {
-            showMessage(msg.message);
-        } else if (msg.type == 'progress') {
-            console.warn("DEPRECIADO! Use { search.began_searching_product }"); // FIXME: remover
+    socket.on("search.finished", () => {
+        // finalizeSearch();
+        // $(".estab").remove();
+        // $('#main-navigation li a').removeClass("disabled");
 
-            $("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
-
-            if (msg.value !== undefined) // FIXME: remover
-                console.warn(`Valor de progresso recebido, mas ignorado (API velha): ${msg.value}`);
-
-            if (msg.done == 1) {
-                $("#progress_bar").css("width", "0%");
-                $("#progress_bar").html("0%");
-                $('ul.tabs').tabs('select', 'pesquisar');
-                $("#progress h5").html(`Iniciando Pesquisa`);
-                $(".log_item").remove();
-                $("#progress_log").css("height", "100%");
-                $(".estab").remove();
-                $('#main-navigation li a').removeClass("disabled");
-                $(window).off();
-
-                $(".log_item").remove();
-                alert("Pesquisa finalizada.");
-                window.location.reload(true);
-            }
-        } else if (msg.type == 'captcha') {
-            showMessage(msg.message);
-        } else if (msg.type == 'log') {
-            console.warn("DEPRECIADO! Use { search.log }"); // FIXME: remover
-
-            var log_data = JSON.parse(msg.data);
-            $("#progress_log").css("height", "fit-content");
-            log_data.map((data) => {
-                $("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
-            });
-            $("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
-        } else if (msg.type == 'cancel') {
-            $("#progress_bar").css("width", "0%");
-            $("#progress_bar").html("0%");
-            $('ul.tabs').tabs('select', 'pesquisar');
-            $("#progress h5").html(`Iniciando Pesquisa`);
-            $(".tabs a").addClass('enable');
-            $(".log_item").remove();
-            $("#progress_log").css("height", "100%");
-            socket.emit('cancel');
-            showMessage(msg.message, { notification: true });
-            $(".pause-overlay").fadeOut(500);
-            $("#pause-loader").fadeOut(500);
-            socket.emit('reload');
-            window.location.reload(true);
-        } else if (msg.type == 'pause') {
-            $("#progress_bar").css("width", "0%");
-            $("#progress_bar").html("0%");
-            $('ul.tabs').tabs('select', 'pesquisar');
-            $("#progress h5").html(`Iniciando Pesquisa`);
-            $(".tabs a").addClass('enable');
-            $(".log_item").remove();
-            $("#progress_log").css("height", "100%");
-            showMessage(msg.message, { notification: true });
-            $("#pause-loader").fadeOut(500);
-            $(".pause-overlay").fadeOut(500);
-        } else if (msg.type == 'error') {
-            console.warn("DEPRECIADO! Use { search.error }"); // FIXME: remover
-
-            $("#progress_bar").css("width", "0%");
-            $("#progress_bar").html("0%");
-            $('ul.tabs').tabs('select', 'pesquisar');
-            $("#progress h5").html(`Iniciando Pesquisa`);
-            $(".tabs a").addClass('enable');
-            $(".log_item").remove();
-            $("#progress_log").css("height", "100%");
-            showMessage(msg.message, { notification: true });
-            alert(msg.message);
-        }
+        const msg = "Pesquisa finalizada.";
+        showMessage(msg, { notification: true });
+        alert(msg);
+        window.location.reload(true);
     });
 
     socket.on("search.began_searching_product", (name) => {
@@ -767,102 +712,6 @@ $(document).ready(() => {
         $("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 500);
     });
 
-    /**
-     * Função responsável por tratar todas as emisões do tipo catpcha vinda do servidor.
-     * @param  {route} 'search'
-     * @param  {json} msg
-     */
-    socket.on('search', (msg) => {
-        if (msg['type'] == 'error') {
-            showMessage("Um erro inexperado aconteceu durante a pesquisa, consulte o arquivo err.log para mais detalhes.");
-        } else if (msg['type'] == 'notification') {
-            showMessage(msg.message);
-        } else if (msg['type'] == 'chrome') {
-            $("#progress_bar").css("width", "0%");
-            $("#progress_bar").html("0%");
-            $('ul.tabs').tabs('select', 'pesquisar');
-            $("#progress h5").html(`Iniciando Pesquisa`);
-            $(".log_item").remove();
-            $("#progress_log").css("height", "100%");
-            $('#main-navigation li a').removeClass("disabled");
-            $(window).off();
-
-            alert("Instale uma versão do Google Chrome para prosseguir com a pesquisa.");
-            window.location.reload(true);
-        } else if (msg['type'] == 'done') {
-            $("#progress_bar").css("width", "0%");
-            $("#progress_bar").html("0%");
-            $('ul.tabs').tabs('select', 'pesquisar');
-            $("#progress h5").html(`Iniciando Pesquisa`);
-            $(".log_item").remove();
-            $("#progress_log").css("height", "100%");
-            $('#main-navigation li a').removeClass("disabled");
-            $(window).off();
-
-            window.location.reload(true);
-        } else if (msg['type'] == 'cancel') {
-            $("#progress_bar").css("width", "0%");
-            $("#progress_bar").html("0%");
-            $('ul.tabs').tabs('select', 'pesquisar');
-            $("#progress h5").html(`Iniciando Pesquisa`);
-            $(".tabs a").addClass('enable');
-            $(".log_item").remove();
-            $("#progress_log").css("height", "100%");
-            socket.emit('cancel');
-            new Notification("ACCB - Pesquisa Automática", {
-                body: msg['message'],
-            });
-            $(".pause-overlay").fadeOut(500);
-            $("#pause-loader").fadeOut(500);
-
-            socket.emit('reload');
-            window.location.reload(true);
-        } else if (msg['type'] == 'pause') {
-            $("#progress_bar").css("width", "0%");
-            $("#progress_bar").html("0%");
-            $('ul.tabs').tabs('select', 'pesquisar');
-            $("#progress h5").html(`Iniciando Pesquisa`);
-            $(".tabs a").addClass('enable');
-            $(".log_item").remove();
-            $("#progress_log").css("height", "100%");
-            new Notification("ACCB - Pesquisa Automática", {
-                body: msg['message'],
-            });
-            $("#pause-loader").fadeOut(500);
-            $(".pause-overlay").fadeOut(500);
-            socket.emit('reload');
-            window.location.reload(true);
-        } else if (msg['type'] == 'log') {
-            var log_data = JSON.parse(msg['data'])
-            // console.table(log_data);
-            $("#progress_log").css("height", "fit-content");
-            log_data.map((data) => {
-                $("#progress_log").append($(`<p class="log_item">${data}</p>`).hide().fadeIn(300));
-            });
-            $("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 1000);
-        } else if (msg['type'] == 'progress') {
-            $("#progress h5").html(`Pesquisando produto <strong>${msg['product']}</strong>`).hide().fadeIn(500);
-
-            if (msg.value !== undefined)
-                updateProgressBar(parseFloat(msg.value));
-
-            if (msg.done == 1) {
-                $("#progress_bar").css("width", "0%");
-                $("#progress_bar").html("0%");
-                $('ul.tabs').tabs('select', 'pesquisar');
-                $("#progress h5").html(`Iniciando Pesquisa`);
-                $(".tabs a").addClass('enable');
-                $(".log_item").remove();
-                $("#progress_log").css("height", "100%");
-                $(".estab").remove();
-                $(".log_item").remove();
-
-                alert("Pesquisa finalizada!");
-                window.location.reload(true);
-            }
-        }
-    });
-
     // Inicia todos os elementos js da aplicação.
     $('.modal').modal();
 
@@ -878,13 +727,14 @@ $(document).ready(() => {
 
     $("#sec-navigation").tabs({
         onShow: () => {},
-    })
+    });
 
     // Listener responsável por parar a pesquisa.
     $("#pause").click((e) => {
         e.preventDefault();
+
         if (window.confirm(`Deseja realmente PAUSAR a pesquisa? Todo o progresso será salvo.`)) {
-            socket.emit("pause");
+            socket.emit("search.pause");
             $("#progress h5").html(`Pausando pesquisa`);
             $(".pause-overlay").fadeIn(500);
             $("#pause-loader").fadeIn(500);
@@ -895,8 +745,9 @@ $(document).ready(() => {
     // Listener responsável por cancelar a pesquisa.
     $("#cancel").click((e) => {
         e.preventDefault();
+
         if (window.confirm(`Deseja realmente CANCELAR a pesquisa? Todos os dados da pesquisa serão EXCLUÌDOS.`)) {
-            socket.emit("cancel");
+            socket.emit("search.cancel");
             $("#progress h5").html(`Cancelando pesquisa`);
             $(".pause-overlay").fadeIn(500);
             $("#pause-loader").fadeIn(500);
@@ -1674,14 +1525,6 @@ $(document).ready(() => {
             showMessage(`Diretório alterado para ${response.path}`, { notification: false });
         });
     };
-
-    const path_option = getOption("path");
-    if (path_option === undefined) {
-        alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-        setOutputPath();
-    } else {
-        socket.emit("output_path_from_options", { path: path_option });
-    }
 
     socket.on("invalid_output_path", () => {
         alert("O diretório de arquivos registrado é inválido! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");

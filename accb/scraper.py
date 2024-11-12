@@ -116,35 +116,18 @@ class Scraper:
             case "errored":
                 # FIXME: isso aqui faz com que a pesquisa seja cancelada e tenha que ser reiniciada. Talvez seja melhor tentar resumir ela por backup?
                 self._delete_related_search()
+                msg = "Ocorreu um erro de rede durante a pesquisa."
+                emit("show_notification", msg, broadcast=True)
 
-                emit(
-                    "search",
-                    {
-                        "type": "error",
-                        "message": "Ocorreu um erro de rede durante a pesquisa.",
-                    },
-                    broadcast=True,
-                )
             case "cancelled":
                 self._delete_related_search()
+                msg = "A pesquisa foi cancelada, todos os dados foram excluídos."
+                emit("show_notification", msg, broadcast=True)
 
-                emit(
-                    "search",
-                    {
-                        "type": "cancel",
-                        "message": "A pesquisa foi cancelada, todos os dados foram excluídos.",
-                    },
-                    broadcast=True,
-                )
             case "paused":
-                emit(
-                    "search",
-                    {
-                        "type": "pause",
-                        "message": "A pesquisa foi parada, todos os dados foram salvos no banco de dados local.",
-                    },
-                    broadcast=True,
-                )
+                msg = "A pesquisa foi parada, todos os dados foram salvos no banco de dados local."
+                emit("show_notification", msg, broadcast=True)
+
             case _ as unreachable:
                 assert_never(unreachable)
 

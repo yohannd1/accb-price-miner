@@ -553,7 +553,7 @@ def route_generate_file() -> RequestDict:
     return {"status": "success", "path": str(output_folder)}
 
 
-@socketio.on("pause")
+@socketio.on("search.pause")
 def on_pause() -> RequestDict:
     """Pausa a pesquisa atual, mantendo seu estado no banco de dados."""
 
@@ -565,7 +565,7 @@ def on_pause() -> RequestDict:
     return {"status": "success"}
 
 
-@socketio.on("cancel")
+@socketio.on("search.cancel")
 def on_cancel() -> RequestDict:
     """Cancela a pesquisa atual e deleta os dados dela no banco de dados."""
 
@@ -714,7 +714,7 @@ def search(
 
             if error_count > max_error_count:
                 emit(
-                    "search.error",
+                    "search.finished_from_error",
                     "Ocorreram muitos erros em sucessão. A pesquisa será parada - inicie-a manualmente para tentar novamente.",
                     broadcast=True,
                 )
@@ -740,13 +740,6 @@ def attempt_search(scraper: Scraper) -> None:
     try:
         scraper.run()
 
-        emit(
-            "captcha",
-            {"type": "progress", "done": 1},
-            broadcast=True,
-        )
-        state.wait_reload = True
-
         if scraper.mode == "default":
             # FIXME: é pra exportar automaticamente mesmo?
             ongoing = scraper.options.ongoing
@@ -754,7 +747,8 @@ def attempt_search(scraper: Scraper) -> None:
                 db, ongoing.search_id, ongoing.estabs, ongoing.city, state.output_path
             )
 
-            emit("show_notification", "Pesquisa concluída.", broadcast=True)
+        state.wait_reload = True
+        emit("search.finished", broadcast=True) # TODO: mover isso p/ self.finalize_search() eu acho
 
     except ScraperRestart as err:
         exc = err
