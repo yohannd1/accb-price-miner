@@ -16,6 +16,7 @@ from flask_material import Material
 from flask_socketio import SocketIO, emit
 
 from selenium.webdriver import Chrome
+from werkzeug.exceptions import NotFound
 
 from accb.scraper import Scraper, ScraperOptions, ScraperError, ScraperRestart
 from accb.utils import log, log_error, ask_user_directory, open_folder, Defer
@@ -96,13 +97,14 @@ def is_port_in_use(port: int) -> bool:
 
 @app.errorhandler(Exception)
 def exception_handler(exc: Exception) -> Response:
-    # TODO: encontrar uma maneira de usar isso ao invés do debugger padrão
+    if isinstance(exc, NotFound):
+        # não precisamos mostrar nada no log
+        return Response(status=404)
 
     fmt = "".join(traceback.format_exception(exc))
     log(f"Erro interno: {exc} -- {fmt}")
     res = {"status": "error", "message": "Erro interno da aplicação"}
     return Response(status=200, mimetype="application/json", response=json.dumps(res))
-
 
 @app.route("/")
 def route_home() -> str:
