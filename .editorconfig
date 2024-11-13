@@ -1,6 +1,6 @@
 root = true
 
-[*.js]
+[*.{js,css}]
 indent_style = space
 indent_size = 4
 

@@ -298,7 +298,9 @@ const list_estab = (city = undefined) => {
     }
 
     $.get("/select_estab", { city: city }, (response) => {
-        response = JSON.parse(response);
+        console.assert(response.status === "success")
+        response = response.estabs;
+
         ESTAB_DATA = response;
         if (response.length == 0) {
             $("#no-result").fadeIn(500);
@@ -666,7 +668,7 @@ $(document).ready(() => {
     });
 
     const finalizeSearch = () => {
-        $('ul.tabs').tabs('select', 'pesquisar');
+        $('ul.tabs').tabs('select', 'tab-pesquisar');
         $("#progress_bar").css("width", "0%");
         $("#progress_bar").html("0%");
         $("#progress_log").css("height", "100%");
@@ -710,6 +712,40 @@ $(document).ready(() => {
         });
 
         $("#progress_scroll").animate({ scrollTop: $('#progress_scroll').prop("scrollHeight") }, 500);
+    });
+
+    const search_state = {};
+
+    $("button.btn-start-search-at-city").on("click", (ev) => {
+        $("#loader").show();
+
+        const city = ev.target.getAttribute("value");
+        search_state.city = city;
+        $("ul.tabs").tabs("select", "listagem");
+
+        $.get("/select_estab", { city: city }, (response) => {
+            console.assert(response.status === "success")
+            response = response.estabs;
+
+            if (response.length == 0) {
+                $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
+                $("#select-all").addClass("disabled");
+                $("#start").addClass("disabled");
+            } else {
+                $("#select-all").removeClass("disabled");
+                $("#start").removeClass("disabled");
+
+                $("#listagem h5").html("Selecione pelo menos um estabelecimento para prosseguir");
+                $(".tabs a").addClass('disable');
+
+                response.map((value, index) => {
+                    var delay = 400 + index * 100;
+                    $("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay))
+                });
+            }
+
+            $("#loader").hide();
+        });
     });
 
     // Inicia todos os elementos js da aplicação.
@@ -1016,69 +1052,32 @@ $(document).ready(() => {
 
     // Botão de iniciar pesquisa
     $("#start").click((e) => {
-        e.preventDefault();
+        const estabs = $("div.tab-content-listagem .select-item-active");
+        const names = estabs.toArray().map(x => x.getAttribute("value"));
 
-        if (!$('.estab').hasClass("select-item-active")) {
+        if (names.length === 0) {
             showMessage('Selecione pelo menos um item para prosseguir.', { notification: false });
-        } else {
-            var local_city = $($(".select-item-active")[0]).attr("value");
-            $('.city').removeClass("select-item-active")
-            city = undefined;
-
-            const active_selections = document
-                .querySelector("div.tab-content-listagem")
-                .querySelectorAll(".select-item-active");
-
-            const names = Array.from(active_selections)
-                .map(x => x.getAttribute("value"));
-
-            socket.emit("search.begin", { names: names, city: local_city });
-
-            $('ul.tabs').tabs('select', 'progress');
-            $("#main-navigation a").addClass("disable");
-            $("#config_path").addClass("disable");
+            return;
         }
-    });
 
-    // Botão de ir para seleção de estabelecimentos
-    $("#select").click(() => {
-        $("#loader").show();
+        city = undefined;
 
-        if (!$('.city').hasClass("select-item-active")) {
-            showMessage('Selecione pelo menos um item para prosseguir.', { notification: false });
-        } else {
-            $('ul.tabs').tabs('select', 'listagem');
-        }
-        let city_name = $('.select-item-active').html();
+        socket.emit("search.begin", { names: names, city: search_state.city });
 
-        $.get("/select_estab", { city: city_name }, (response) => {
-            response = JSON.parse(response);
-            if (response.length == 0) {
-                $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
-                $("#select-all").addClass("disabled");
-                $("#start").addClass("disabled");
-            } else {
-                $("#select-all").removeClass("disabled");
-                $("#start").removeClass("disabled");
-
-                $("#listagem h5").html("Selecione pelo menos um estabelecimento para prosseguir");
-                $(".tabs a").addClass('disable');
-                response.map((value, index) => {
-                    var delay = 400 + index * 100;
-                    $("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay))
-                });
-                $("#loader").hide();
-            }
-        });
+        $('ul.tabs').tabs('select', 'progress');
+        $("#main-navigation a").addClass("disable");
+        $("#config_path").addClass("disable");
     });
 
     // Botão selecionar todos
     $("#select-all").click(() => {
-        if (!$('.estab').hasClass("select-item-active")) {
-            $(`.estab`).addClass('select-item-active');
-        } else {
-            $(`.estab`).removeClass('select-item-active');
-        }
+        const all = $(".estab");
+        const cls = "select-item-active";
+
+        if (!all.hasClass(cls))
+            all.addClass(cls);
+        else
+            all.removeClass(cls);
     });
 
     $("#select-all-file").click(() => {
@@ -1094,7 +1093,7 @@ $(document).ready(() => {
         $('.city').removeClass("select-item-active")
         city = undefined;
 
-        $('ul.tabs').tabs('select', 'pesquisar');
+        $('ul.tabs').tabs('select', 'tab-pesquisar');
 
         $("#config-product").addClass('enable');
         $("#search").addClass('enable');
@@ -1319,7 +1318,9 @@ $(document).ready(() => {
         const city = selected.attr("city");
 
         $.get("/select_estab", { city: city }, (response) => {
-            response = JSON.parse(response);
+            console.assert(response.status === "success")
+            response = response.estabs;
+
             if (response.length == 0) {
 
                 $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");

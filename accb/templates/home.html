@@ -44,63 +44,86 @@
       {{ top_logos() }}
 
       <div style="margin-top: 2em;">
-        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path" ><i class="fa fa-cogs"></i></a>
+        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path"><i class="fa fa-cogs"></i></a>
         <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
-        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder" ><i class="fa fa-folder"></i></a>
-        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app" ><i class="fa fa-close"></i></a>
+        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder"><i class="fa fa-folder"></i></a>
+        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app"><i class="fa fa-close"></i></a>
       </div>
     </div>
     <div>
-      <p class="title"><i class="fa fa-shopping-cart"> </i> Preço da Hora Bahia - Coleta Semi-Automática </p>
       <ul id="main-navigation" class="tabs" style="width: fit-content;">
-        <li class="tab col s3"><a id="search" href="#pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município"> <i class="fa fa-map-marker"> </i> Município</a></li>
-        <li class="tab col s3"></i><a class="disable" id="list" href="#listagem" > <i class="fa fa-shopping-cart"> </i>
-          Estabelecimentos</a></li>
-        <li class="tab col s3"><a class="disable  " id="prog" href="#progress"> <i class="fa fa-spinner"> </i> Progresso</a></li>
-        <li class="tab col s3"></i><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos"> <i class="fa fa-cogs"> </i>
-          Estabelecimentos</a></li>
-        <li class="tab col s3"></i><a href="#produtos"  id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos"> <i class="fa fa-cogs"> </i>
-          Produtos</a></li>
-        <li class="tab col s3"></i><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar Pesquisas"> <i class="fa fa-database"> </i>
-          Pesquisas</a></li>
-        <!-- SOBRE -->
-        <li class="tab col s3"></i><a href="#about" id="sobre" class="tooltipped" data-position="left" data-tooltip="Sobre o Programa"> <i class="fa fa-info-circle"> </i>
-          Sobre</a></li>
+        <li class="tab col s3"><a id="search" href="#tab-pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município">
+          <i class="fa fa-map-marker"></i>
+          Município
+        </a></li>
+
+        <li class="tab col s3"><a class="disable" id="list" href="#listagem">
+          <i class="fa fa-shopping-cart"></i>
+          Estabelecimentos
+        </a></li>
+
+        <li class="tab col s3"><a class="disable" id="prog" href="#progress">
+          <i class="fa fa-spinner"></i>
+          Progresso
+        </a></li>
+
+        <li class="tab col s3"><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos">
+          <i class="fa fa-cogs"></i>
+          Estabelecimentos
+        </a></li>
+
+        <li class="tab col s3"><a href="#produtos" id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos">
+          <i class="fa fa-cogs"></i>
+          Produtos
+        </a></li>
+
+        <li class="tab col s3"><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar Pesquisas">
+          <i class="fa fa-database"></i>
+          Pesquisas
+        </a></li>
+
+        <li class="tab col s3"><a href="#tab-configuracoes" class="tooltipped" data-position="bottom" data-tooltip="Configurações">
+          <i class="fa fa-cogs"></i>
+          Configurações
+        </a></li>
+
+        <li class="tab col s3"><a href="#about" id="sobre" class="tooltipped" data-position="left" data-tooltip="Sobre o Programa">
+          <i class="fa fa-info-circle"></i>
+          Sobre
+        </a></li>
       </ul>
     </div>
   </header>
   <main class="main-content row z-depth-5">
-    <div id="pesquisar" class="tab">
-        <div class="tab-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-          <h5>{{ initial_message }}</h5>
+    <div id="tab-pesquisar" class="tab">
+      <div class="tab-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <p class="title">
+          <i class="fa fa-shopping-cart"></i>
+          ACCB Price Miner - Preço da Hora Bahia
+        </p>
 
-          <div class="select-wrapper-main" style="flex-direction: row;">
-            {% if not chrome_installed %}
-            {% elif len(city_names) == 0 %}
-                <a class="select-item city z-depth-2" >Cadastre pelo menos um município para prosseguir.</a>
-            {% else %}
-              {% if product_len == 0 %}
-                {% for city in city_names %}
-                  <a class="select-item city z-depth-2 disable"" value="{{ city }}" id="{{ replace(city, ' ') }}" >{{ city }}</a>
-                {% endfor %}
-              {% else %}
-                {% for city in city_names %}
-                  <a class="select-item city z-depth-2" value="{{ city }}" id="{{ replace(city, ' ') }}" >{{ city }}</a>
-                {% endfor %}
-              {% endif %}
-            {% endif %}
+        {% if not is_chrome_installed %}
+          <h5>Google Chrome não encontrado.</h5>
+          <p>Instale uma versão qualquer do Google Chrome para realizar uma pesquisa.</p>
+
+        {% elif len(city_names) == 0 %}
+          <h5>Cadastre pelo menos um município para realizar uma pesquisa</h5>
+
+        {% elif product_len == 0 %}
+          <h5>Cadastre pelo menos um produto para realizar uma pesquisa</h5>
+
+        {% else %}
+          <h5>Selecione um município para prosseguir com a pesquisa:</h5>
+
+          <div class="select-wrapper-main">
+            {% for city in city_names %}
+              <button class="btn-large btn-start-search-at-city" value="{{ city }}">{{ city }}</button>
+            {% endfor %}
           </div>
 
-          {% if not chrome_installed %}
-          {% elif len(city_names) == 0 or product_len == 0 %}
-            <button id="select" class="disable btn-large" style="background-color: gray !important;">Selecionar Estabelecimentos</button>
-          {% else %}
-            <button id="select" class="btn-large">Selecionar Estabelecimentos</button>
-          {% endif %}
+          <h5>Ou selecione uma das pesquisas interrompidas (backups):</h5>
 
-          {% if len(ongoing_searches_pairs) > 0 %}
-            <h5>Ou selecione uma das pesquisas interrompidas (backups):</h5>
-
+          <div class="select-wrapper-main tab-pesquisar-backup-list">
             {% for ong, sch in ongoing_searches_pairs %}
               <button
                 class="resume-ongoing-search btn-large"
@@ -109,8 +132,9 @@
                 Pesquisa em {{ ong.city }} ({{ as_percentage(ong.current_product, len(ong.products)) }}) ({{ sch.start_date }})
               </button>
             {% endfor %}
-          {% endif %}
-        </div>
+          </div>
+        {% endif %}
+      </div>
     </div>
     <div id="listagem" class="col s12 tab">
       <h5>Selecione pelo menos um estabelecimento para prosseguir</h5>
@@ -145,10 +169,10 @@
         <i class="fa fa-spinner fa-pulse" id="pause-loader"></i>
       </div>
     </div>
-    <div id="configurar" class="col s12 tab" >
+    <div id="configurar" class="col s12 tab">
       <div class="config-menu">
-        <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Cidade" >
-          <select id="city-select" class="browser-default" >
+        <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Cidade">
+          <select id="city-select" class="browser-default">
             {% for city in city_names %}
               <option value="{{ city }}">{{ city }}</option>
             {% endfor %}
@@ -181,16 +205,15 @@
         </div>
       </div>
     </div>
-    <div id="produtos" class="col s12 tab" >
+    <div id="produtos" class="col s12 tab">
       <div class="tab-content-config">
         <div class="config-title">
           <h5>Listagem de Produtos</h5>
           <a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
         </div>
         <div id="list-product">
-
           <div style="display: none;" class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;">
-            <a style="color: white; width: 100%;"  href="#add-modal-product" rel="modal:open">
+            <a style="color: white; width: 100%;" href="#add-modal-product" rel="modal:open">
             <p>Nenhum produto cadastrado, pressione para adicionar.</p>
             </a>
           </div>
@@ -201,7 +224,7 @@
       <div class="tab-content-search">
         <div class="config-title" style="margin: 0;">
           <div>
-            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa" >
+            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa">
               <select id="search-select" class="browser-default">
                 {% if len(searches) == 0 %}
                   <option value="null">Nenhuma Pesquisa</option>
@@ -212,7 +235,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês" >
+            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês">
               <select id="month-picker" class="browser-default">
                 {% for i, m in enumerate(months) %}
                   {% if i + 1 == active_month %}
@@ -232,8 +255,8 @@
         </div>
         <h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
         <div class="input-field search_div">
-          <input placeholder="Nome do Estabelecimento : dalnordes .." class="browser-default z-depth-2" id="search_bar">
-          <a class="round btn-floating btn-large  primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
+          <input placeholder="Nome do Estabelecimento: dalnordes .." class="browser-default z-depth-2" id="search_bar">
+          <a class="round btn-floating btn-large primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
         </div>
         <div id="list-search">
             <table class="centered striped">
@@ -261,7 +284,7 @@
         </div>
         <span class="left duration">Tempo de duração da pesquisa: ???</span>
     </div>
-    <div id="about" class="col s12 tab" >
+    <div id="about" class="col s12 tab">
       <div class="tab-content-config row center" style="padding-bottom: 5%;">
         <div id="doc" class="row tab" style="margin: 1em 0;">
         <div class="config-title">
@@ -312,22 +335,30 @@
           </div>
         </div>
         <ul id="sec-navigation" class="tabs" style="width: 100%;">
-          <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>  Colaboradores </a></li>
-          <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i> O programa</a></li>
+          <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>Colaboradores</a></li>
+          <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i>O programa</a></li>
         </ul>
+    </div>
+    </div>
+    <div id="tab-configuracoes" class="col s12 tab">
+      <div class="tab-content row center">
+        <h5>Configurações</h5>
+        <p>TODO: popular isso aqui por JS</p>
+        <p>TODO: caminho de saída (export path)</p>
+        <p>TODO: mostrar janela do navegador automatizado durante a pesquisa (explicar o que é)</p>
+        <p>TODO: mostrar "aguardando por x segundos" durante a pesquisa</p>
+      </div>
     </div>
   </main>
 
   <!-- MODAL DINAMICO PARA EDIÇÃO DE ESTAB -->
-
-  <div id="edit-modal"  style="min-height: 450px" class="modal">
-    <a href="#" rel="modal:close" />
+  <div id="edit-modal" style="min-height: 450px" class="modal">
+    <a href="#" rel="modal:close"/>
   </div>
 
   <!-- MODAL DINAMICO PARA EDIÇÃO DE PRODUTO -->
-
-  <div style="height: 45%;  min-height: 350px;"id="edit-modal-product" class="modal">
-    <a href="#" rel="modal:close" />
+  <div style="height: 45%; min-height: 350px;"id="edit-modal-product" class="modal">
+    <a href="#" rel="modal:close"/>
   </div>
 
   <!-- MODAL ADICIONANDO PRODUTO -->
@@ -339,11 +370,11 @@
         <div>
           <div style="margin: 20px 0;">
             <div class="input-field col s12">
-              <input placeholder="" id="product_name" type="text" >
+              <input placeholder="" id="product_name" type="text">
               <label class="active" for="product_name">Produto</label>
             </div>
             <div class="input-field col s12">
-              <input  placeholder="Palavras Chave" id="keywords" type="text" >
+              <input  placeholder="Palavras Chave" id="keywords" type="text">
               <label class="active" for="">Palavras Chave</label>
             </div>
           </div>
@@ -366,21 +397,21 @@
             <div class="input-field col s6">
               <select id="city_name-save" style="color: black !important;">
                 {% for city in city_names %}
-                  <option value="{{ city_name }}" >{{ city_name }}</option>
+                  <option value="{{ city_name }}">{{ city_name }}</option>
                 {% endfor %}
               </select>
               <label>Cidade</label>
             </div>
             <div class="input-field col s6">
-              <input placeholder="Estabelecimento" id="estab_name-save" type="text" >
+              <input placeholder="Estabelecimento" id="estab_name-save" type="text">
               <label class="active" for="estab_name-save">Estabelecimento</label>
             </div>
             <div class="input-field col s6">
-              <input  placeholder="Nome na Plataforma" id="web_name-save" type="text" >
+              <input  placeholder="Nome na Plataforma" id="web_name-save" type="text">
               <label class="active" for="web_name-save">Nome na Plataforma</label>
             </div>
             <div class="input-field col s6">
-              <input placeholder="Endereço" id="address-save" type="text" >
+              <input placeholder="Endereço" id="address-save" type="text">
               <label class="active" for="address-save">Endereço</label>
             </div>
           </div>
@@ -403,7 +434,7 @@
             <div class="input-field col s12">
               <select id="city-delete-select" style="color: black !important;">
                 {% for city in city_names %}
-                  <option value="{{ city_name }}" >{{ city_name }}</option>
+                  <option value="{{ city_name }}">{{ city_name }}</option>
                 {% endfor %}
               </select>
               <label>Cidade</label>
@@ -426,13 +457,13 @@
             <div class="input-field col s6">
               <select id="city-edit-select" style="color: black !important;">
                 {% for city in city_names %}
-                  <option value="{{ city_name }}" >{{ city_name }}</option>
+                  <option value="{{ city_name }}">{{ city_name }}</option>
                 {% endfor %}
               </select>
               <label>Cidade</label>
             </div>
             <div class="input-field col s6">
-              <input placeholder="Cidade" id="city-edit" type="text" >
+              <input placeholder="Cidade" id="city-edit" type="text">
               <label class="active" for="city-edit">Novo Nome</label>
             </div>
         </div>
@@ -452,7 +483,7 @@
         <div>
           <div style="margin: 20px 0;">
             <div class="input-field col s12">
-              <input placeholder="Cidade" id="save-city" type="text" >
+              <input placeholder="Cidade" id="save-city" type="text">
               <label class="active" for="save-city">Cidade</label>
             </div>
           </div>
@@ -492,8 +523,8 @@
       <div style="margin-top: 1.8em;">
         <div class="input-field col s12">
           <select id="file_format" style="color: black !important;">
-              <option value="default" >Padrão (Estabelecimentos cadastrados)</option>
-              <option value="all" >Todos (Estabelecimentos não cadastrados)</option>
+              <option value="default">Padrão (Estabelecimentos cadastrados)</option>
+              <option value="all">Todos (Estabelecimentos não cadastrados)</option>
           </select>
           <label style="left: 0;">Formatação</label>
         </div>

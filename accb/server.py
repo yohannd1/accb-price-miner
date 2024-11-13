@@ -139,25 +139,15 @@ def route_home() -> str:
     # acaba ficando 0 ou 2 já que 0 + 1 + 1 = 2
     template = "home.html" if 0 >= state.connected_count <= 2 else "notallowed.html"
 
-    if not is_chrome_installed():
-        initial_message = (
-            "Instale uma versão qualquer do Google Chrome para realizar uma pesquisa."
-        )
-    elif len(product_names) == 0:
-        initial_message = "Cadastre pelo menos um produto para realizar uma pesquisa"
-    else:
-        initial_message = "Selecione um município para prosseguir com a pesquisa"
-
     return render_template(
         template,
-        initial_message=initial_message,
         city_names=city_names,
         ongoing_searches_pairs=ongoing_searches_pairs,
         searches=searches,
         product_len=len(product_names),
         months=MONTHS_PT_BR,
         active_month=day,
-        chrome_installed=is_chrome_installed(),
+        is_chrome_installed=is_chrome_installed(),
         years=search_years,
     )
 
@@ -270,9 +260,8 @@ def route_select_estab() -> str:
 
     db = state.db_manager
     city = request.args.get("city")
-    estab = db.get_estab_old()
-    estab_list = [e for e in estab if e[0] == city]
-    return json.dumps(estab_list)
+    estabs = [e for e in db.get_estab_old() if e[0] == city]
+    return {"status": "success", "estabs": estabs}
 
 
 @app.route("/remove_estab")
