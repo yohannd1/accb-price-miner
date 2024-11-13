@@ -15,29 +15,24 @@ const updateProgressBar = (newValue) => {
     pb.style.width = encoded;
 };
 
-const setOption = (key, value) => {
-    $.ajax({
-        async: false,
-        type: "GET",
-        url: "/set_option",
-        data: { key: key, value: JSON.stringify(value) },
-    });
+const getGenericJson = async (url, data = undefined) => {
+    const args = { async: true, type: "GET", url: url, data: data };
+    return $.ajax(args);
 };
 
-const getOption = (key) => {
-    const result = $.ajax({
-        async: false,
-        type: "GET",
-        url: "/get_option",
-        data: { key: key },
-    }).responseJSON;
+const setOption = async (key, value) => {
+    return getGenericJson("/set_option", { key: key, value: JSON.stringify(value) });
+};
 
-    return result.value;
+const getOption = async (key) => {
+    const r = await getGenericJson("/get_option", { key: key });
+    console.assert(r.status === "success", "Failed to get option");
+    return r.value;
 };
 
 /**
  * Filtra a aba de pesquisa de acordo com o mês passado
- * @param  {string} month
+ * @param {string} month
  */
 function filter_search(month) {
     $.get("/select_search_info", { month: month }, (response) => {
@@ -287,7 +282,7 @@ const custom_select_search = () => {
 
 /**
  * Lista todos os estabelecimentos para uma cidade de id CITY, na pagina de configuração.
- * @param  {integer} city=undefined
+ * @param {integer} city=undefined
  */
 const list_estab = (city = undefined) => {
     if (city == undefined)
@@ -312,8 +307,8 @@ const list_estab = (city = undefined) => {
                 <div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
                     <p>${value[1]}</p>
                     <div class="right">
-                        <a  id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large   primary_color edit "  ><i class="fa fa-edit"></i></a>
-                        <a  value="${value[1]}" class="remove-estab btn-floating btn-large  red " data-position="left" ><i class="fa fa-minus"></i></a>
+                        <a id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large primary_color edit " ><i class="fa fa-edit"></i></a>
+                        <a value="${value[1]}" class="remove-estab btn-floating btn-large red " data-position="left" ><i class="fa fa-minus"></i></a>
                     </div>
                 </div>
             `).appendTo("#list-config").hide().slideDown("slow");
@@ -325,7 +320,7 @@ const list_estab = (city = undefined) => {
 
 /**
  * Lista todos os dados de pesquisas para uma pesquisa de id search_id, na pagina de pesquisas.
- * @param  {integer} search_id=undefined
+ * @param {integer} search_id=undefined
  */
 const list_search = (search_id = undefined) => {
     $("#search-loader").show();
@@ -397,8 +392,8 @@ const list_product = () => {
                     <div class="z-depth-3 product-config edit-product" id="ed-${value[0]}" value="${value[0]}">
                         <p>${value[0]}</p>
                         <div class="right">
-                            <a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large   primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
-                            <a  value="${value[0]}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
+                            <a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
+                            <a value="${value[0]}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
                         </div>
                     </div>
                 `;
@@ -418,8 +413,8 @@ const list_product = () => {
 // Conteudo do modal dinamico
 /**
  * Modal dinâmico que retorna o conteúdo do estabelecimento estab_name para uma cidade cities filtrada.
- * @param  {string} estab_name
- * @param  {Array(string)} cities
+ * @param {string} estab_name
+ * @param {Array(string)} cities
  */
 const get_modal_content = (estab_name, cities) => {
     $('#edit-modal .modal-content').remove();
@@ -464,7 +459,7 @@ const get_modal_content = (estab_name, cities) => {
                 </div>
                 <div class="modal-menu">
                     <button id="cancel" class="primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
-                    <button id="save-edit" class="primary_color   btn-large">Salvar Alterações</button>
+                    <button id="save-edit" class="primary_color btn-large">Salvar Alterações</button>
                 </div>
         </div>
     `
@@ -481,7 +476,7 @@ const get_modal_content = (estab_name, cities) => {
 
 /**
  * Modal dinâmico que retorna o conteúdo do produto product_name.
- * @param  {string} product_name
+ * @param {string} product_name
  */
 const get_modal_content_product = (product_name) => {
     $('#edit-modal-product .modal-content').remove();
@@ -513,7 +508,7 @@ const get_modal_content_product = (product_name) => {
                 </div>
                 <div class="modal-menu" style="position: relative;">
                     <button id="cancel" class="primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
-                    <button id="save-edit-product" class="primary_color   btn-large">Salvar Alterações</button>
+                    <button id="save-edit-product" class="primary_color btn-large">Salvar Alterações</button>
                 </div>
         </div>
     `
@@ -530,7 +525,7 @@ const get_modal_content_product = (product_name) => {
 // Cria novo estab adidiconado e o coloca no front end
 /**
  * Adiciona um novo elemento .estab para a listagem de estabs com o nome novo dele. Chamado pel modal de criação de estabelecimento.
- * @param  {string} new_estab
+ * @param {string} new_estab
  */
 const createEstabElement = (new_estab) => {
     var element =
@@ -538,8 +533,8 @@ const createEstabElement = (new_estab) => {
         <div class="z-depth-3 estab-config edit" id="ed-${new_estab}" value="${new_estab}">
             <p>${new_estab}</p>
             <div class="right">
-                <a  id="e-${new_estab}" value="${new_estab}" class="btn-floating btn-large   primary_color edit" ><i class="fa fa-edit"></i></a>
-                <a  value="${new_estab}" class="remove-estab btn-floating btn-large   red"><i class="fa fa-minus"></i></a>
+                <a id="e-${new_estab}" value="${new_estab}" class="btn-floating btn-large primary_color edit" ><i class="fa fa-edit"></i></a>
+                <a value="${new_estab}" class="remove-estab btn-floating btn-large red"><i class="fa fa-minus"></i></a>
             </div>
         </div>
         `;
@@ -563,30 +558,28 @@ const openFolder = (path) => {
 // Cria novo produto adidiconado e o coloca no front end
 /**
  * Adiciona um novo elemento .product para a listagem de produtos com o nome novo dele. Chamado pel modal de criação de produtos.
- * @param  {string} new_product
+ * @param {string} new_product
  */
 const create_product_element = (new_product) => {
-
-    var element =
+    const element =
         `
         <div class="z-depth-3 product-config edit-product" id="ed-${new_product}" value="${new_product}">
             <p>${new_product}</p>
             <div class="right">
-                <a style="margin-right: 10px;" id="e-${new_product}" value="${new_product}" class="btn-floating btn-large   primary_color edit-product" ><i class="fa fa-edit"></i></a>
-                <a  value="${new_product}" class="remove-product btn-floating btn-large   red"><i class="fa fa-minus"></i></a>
+                <a style="margin-right: 10px;" id="e-${new_product}" value="${new_product}" class="btn-floating btn-large primary_color edit-product" ><i class="fa fa-edit"></i></a>
+                <a value="${new_product}" class="remove-product btn-floating btn-large red"><i class="fa fa-minus"></i></a>
             </div>
         </div>
         `
 
     $("#list-product").prepend(element).hide().fadeIn(1000);
     $("#no-result-product").fadeOut("500");
-
 }
 
 /**
  * Confirma se todos os dados foram preenchidos em um dado array info.
- * @param  {Array} info
- * @param  {boolean} edit=false
+ * @param {Array} info
+ * @param {boolean} edit=false
  */
 const validateForm = (info, edit = false) => {
     if (edit)
@@ -633,13 +626,13 @@ $(document).ready(() => {
 
     const socket = io();
 
-    socket.on("connect", () => {
+    socket.on("connect", async () => {
         console.log(`Conectado - id do socket: ${socket.id}`);
 
-        const path_option = getOption("path");
+        const path_option = await getOption("path");
         if (path_option === undefined) {
             alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-            setOutputPath();
+            setOutputPath().then();
         } else {
             socket.emit("output_path_from_options", { path: path_option });
         }
@@ -656,15 +649,19 @@ $(document).ready(() => {
         updateProgressBar(parseFloat(val));
     });
 
-    const wait_log = document.querySelector("div#progress p#wait-log");
+    const wait_log = $("div#progress p#wait-log");
+
+    getOption("show_search_extras").then(val => {
+        if (!val) wait_log.hide();
+    });
 
     socket.on("search.started_waiting", (time) => {
-        const fmt = time.toFixed(2);
-        wait_log.innerText = `Aguardando por até ${fmt}s...`;
+        const time_fmt = time.toFixed(2);
+        wait_log.html(`Aguardando por até ${time_fmt}s...`);
     });
 
     socket.on("search.finished_waiting", () => {
-        wait_log.innerText = "...";
+        wait_log.html("...");
     });
 
     const finalizeSearch = () => {
@@ -729,21 +726,21 @@ $(document).ready(() => {
 
             if (response.length == 0) {
                 $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
-                $("#select-all").addClass("disabled");
-                $("#start").addClass("disabled");
             } else {
-                $("#select-all").removeClass("disabled");
-                $("#start").removeClass("disabled");
-
                 $("#listagem h5").html("Selecione pelo menos um estabelecimento para prosseguir");
                 $(".tabs a").addClass('disable');
 
                 response.map((value, index) => {
-                    var delay = 400 + index * 100;
-                    $("#listagem  .select_wrapper").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${index}" >${value[1]}</a>`).hide().fadeIn(delay))
+                    const delay = 400 + index * 100;
+                    const elem = $(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${index}" >${value[1]}</a>`)
+                        .hide()
+                        .fadeIn(delay);
+
+                    $("#listagem .select_wrapper").append(elem);
                 });
             }
 
+            $("#main-navigation").hide();
             $("#loader").hide();
         });
     });
@@ -1066,6 +1063,7 @@ $(document).ready(() => {
 
         $('ul.tabs').tabs('select', 'progress');
         $("#main-navigation a").addClass("disable");
+        $("#main-navigation").hide();
         $("#config_path").addClass("disable");
     });
 
@@ -1510,26 +1508,29 @@ $(document).ready(() => {
         });
     });
 
-    if (getOption("warning") === undefined) {
+    getOption("warning").then(opt => {
+        if (opt !== null)
+            return;
+
         $("#warning").modal({});
         setOption("warning", "seen");
-    }
+    });
 
-    const setOutputPath = () => {
-        $.get("/ask_output_path", (response) => {
-            if (response.status !== "success") {
-                alert("Ocorreu um erro durante a escolha do diretório.");
-                return;
-            }
+    const setOutputPath = async () => {
+        const response = await getGenericJson("/ask_output_path");
 
-            setOption("path", response.path);
-            showMessage(`Diretório alterado para ${response.path}`, { notification: false });
-        });
+        if (response.status !== "success") {
+            alert("Ocorreu um erro durante a escolha do diretório.");
+            return;
+        }
+
+        await setOption("path", response.path);
+        showMessage(`Diretório alterado para ${response.path}`, { notification: false });
     };
 
     socket.on("invalid_output_path", () => {
         alert("O diretório de arquivos registrado é inválido! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-        setOutputPath();
+        setOutputPath().then();
     });
 
     socket.connect("http://127.0.0.1:5000/");
@@ -1538,7 +1539,7 @@ $(document).ready(() => {
         e.preventDefault();
 
         alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-        setOutputPath();
+        setOutputPath().then();
     });
 
     $("#close_app").on("click", () => {
@@ -1549,9 +1550,72 @@ $(document).ready(() => {
         window.close();
     });
 
-    $("#open_folder").on("click", () => {
-        const path = getOption("path");
+    $("#open_folder").on("click", async () => {
+        const path = await getOption("path");
         if (path)
             openFolder(path);
     });
+
+    (async () => {
+        const settings_list = $("#tab-configuracoes-settings-list");
+        const please_wait = settings_list.find("p#please-wait");
+
+        const out_path_text = $(`<span></span>`);
+
+        const loadCurrentOutputPath = async () => {
+            const out_path = await getOption("path");
+            out_path_text.html(`Caminho de saída: ${out_path}`);
+        };
+
+        const handleSetOutputPath = async () => {
+            await setOutputPath();
+            await loadCurrentOutputPath();
+        };
+
+        const makeBoolOptionButton = async (option) => {
+            const btn = $(`<a class="btn-large primary_color"></a>`);
+
+            const update = (val) => {
+                const text = val ? "sim" : "não";
+                btn.html(text);
+            };
+
+            const toggle = async () => {
+                const val = await getOption(option);
+                await setOption(option, !val);
+                return !val;
+            };
+
+            btn.on("click", async () => {
+                const val = await toggle();
+                await update(val);
+            });
+
+            const initial_value = await getOption(option);
+            await update(initial_value);
+
+            return btn;
+        };
+
+        const opp = $(`<p></p>`);
+        loadCurrentOutputPath();
+        out_path_text.appendTo(opp);
+        $(`<br/><span>Se refere ao caminho para onde os arquivos de pesquisa serão exportados.</span>`).appendTo(opp);
+        $(`<br/><a class="btn-large primary_color">Alterar caminho de saída</a>`).on("click", handleSetOutputPath).appendTo(opp);
+        opp.appendTo(settings_list);
+
+        const ssw = $(`<p></p>`);
+        $(`<span>Mostrar janela do navegador automatizado durante a pesquisa: </span>`).appendTo(ssw);
+        ssw.append(await makeBoolOptionButton("show_search_window"));
+        $(`<br/><span>Para entender como a pesquisa está sendo feita em tempo real. Útil para testes.</span>`).appendTo(ssw);
+        ssw.appendTo(settings_list);
+
+        const sse = $(`<p></p>`);
+        $(`<span>Mostrar detalhes extra na pesquisa: </span>`).appendTo(sse);
+        sse.append(await makeBoolOptionButton("show_search_extras"));
+        $(`<br/><span>Mostra alguns detalhes extra na pesquisa, como quanto tempo está sendo aguardado para a próxima ação.</span>`).appendTo(sse);
+        sse.appendTo(settings_list);
+
+        please_wait.hide();
+    })();
 });

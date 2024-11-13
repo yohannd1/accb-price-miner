@@ -14,7 +14,7 @@
   </script>
   <script type='text/javascript' src="{{ url_for('static', filename='js/materialize.js') }}"></script>
   <script type='text/javascript' src="{{ url_for('static', filename='js/modal.js') }}"></script>
-  <script type="module" src="{{ url_for('static', filename='js/home.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/home.mjs') }}"></script>
 {% endblock %}
 
 {% macro img(src,alt) %}
@@ -44,8 +44,8 @@
       {{ top_logos() }}
 
       <div style="margin-top: 2em;">
-        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path"><i class="fa fa-cogs"></i></a>
-        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large  primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path"><i class="fa fa-cogs"></i></a>
+        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
         <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder"><i class="fa fa-folder"></i></a>
         <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app"><i class="fa fa-close"></i></a>
       </div>
@@ -67,7 +67,7 @@
           Progresso
         </a></li>
 
-        <li class="tab col s3"><a href="#configurar"  id="config"  class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos">
+        <li class="tab col s3"><a href="#configurar" id="config" class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos">
           <i class="fa fa-cogs"></i>
           Estabelecimentos
         </a></li>
@@ -123,7 +123,7 @@
 
           <h5>Ou selecione uma das pesquisas interrompidas (backups):</h5>
 
-          <div class="select-wrapper-main tab-pesquisar-backup-list">
+          <div class="select-wrapper-main" id="tab-pesquisar-backup-list">
             {% for ong, sch in ongoing_searches_pairs %}
               <button
                 class="resume-ongoing-search btn-large"
@@ -178,14 +178,14 @@
             {% endfor %}
           </select>
         </div>
-        <a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large  primary_color tooltipped"  data-position="left" data-tooltip="Adicionar Cidade"><i class="fa fa-plus"></i>
+        <a href="#add-city-modal" rel="modal:open" class="right round btn-floating btn-large primary_color tooltipped" data-position="left" data-tooltip="Adicionar Cidade"><i class="fa fa-plus"></i>
         </a>
-        <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Editar Cidade" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i>
+        <a style="margin-right: 10px;" class="right round btn-floating btn-large primary_color tooltipped" data-position="bottom" data-tooltip="Editar Cidade" href="#edit-city" rel="modal:open"><i class="fa fa-edit"></i>
         </a>
-        <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="bottom" data-tooltip="Remover Cidade" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i>
+        <a style="margin-right: 10px;" class="right round btn-floating btn-large primary_color tooltipped" data-position="bottom" data-tooltip="Remover Cidade" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i>
         </a>
-        <a id="export" class="primary_color left  btn-large">Exportar</a>
-        <a id="import" class="primary_color left  btn-large">
+        <a id="export" class="primary_color left btn-large">Exportar</a>
+        <a id="import" class="primary_color left btn-large">
           Importar
         </a>
         <div style="width: 0; height: 0; overflow: hidden;">
@@ -195,10 +195,10 @@
       <div class="tab-content-config">
         <div class="config-title">
           <h5>Listagem de Estabelecimentos</h5>
-          <a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Estabelecimento" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
+          <a class="right round btn-floating btn-large primary_color tooltipped" data-position="left" data-tooltip="Adicionar Estabelecimento" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
         </div>
         <div id="list-config">
-          <div style="display: none;" class="z-depth-3 estab-config-result" id="no-result" style="justify-content: center;"><a style="color: white; width: 100%;"  href="#add-modal" rel="modal:open">
+          <div style="display: none;" class="z-depth-3 estab-config-result" id="no-result" style="justify-content: center;"><a style="color: white; width: 100%;" href="#add-modal" rel="modal:open">
             <p>Nenhum estabelecimento cadastrado, pressione para adicionar.</p>
             </a>
           </div>
@@ -209,7 +209,7 @@
       <div class="tab-content-config">
         <div class="config-title">
           <h5>Listagem de Produtos</h5>
-          <a class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
+          <a class="right round btn-floating btn-large primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
         </div>
         <div id="list-product">
           <div style="display: none;" class="z-depth-3 product-config" id="no-result-product" style="justify-content: center;">
@@ -248,14 +248,14 @@
             </div>
           </div>
           <div>
-            <a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large  primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
-            <a class="right round btn-floating btn-large  primary_color tooltipped"  id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
-            <a style="margin-right: 10px;" class="right round btn-floating btn-large  primary_color tooltipped"  id="clean-search" data-position="left" data-tooltip="Limpar Pesquisas"><i class="fa fa-trash"></i></a>
+            <a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
+            <a class="right round btn-floating btn-large primary_color tooltipped" id="remove-search" data-position="left" data-tooltip="Remover Pesquisa"><i class="fa fa-minus"></i></a>
+            <a style="margin-right: 10px;" class="right round btn-floating btn-large primary_color tooltipped" id="clean-search" data-position="left" data-tooltip="Limpar Pesquisas"><i class="fa fa-trash"></i></a>
           </div>
         </div>
         <h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
         <div class="input-field search_div">
-          <input placeholder="Nome do Estabelecimento: dalnordes .." class="browser-default z-depth-2" id="search_bar">
+          <input placeholder="Nome do Estabelecimento: dalnordes..." class="browser-default z-depth-2" id="search_bar"/>
           <a class="round btn-floating btn-large primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
         </div>
         <div id="list-search">
@@ -284,24 +284,24 @@
         </div>
         <span class="left duration">Tempo de duração da pesquisa: ???</span>
     </div>
+
     <div id="about" class="col s12 tab">
+      {% macro about_url(icon, name, href) %}
+        <div>
+          <a target="_blank" href="{{ href }}">
+            <img src="{{ url_for('static', filename=icon) }}"/>
+            {{ name }}
+          </a>
+        </div>
+      {% endmacro %}
+
       <div class="tab-content-config row center" style="padding-bottom: 5%;">
         <div id="doc" class="row tab" style="margin: 1em 0;">
-        <div class="config-title">
-          <h5>Colaboradores</h5>
-        </div>
+          <div class="config-title">
+            <h5>Colaboradores</h5>
+          </div>
           <div class="col s12 m12 center about-item">
             <div class="about-container">
-
-{% macro about_url(icon, name, href) %}
-  <div>
-    <a target="_blank" href="{{ href }}">
-      <img src="{{ url_for('static', filename=icon) }}"/>
-      {{ name }}
-    </a>
-  </div>
-{% endmacro %}
-
               <div class="about-profile z-depth-5">
                 <div>
                   {{ about_url("img/linkedin.svg", "Samuel Mendonça Vasconcelos", "https://linkedin.com/in/samuel-vasconcelos-b196001ba/") }}
@@ -322,31 +322,30 @@
                   {{ about_url("img/gmail.svg", "mpires@uesc.br", "mailto:mpires@uesc.br") }}
                 </div>
               </div>
-
             </div>
           </div>
-        </div>
-        <div id="doc2" class="row tab" style="margin: 1em 0; position: relative;">
-          <div class="config-title">
-            <h5>Sobre o programa</h5>
+          <div id="doc2" class="row tab" style="margin: 1em 0; position: relative;">
+            <div class="config-title">
+              <h5>Sobre o programa</h5>
+            </div>
+            <div class="about-program">
+              <p>{{ sobre_programa() }}</p>
+            </div>
           </div>
-          <div class="about-program">
-            <p>{{ sobre_programa() }}</p>
-          </div>
+          <ul id="sec-navigation" class="tabs" style="width: 100%;">
+            <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>Colaboradores</a></li>
+            <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i>O programa</a></li>
+          </ul>
         </div>
-        <ul id="sec-navigation" class="tabs" style="width: 100%;">
-          <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>Colaboradores</a></li>
-          <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i>O programa</a></li>
-        </ul>
+      </div>
     </div>
-    </div>
+
     <div id="tab-configuracoes" class="col s12 tab">
       <div class="tab-content row center">
         <h5>Configurações</h5>
-        <p>TODO: popular isso aqui por JS</p>
-        <p>TODO: caminho de saída (export path)</p>
-        <p>TODO: mostrar janela do navegador automatizado durante a pesquisa (explicar o que é)</p>
-        <p>TODO: mostrar "aguardando por x segundos" durante a pesquisa</p>
+        <div class="select-wrapper-main" id="tab-configuracoes-settings-list">
+          <p id="please-wait">Por favor aguarde...</p>
+        </div>
       </div>
     </div>
   </main>
@@ -374,13 +373,13 @@
               <label class="active" for="product_name">Produto</label>
             </div>
             <div class="input-field col s12">
-              <input  placeholder="Palavras Chave" id="keywords" type="text">
+              <input placeholder="Palavras Chave" id="keywords" type="text">
               <label class="active" for="">Palavras Chave</label>
             </div>
           </div>
         </div>
         <div class="modal-menu" style="position: relative;">
-          <button  class="cancel primary_color btn-large" href="#add-modal-product" rel="modal:close">Cancelar</button>
+          <button class="cancel primary_color btn-large" href="#add-modal-product" rel="modal:close">Cancelar</button>
           <button id="save-add-product" class="primary_color btn-large">Adicionar Produto</button>
         </div>
     </div>
@@ -407,7 +406,7 @@
               <label class="active" for="estab_name-save">Estabelecimento</label>
             </div>
             <div class="input-field col s6">
-              <input  placeholder="Nome na Plataforma" id="web_name-save" type="text">
+              <input placeholder="Nome na Plataforma" id="web_name-save" type="text">
               <label class="active" for="web_name-save">Nome na Plataforma</label>
             </div>
             <div class="input-field col s6">
@@ -417,7 +416,7 @@
           </div>
         </div>
         <div class="modal-menu">
-          <button  class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
+          <button class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
           <button id="save-add" class="primary_color btn-large">Adicionar Estabelecimento</button>
         </div>
     </div>
@@ -429,47 +428,49 @@
       <div>
         <h5 class="modal-title">Deletar Cidade</h5>
       </div>
-        <div>
-          <div style="margin: 20px 0;">
-            <div class="input-field col s12">
-              <select id="city-delete-select" style="color: black !important;">
-                {% for city in city_names %}
-                  <option value="{{ city_name }}">{{ city_name }}</option>
-                {% endfor %}
-              </select>
-              <label>Cidade</label>
-            </div>
+      <div>
+        <div style="margin: 20px 0;">
+          <div class="input-field col s12">
+            <select id="city-delete-select" style="color: black !important;">
+              {% for city in city_names %}
+                <option value="{{ city_name }}">{{ city_name }}</option>
+              {% endfor %}
+            </select>
+            <label>Cidade</label>
+          </div>
         </div>
       </div>
       <div class="modal-menu">
-        <button  class="cancel primary_color btn-large" href="#delete-city" rel="modal:close">Cancelar</button>
+        <button class="cancel primary_color btn-large" href="#delete-city" rel="modal:close">Cancelar</button>
         <button id="save-delete-city" class="primary_color btn-large">Deletar Cidade</button>
       </div>
+    </div>
   </div>
+
   <!-- MODAL EDITANDO CIDADE -->
   <div id="edit-city" class="modal" style="height: 40%; min-height: 350px;">
     <div class="modal-content">
       <div>
         <h5 class="modal-title">Editar Cidade</h5>
       </div>
-        <div>
-          <div style="margin: 20px 0;">
-            <div class="input-field col s6">
-              <select id="city-edit-select" style="color: black !important;">
-                {% for city in city_names %}
-                  <option value="{{ city_name }}">{{ city_name }}</option>
-                {% endfor %}
-              </select>
-              <label>Cidade</label>
-            </div>
-            <div class="input-field col s6">
-              <input placeholder="Cidade" id="city-edit" type="text">
-              <label class="active" for="city-edit">Novo Nome</label>
-            </div>
+      <div>
+        <div style="margin: 20px 0;">
+          <div class="input-field col s6">
+            <select id="city-edit-select" style="color: black !important;">
+              {% for city in city_names %}
+                <option value="{{ city_name }}">{{ city_name }}</option>
+              {% endfor %}
+            </select>
+            <label>Cidade</label>
+          </div>
+          <div class="input-field col s6">
+            <input placeholder="Cidade" id="city-edit" type="text">
+            <label class="active" for="city-edit">Novo Nome</label>
+          </div>
         </div>
       </div>
       <div class="modal-menu">
-        <button  class="cancel primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
+        <button class="cancel primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
         <button id="save-edit-city" class="primary_color btn-large">Salvar Alterações</button>
       </div>
   </div>
@@ -480,18 +481,18 @@
       <div>
         <h5 class="modal-title">Adicionar Cidade</h5>
       </div>
-        <div>
-          <div style="margin: 20px 0;">
-            <div class="input-field col s12">
-              <input placeholder="Cidade" id="save-city" type="text">
-              <label class="active" for="save-city">Cidade</label>
-            </div>
+      <div>
+        <div style="margin: 20px 0;">
+          <div class="input-field col s12">
+            <input placeholder="Cidade" id="save-city" type="text">
+            <label class="active" for="save-city">Cidade</label>
           </div>
         </div>
-        <div class="modal-menu">
-          <button  class="cancel primary_color btn-large" href="#add-city-modal" rel="modal:close">Cancelar</button>
-          <button id="add-city" class="primary_color btn-large">Adicionar Cidade</button>
-        </div>
+      </div>
+      <div class="modal-menu">
+        <button class="cancel primary_color btn-large" href="#add-city-modal" rel="modal:close">Cancelar</button>
+        <button id="add-city" class="primary_color btn-large">Adicionar Cidade</button>
+      </div>
     </div>
   </div>
 
@@ -499,7 +500,7 @@
   <div id="warning" class="modal">
     <div class="modal-content" style="height: 100%">
       <div>
-        <h5 class="modal-title"  style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Dicas para utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
+        <h5 class="modal-title" style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Dicas para utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
       </div>
       <ul class="browser-default">
         <li>Atualizar a página do programa manualmente irá fechar o programa.</li>
@@ -508,7 +509,7 @@
         <li>É possível pesquisar por qualquer campo da tabela de pesquisas disponível na janela de pesquisas.</li>
         <li>Evite o máximo atualizar a página manualmente ou fecha-la durante uma pesquisa para minimizar a probabilidade de erro causado durante uma pesquisa.</li>
         <li>Só é possível abrir uma aba do programa por vez, caso seja aberto uma outra janela você encontrará um aviso o notificando para voltar para a janela principal.</li>
-        <li>Todos os endereços dos estabelecimentos devem ser cadastrados da forma mais identica possível aos valores encontrados no  Preço da Hora - Bahia para máximizar as chances de uma filtragem correta.</li>
+        <li>Todos os endereços dos estabelecimentos devem ser cadastrados da forma mais identica possível aos valores encontrados no Preço da Hora - Bahia para máximizar as chances de uma filtragem correta.</li>
         <li>Antes de cadastrar uma cidade, confira no site do preço da hora como o nome do município aparece, isso pode ser feito nos filtros de pesquisa em : Alterar Localização &gt; (popup) Usar centro do município &gt; Insira o nome do município desejado. </li>
       </ul>
     </div>
@@ -523,16 +524,12 @@
       <div style="margin-top: 1.8em;">
         <div class="input-field col s12">
           <select id="file_format" style="color: black !important;">
-              <option value="default">Padrão (Estabelecimentos cadastrados)</option>
-              <option value="all">Todos (Estabelecimentos não cadastrados)</option>
+            <option value="default">Padrão (Estabelecimentos cadastrados)</option>
+            <option value="all">Todos (Estabelecimentos não cadastrados)</option>
           </select>
           <label style="left: 0;">Formatação</label>
         </div>
-        <div id="file-list" style="max-height: 250px;overflow: auto; width: 100%;display: inline-flex; flex-wrap: wrap; justify-content: center; margin-bottom: 15px; align-items: center;">
-          <!-- <div class="select_wrapper col s12">
-            <i class="fa fa-spinner fa-pulse" id="loader"></i>
-          </div> -->
-        </div>
+        <div id="file-list"></div>
         <div class="modal-menu" style="position: relative;">
           <button class="cancel primary_color btn-large" href="#add-modal" rel="modal:close">Cancelar</button>
           <button id="select-all-file" class=" btn-large primary_color">Selecionar Todos</button>

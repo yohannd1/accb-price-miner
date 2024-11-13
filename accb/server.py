@@ -110,6 +110,12 @@ def route_home() -> str:
 
     db = state.db_manager
 
+    if db.get_option("show_search_window") is None:
+        db.set_option("show_search_window", False)
+
+    if db.get_option("show_search_extras") is None:
+        db.set_option("show_search_extras", True)
+
     product_names = db.run_query("SELECT product_name FROM product")
 
     ongoing_searches_pairs = [
@@ -255,7 +261,7 @@ def route_update_product() -> RequestDict:
 
 
 @app.route("/select_estab")
-def route_select_estab() -> str:
+def route_select_estab() -> RequestDict:
     """Rota de seleção de estabelecimentos no banco de dados."""
 
     db = state.db_manager
@@ -685,7 +691,8 @@ def search(
 
     while True:
         try:
-            is_headless = False
+            is_headless = not db.get_option("show_search_window")
+
             with Defer(open_chrome_driver(is_headless=is_headless), deinit=close_driver) as driver:
                 scraper = Scraper(opts, state, driver)
                 state.scraper = scraper
