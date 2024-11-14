@@ -471,9 +471,9 @@ class DatabaseManager:
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            query = """UPDATE search SET done=?, duration=? WHERE id=?"""
+            query = """UPDATE search SET done=-1, duration=? WHERE id=?"""
             cursor.execute(
-                query, (int(search._done), search.total_duration_mins, search.id)
+                query, (search.total_duration_mins, search.id)
             )
 
     def run_query(self, query: str, args: tuple = ()) -> list[Any]:
@@ -491,7 +491,7 @@ class DatabaseManager:
             if patt.match(a) is not None:
                 continue
             raise ValueError(
-                f"valor não passou o check de argumento seguro para query: {repr(a)}"
+                f"{repr(a)} não passou o check de argumento seguro para query"
             )
 
         return fmt.format(*args)
@@ -508,7 +508,7 @@ class DatabaseManager:
 
     def get_search_by_id(self, id_: int) -> Optional[Search]:
         result = self.run_query(
-            "SELECT done, city_name, search_date, duration FROM search WHERE id=?",
+            "SELECT city_name, search_date, duration FROM search WHERE id=?",
             (id_,),
         )
 
@@ -519,10 +519,9 @@ class DatabaseManager:
 
         return Search(
             id=id_,
-            _done=bool(tup[0]),
-            city_name=tup[1],
-            start_date=tup[2],
-            total_duration_mins=tup[3],
+            city_name=tup[0],
+            start_date=tup[1],
+            total_duration_mins=tup[2],
         )
 
     def delete_search_by_id(self, id_: int) -> None:

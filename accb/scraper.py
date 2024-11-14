@@ -42,30 +42,24 @@ class ScraperOptions:
 
 
 class ScraperError(Exception):
+    """Erro genérico do Scraper"""
+
+    pass
+
+
+class ScraperInterrupt(Exception):
+    """Avisa que o scraper foi interrompido."""
+
     pass
 
 
 class ScraperRestart(Exception):
+    """Avisa que o scraper foi interrompido e precisa ser reiniciado."""
+
     pass
 
 
-class SearchResponse:
-    @dataclass
-    class DefaultChecks:
-        pass
-
-    @dataclass
-    class Error:
-        message: str
-
-    @dataclass
-    class Sleep:
-        duration: float
-
-    All = DefaultChecks | Sleep | Error
-
-
-Mode = Literal["default", "errored", "cancelled", "paused"]
+ScraperMode = Literal["default", "errored", "cancelled", "paused"]
 
 
 class Scraper:
@@ -77,16 +71,25 @@ class Scraper:
         self.driver = driver
         self.db = self.state.db_manager
 
-        self.mode: Mode = "default"
+        self.mode: ScraperMode = "default"
 
         self.start_time = time()
         """Valor do tempo no inicio da pesquisa."""
 
-        self.time_coeff = 4
+        self.time_coeff = 4.0
         """Valor usado no cálculo de tempo"""
 
+        self.sleep_step = 1.0
+        """Unidade de tempo quando aguardando algo. Geralmente são feitas verificações a cada unidade."""
+
+    def pause(self) -> None:
+        self.mode = "paused"
+
+    def cancel(self) -> None:
+        self.mode = "cancelled"
+
     @staticmethod
-    def is_connected(test_url: str = "https://www.example.org/") -> bool:
+    def _is_connected(test_url: str = "https://www.example.org/") -> bool:
         """Confere a conexão com a URL_PRECODAHORA desejada."""
 
         try:
@@ -95,12 +98,6 @@ class Scraper:
 
         except URLError:
             return False
-
-    def pause(self) -> None:
-        self.mode = "paused"
-
-    def cancel(self) -> None:
-        self.mode = "cancelled"
 
     def _delete_related_search(self) -> None:
         db = self.state.db_manager
@@ -116,17 +113,12 @@ class Scraper:
             case "errored":
                 # FIXME: isso aqui faz com que a pesquisa seja cancelada e tenha que ser reiniciada. Talvez seja melhor tentar resumir ela por backup?
                 self._delete_related_search()
-                msg = "Ocorreu um erro de rede durante a pesquisa."
-                emit("show_notification", msg, broadcast=True)
 
             case "cancelled":
                 self._delete_related_search()
-                msg = "A pesquisa foi cancelada, todos os dados foram excluídos."
-                emit("show_notification", msg, broadcast=True)
 
             case "paused":
-                msg = "A pesquisa foi parada, todos os dados foram salvos no banco de dados local."
-                emit("show_notification", msg, broadcast=True)
+                pass
 
             case _ as unreachable:
                 assert_never(unreachable)
@@ -143,7 +135,7 @@ class Scraper:
         log(f"[Scraper.send_logs]: {final}")
         emit("search.log", list(messages), broadcast=True)
 
-    def extract_and_save_data(self, keyword: str) -> None:
+    def _extract_and_save_data(self, product: str, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
 
         elements = self.driver.page_source
@@ -156,7 +148,15 @@ class Scraper:
         def adjust_and_clean(x: str) -> str:
             return irrelevant_patt.sub(" ", x).lstrip()
 
-        for item in soup.find_all(True, {"class": "flex-item2"}):
+        all_elements = list(soup.find_all(True, {"class": "flex-item2"}))
+
+        if len(all_elements) == 0:
+            # TODO: adicionar warning na pesquisa
+            self.send_logs(
+                f"AVISO: Nenhum item encontrado com palavra-chave {keyword} (produto {product})"
+            )
+
+        for item in all_elements:
             product_name = adjust_and_clean(item.find("strong").text)
             product_address = adjust_and_clean(
                 item.find(attrs={"data-original-title": "Endereço"}).parent.text
@@ -183,7 +183,7 @@ class Scraper:
 
         self.send_logs(*logs)
 
-    def smart_sleep(self, base: float, unit_size: float = 1.0) -> None:
+    def _sleep(self, base: float, unit_size: float = 1.0) -> None:
         """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo.
 
         A cada `unit_size` segundos, verifica se a pesquisa foi cancelada, e para se este for o caso.
@@ -195,22 +195,38 @@ class Scraper:
         emit("search.started_waiting", value, broadcast=True)
 
         to_sleep = value
-        while to_sleep > 0.0 and self.mode == "default":
+        while to_sleep > 0.0:
             amount = min(to_sleep, unit_size)
             sleep(amount)
             to_sleep -= amount
 
+            self._check_interrupt()
+
         emit("search.finished_waiting", broadcast=True)
 
-    def _is_in_captcha(self) -> bool:
-        return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
+    def _check_interrupt(self) -> None:
+        if self.mode == "default":
+            return
 
-    def _handle_captcha(self) -> None:
-        """Abre o captcha e aguarda o usuário resolver o captcha."""
+        if self.mode == "paused":
+            raise ScraperInterrupt(
+                "Pesquisa pausada com sucesso - progresso salvo no banco de dados."
+            )
 
-        if not self.is_connected():
+        if self.mode == "cancelled":
+            raise ScraperInterrupt("Pesquisa cancelada com sucesso.")
+
+        if self.mode == "errored":
+            # XXX: acho que isso aqui nunca acontece (esse estado só ocorre quando o exception handler pega um Exception de qualquer modo), mas vai que.
+            raise ScraperInterrupt("Pesquisa cancelada por erro.")
+
+        raise ScraperInterrupt("Pesquisa interrompida por motivo desconhecido.")
+
+    def _check_connection(self) -> None:
+        if not self._is_connected():
             raise ScraperError("Sem conexão com a rede!")
 
+    def _check_captcha(self) -> None:
         if self._is_in_captcha():
             # a página inicial redireciona automaticamente p/ a URL de captcha
             webbrowser.open(self.options.url)
@@ -221,24 +237,11 @@ class Scraper:
                 message="O captcha foi ativado. Foi aberta uma aba no seu navegador - resolva-o lá e depois pressione OK nesta mensagem.",
             )
 
+            self.mode = "paused"
             raise ScraperRestart()
 
-    def run(self) -> None:
-        for response in self.begin_search():
-            self._handle_captcha()
-
-            if self.mode != "default":
-                break
-
-            match response:
-                case SearchResponse.Error(message=message):
-                    raise ScraperError(message)
-                case SearchResponse.Sleep(duration=duration):
-                    self.smart_sleep(duration)
-                case SearchResponse.DefaultChecks():
-                    pass
-                case _ as unreachable:
-                    assert_never(unreachable)
+    def _is_in_captcha(self) -> bool:
+        return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
 
     def _wait_for_element(
         self, by: str, value: str, timeout: float
@@ -247,31 +250,30 @@ class Scraper:
             emit("search.finished_waiting", broadcast=True)
 
         emit("search.started_waiting", timeout, broadcast=True)
+        sleep_left = timeout
         with Defer(None, deinit=deinit):
-            try:
-                ec = EC.presence_of_element_located((by, value))
-                WebDriverWait(self.driver, timeout).until(ec)
-                return self.driver.find_element(by, value)
-            except TimeoutException:
-                return None
+            while sleep_left > 0.0:
+                self._check_interrupt()
+
+                try:
+                    ec = EC.presence_of_element_located((by, value))
+                    WebDriverWait(self.driver, self.sleep_step).until(ec)
+                    return self.driver.find_element(by, value)
+                except TimeoutException:
+                    sleep_left -= self.sleep_step
+
+            self._check_interrupt()
+            self._check_connection()
+            self._check_captcha()
+            return None
 
     def _wait_for_element_or_captcha(
         self, by: str, value: str, timeout: float
     ) -> WebElement:
         elem = self._wait_for_element(by, value, timeout)
-        if elem is not None:
-            return elem
-        self._handle_captcha()
+        return elem or self.driver.find_element(by, value)
 
-        elem = self._wait_for_element(by, value, timeout)
-        assert elem is not None
-        return elem
-
-    def begin_search(self) -> Generator[SearchResponse.All, None, None]:
-        Sleep = SearchResponse.Sleep
-        DefaultChecks = SearchResponse.DefaultChecks
-        Error = SearchResponse.Error
-
+    def begin_search(self) -> None:
         ongoing = self.options.ongoing
         driver = self.driver
 
@@ -287,34 +289,31 @@ class Scraper:
 
         # botão que abre o modal referente a localização
         wait_for_element_or_captcha(By.CLASS_NAME, "location-box", 12.0).click()
-        yield Sleep(0.5)
+        self._sleep(0.5)
 
         # botão que abre a opção de inserir o CEP
         wait_for_element_or_captcha(By.ID, "add-center", 8.0).click()
-        yield Sleep(0.5)
+        self._sleep(0.5)
 
         # envia o município desejado para a barra de pesquisa
         sbar_municipio = driver.find_element(By.CLASS_NAME, "sbar-municipio")
         for w in ongoing.city:
             sbar_municipio.send_keys(w)
             sleep(0.05)
-        yield Sleep(0.5)
+        self._sleep(0.5)
 
         # seleciona o município na lista
         driver.find_element(By.CLASS_NAME, "set-mun").click()
-        yield Sleep(0.25)
+        self._sleep(0.25)
 
         # confirma a escolha
         driver.find_element(By.ID, "aplicar").click()
-        yield Sleep(0.25)
+        self._sleep(0.25)
 
         product_count = len(ongoing.products)
 
         for p_idx, p in enumerate_skip(ongoing.products, start=ongoing.current_product):
-            yield DefaultChecks()
-
             product = p.name
-            keywords = p.keywords
 
             progress_value = 100 * p_idx / product_count
 
@@ -325,10 +324,8 @@ class Scraper:
             emit("search.update_progress_bar", progress_value, broadcast=True)
 
             for k_idx, keyword in enumerate_skip(
-                keywords, start=ongoing.current_keyword
+                p.keywords, start=ongoing.current_keyword
             ):
-                yield DefaultChecks()
-
                 self.send_logs(f"Próxima palavra chave: {keyword}")
 
                 duration = (
@@ -346,15 +343,11 @@ class Scraper:
 
                 self.send_logs("Digitando palavra chave...")
 
-                # FIXME: por que que isso tá dando errado??
-                if keyword == "CARNE BOVINA CHA DE DENTRO":
-                    keyword = "CARNE CHA DE DENTRO"
-
                 for w in keyword:
                     e_top_sbar.send_keys(w)
                     sleep(0.05)
                 e_top_sbar.send_keys(Keys.ENTER)
-                yield Sleep(1)
+                self._sleep(1)
 
                 driver.page_source.encode("utf-8")
 
@@ -363,31 +356,33 @@ class Scraper:
                 _ = wait_for_element_or_captcha(By.CLASS_NAME, "flex-item2", 16.0)
 
                 # apertar algumas vezes o botão de mostrar mais resultados na lista
-                yield DefaultChecks()
                 update_threshold = 3.0
                 update_counter = 0.0
                 while True:
-                    if e_update_results := wait_for_element(By.ID, "updateResults", 8.0):
+                    if e_update_results := wait_for_element(
+                        By.ID, "updateResults", 8.0
+                    ):
                         e_update_results.click()
                         update_counter += 1
                     else:
                         # se falhou, aumentar menos, para dar mais chances de procurar mais vezes
                         update_counter += 0.5
 
-                    yield Sleep(0.2)
+                    self._sleep(0.2)
 
                     if update_counter >= update_threshold:
                         break
 
-                self.extract_and_save_data(keyword)
+                self._extract_and_save_data(product, keyword)
 
-        yield DefaultChecks()
+            # voltar para o índice 0 de keyword (para não pular keywords do próximo produto)
+            ongoing.current_keyword = 0
 
         duration = get_time_hms(self.start_time)
+        log(f"************** {duration=} ***********")  # FIXME: tirar isso (debug)
 
         search = self.db.get_search_by_id(ongoing.search_id)
         assert search is not None
-        search._done = True
         search.total_duration_mins = duration["minutes"] + self.options.duration_mins
         self.db.update_search(search)
 

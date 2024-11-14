@@ -18,7 +18,13 @@ from flask_socketio import SocketIO, emit
 from selenium.webdriver import Chrome
 from werkzeug.exceptions import NotFound
 
-from accb.scraper import Scraper, ScraperOptions, ScraperError, ScraperRestart
+from accb.scraper import (
+    Scraper,
+    ScraperOptions,
+    ScraperError,
+    ScraperRestart,
+    ScraperInterrupt,
+)
 from accb.utils import log, log_error, ask_user_directory, open_folder, Defer
 from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
@@ -105,6 +111,7 @@ def exception_handler(exc: Exception) -> Response:
     log(f"Erro interno: {exc} -- {fmt}")
     res = {"status": "error", "message": "Erro interno da aplicação"}
     return Response(status=200, mimetype="application/json", response=json.dumps(res))
+
 
 @app.route("/")
 def route_home() -> str:
@@ -695,13 +702,15 @@ def search(
         try:
             is_headless = not db.get_option("show_search_window")
 
-            with Defer(open_chrome_driver(is_headless=is_headless), deinit=close_driver) as driver:
+            with Defer(
+                open_chrome_driver(is_headless=is_headless), deinit=close_driver
+            ) as driver:
                 scraper = Scraper(opts, state, driver)
                 state.scraper = scraper
                 attempt_search(scraper)
             break
 
-        except ScraperRestart as _exc:
+        except ScraperRestart as _:
             # não é tecnicamente um erro, então vamos só fingir que nada aconteceu e ele vai reiniciar automaticamente
             pass
 
@@ -712,7 +721,7 @@ def search(
 
             if error_count > max_error_count:
                 emit(
-                    "search.finished_from_error",
+                    "search.finished",
                     "Ocorreram muitos erros em sucessão. A pesquisa será parada - inicie-a manualmente para tentar novamente.",
                     broadcast=True,
                 )
@@ -723,8 +732,7 @@ def search(
                 "Ocorreu um erro durante a pesquisa; ela será reiniciada, aguarde um instante.",
                 broadcast=True,
             )
-
-            sleep(1)
+            sleep(1.0)
 
     state.scraper = None
 
@@ -733,10 +741,11 @@ def attempt_search(scraper: Scraper) -> None:
     """Inicia a pesquisa."""
 
     db = state.db_manager
-    exc: Optional[Exception] = None
+    exc_to_raise: Optional[BaseException] = None
+    needs_to_restart: bool = False
 
     try:
-        scraper.run()
+        scraper.begin_search()
 
         if scraper.mode == "default":
             # FIXME: é pra exportar automaticamente mesmo?
@@ -745,22 +754,35 @@ def attempt_search(scraper: Scraper) -> None:
                 db, ongoing.search_id, ongoing.estabs, ongoing.city, state.output_path
             )
 
-        state.wait_reload = True
-        emit("search.finished", broadcast=True) # TODO: mover isso p/ self.finalize_search() eu acho
+        emit("search.finished", "Pesquisa finalizada com sucesso.", broadcast=True)
 
-    except ScraperRestart as err:
-        exc = err
-        scraper.mode = "paused"
+    except ScraperInterrupt as exc:
+        # ao parar, o modo não pode estar "default" (fica vago demais para saber se precisa salvar)
+        assert scraper.mode != "default"
 
-    except ScraperError as err:
-        exc = err
+        (message,) = exc.args
+        emit("search.finished", message, broadcast=True)
+
+    except ScraperRestart as exc:
+        # se precisamos reiniciar, vamos garantir que está pausado (para fazer backup)
+        if scraper.mode != "paused":
+            log(
+                f"Ao usar um ScraperRestart, o modo não estava `paused`. Forçando isso..."
+            )
+            scraper.mode = "paused"
+
+        # vamos jogar a exceção de novo mas o `attempt_search()` vai capturar de novo para reiniciar
+        exc_to_raise = exc
+
+    except ScraperError as exc:
         scraper.mode = "errored"
+        exc_to_raise = exc
 
     finally:
         scraper.finalize_search()
 
-    if exc is not None:
-        raise exc
+    if exc_to_raise is not None:
+        raise exc_to_raise
 
 
 @app.context_processor

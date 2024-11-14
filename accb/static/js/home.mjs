@@ -638,10 +638,13 @@ $(document).ready(() => {
         }
     });
 
+    socket.on("disconnect", (reason) => {
+        console.log(`Desconectado - vai reconectar: ${socket.active}, motivo: ${reason}`);
+    });
+
     socket.on("show_notification", (msg) => showMessage(msg));
 
     socket.on("search.began", () => {
-        updateProgressBar(0.0);
         $(window).on("unload", _ => "Realmente deseja sair? Existe uma pesquisa em andamento.");
     });
 
@@ -650,6 +653,7 @@ $(document).ready(() => {
     });
 
     const wait_log = $("div#progress p#wait-log");
+    wait_log.html("...");
 
     getOption("show_search_extras").then(val => {
         if (!val) wait_log.hide();
@@ -675,22 +679,8 @@ $(document).ready(() => {
         $(window).off();
     };
 
-    socket.on("search.finished_from_error", (msg) => {
-        // finalizeSearch();
-        // $(".tabs a").addClass('enable');
-
-        showMessage(msg, { notification: true });
-        alert(msg);
-        window.location.reload(true);
-    });
-
-    socket.on("search.finished", () => {
-        // finalizeSearch();
-        // $(".estab").remove();
-        // $('#main-navigation li a').removeClass("disabled");
-
-        const msg = "Pesquisa finalizada.";
-        showMessage(msg, { notification: true });
+    socket.on("search.finished", (msg) => {
+        showMessage(msg, { notification: true, toast: false });
         alert(msg);
         window.location.reload(true);
     });
@@ -740,7 +730,6 @@ $(document).ready(() => {
                 });
             }
 
-            $("#main-navigation").hide();
             $("#loader").hide();
         });
     });
@@ -762,31 +751,31 @@ $(document).ready(() => {
         onShow: () => {},
     });
 
-    // Listener responsável por parar a pesquisa.
+    const showPauseOverlay = () => {
+        $(".pause-overlay").fadeIn(500);
+        $("#pause-loader").fadeIn(500);
+    };
+
     $("#pause").click((e) => {
         e.preventDefault();
 
         if (window.confirm(`Deseja realmente PAUSAR a pesquisa? Todo o progresso será salvo.`)) {
             socket.emit("search.pause");
             $("#progress h5").html(`Pausando pesquisa`);
-            $(".pause-overlay").fadeIn(500);
-            $("#pause-loader").fadeIn(500);
+            showPauseOverlay();
             $(window).off();
         }
     });
 
-    // Listener responsável por cancelar a pesquisa.
     $("#cancel").click((e) => {
         e.preventDefault();
 
         if (window.confirm(`Deseja realmente CANCELAR a pesquisa? Todos os dados da pesquisa serão EXCLUÌDOS.`)) {
             socket.emit("search.cancel");
             $("#progress h5").html(`Cancelando pesquisa`);
-            $(".pause-overlay").fadeIn(500);
-            $("#pause-loader").fadeIn(500);
+            showPauseOverlay();
             $(window).off();
         }
-
     });
 
     // Mascara para keywords
@@ -820,7 +809,6 @@ $(document).ready(() => {
     });
 
     // Salvar edição de cidade
-
     $('#save-edit-city').click(function (e) {
         e.preventDefault();
 
@@ -867,7 +855,6 @@ $(document).ready(() => {
                     $(".jquery-modal").fadeOut(500);
                     window.location = window.location.origin + "#produtos";
                     window.location.reload(true);
-                    // TODO: não reiniciar a janela. é muito desorientador
                 });
             }
     });
@@ -1063,7 +1050,7 @@ $(document).ready(() => {
 
         $('ul.tabs').tabs('select', 'progress');
         $("#main-navigation a").addClass("disable");
-        $("#main-navigation").hide();
+        $("#close_app").addClass("disable").hide();
         $("#config_path").addClass("disable");
     });
 
@@ -1349,10 +1336,10 @@ $(document).ready(() => {
             return;
         }
 
-        if (!window.confirm("Realmente deseja excluir todas as pesquisas salvas?"))
-            return
+        if (!window.confirm("Realmente deseja excluir todas as pesquisas salvas? Esta ação não é reversível."))
+            return;
 
-        var generate = window.confirm("Deseja gerar uma coleção de arquivos excel com todas as pesquisas existentes?");
+        const generate = window.confirm("Deseja gerar uma coleção de arquivos excel com todas as pesquisas existentes?");
 
         $.get("/clean_search", { generate: generate.toString() }, (response) => {
             if (response.status !== "success") {
@@ -1607,7 +1594,7 @@ $(document).ready(() => {
         const ssw = $(`<p></p>`);
         $(`<span>Mostrar janela do navegador automatizado durante a pesquisa: </span>`).appendTo(ssw);
         ssw.append(await makeBoolOptionButton("show_search_window"));
-        $(`<br/><span>Para entender como a pesquisa está sendo feita em tempo real. Útil para testes.</span>`).appendTo(ssw);
+        $(`<br/><span>Útil para entender como a pesquisa está sendo feita em tempo real.</span>`).appendTo(ssw);
         ssw.appendTo(settings_list);
 
         const sse = $(`<p></p>`);

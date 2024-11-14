@@ -28,8 +28,6 @@ class Search:
     start_date: str
     total_duration_mins: float
 
-    _done: bool
-
 
 @dataclass
 class SearchItem:
