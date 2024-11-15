@@ -30,6 +30,7 @@ def open_chrome_driver(is_headless: bool = True) -> webdriver.Chrome:
         "--disable-features=NetworkService",
         "--window-size=1920x1080",
         "--disable-features=VizDisplayCompositor",
+        "--user-agent=Mozilla/5.0 (Windows NT 4.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36",
     ]
 
     if is_headless:

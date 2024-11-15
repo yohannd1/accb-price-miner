@@ -38,29 +38,22 @@
     <div id="top-menu">
       {{ top_logos() }}
 
-      <div style="margin-top: 2em;">
-        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Configuração de Caminho (Salvar Pastas)" id="config_path"><i class="fa fa-cogs"></i></a>
-        <a style="background: #fea621 !important; margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
-        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder"><i class="fa fa-folder"></i></a>
-        <a style="margin-right: 10px;" class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app"><i class="fa fa-close"></i></a>
+      <div id="top-right-buttons">
+        <a class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Aviso Utilização" id="warning-button" href="#warning" rel="modal:open"><i class="fa fa-warning"></i></a>
+        <a class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Abrir pasta de arquivos" id="open_folder"><i class="fa fa-folder"></i></a>
+        <a class="round btn-floating btn-large primary_color tooltipped red" data-position="bottom" data-tooltip="Fechar Programa" id="close_app"><i class="fa fa-close"></i></a>
       </div>
     </div>
     <div>
-      <ul id="main-navigation" class="tabs" style="width: fit-content;">
+      <ul id="main-navigation" class="tabs">
         <li class="tab col s3"><a id="search" href="#tab-pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município">
           <i class="fa fa-map-marker"></i>
           Município
         </a></li>
 
-        <li class="tab col s3"><a class="disable" id="list" href="#listagem">
-          <i class="fa fa-shopping-cart"></i>
-          Estabelecimentos
-        </a></li>
+        <li class="hidden tab col s3"><a class="disable" id="list" href="#listagem"></a></li>
 
-        <li class="tab col s3"><a class="disable" id="prog" href="#progress">
-          <i class="fa fa-spinner"></i>
-          Progresso
-        </a></li>
+        <li class="hidden tab col s3"><a class="disable" id="prog" href="#progress"></a></li>
 
         <li class="tab col s3"><a href="#configurar" id="config" class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos">
           <i class="fa fa-cogs"></i>
@@ -89,6 +82,7 @@
       </ul>
     </div>
   </header>
+
   <main class="main-content row z-depth-5">
     <div id="tab-pesquisar" class="tab">
       <div class="tab-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">

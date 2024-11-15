@@ -30,6 +30,15 @@ const getOption = async (key) => {
     return r.value;
 };
 
+const setTabRowEnable = (value) => {
+    const mn = $("#main-navigation");
+
+    if (value)
+        mn.removeClass("disabled");
+    else
+        mn.addClass("disabled");
+};
+
 /**
  * Filtra a aba de pesquisa de acordo com o mês passado
  * @param {string} month
@@ -612,13 +621,13 @@ $(document).ready(() => {
     requestNotificationPermission();
 
     const resumeOngoingSearch = (search_id) => {
-        $("#config_path").addClass("disable");
+        $("#config_path").addClass("disabled");
         $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
 
         socket.emit("search.resume_ongoing", { search_id: parseInt(search_id) });
 
         $("#main-navigation").tabs("select", "progress");
-        $("#main-navigation a").addClass("disabled");
+        setTabRowEnable(false);
     };
     document.querySelectorAll("button.resume-ongoing-search").forEach(btn => {
         btn.addEventListener("click", () => resumeOngoingSearch(btn.getAttribute("data-search-id")));
@@ -703,35 +712,36 @@ $(document).ready(() => {
 
     const search_state = {};
 
-    $("button.btn-start-search-at-city").on("click", (ev) => {
+    $("button.btn-start-search-at-city").on("click", async (ev) => {
         $("#loader").show();
 
         const city = ev.target.getAttribute("value");
         search_state.city = city;
         $("ul.tabs").tabs("select", "listagem");
+        setTabRowEnable(false);
 
-        $.get("/select_estab", { city: city }, (response) => {
-            console.assert(response.status === "success")
-            response = response.estabs;
+        const response = await getGenericJson("/select_estab", { city: city });
+        console.assert(response.status === "success");
 
-            if (response.length == 0) {
-                $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
-            } else {
-                $("#listagem h5").html("Selecione pelo menos um estabelecimento para prosseguir");
-                $(".tabs a").addClass('disable');
+        const estabs = response.estabs;
 
-                response.map((value, index) => {
-                    const delay = 400 + index * 100;
-                    const elem = $(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${index}" >${value[1]}</a>`)
-                        .hide()
-                        .fadeIn(delay);
+        if (estabs.length == 0) {
+            $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
+            return;
+        }
 
-                    $("#listagem .select_wrapper").append(elem);
-                });
-            }
+        $("#listagem h5").html("Selecione pelo menos um estabelecimento para prosseguir");
 
-            $("#loader").hide();
+        estabs.forEach((value, i) => {
+            const delay = 400 + i * 100;
+            const elem = $(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="E${i}" >${value[1]}</a>`)
+                .hide()
+                .fadeIn(delay);
+
+            $("#listagem .select_wrapper").append(elem);
         });
+
+        $("#loader").hide();
     });
 
     // Inicia todos os elementos js da aplicação.
@@ -1034,6 +1044,7 @@ $(document).ready(() => {
         }
     });
 
+
     // Botão de iniciar pesquisa
     $("#start").click((e) => {
         const estabs = $("div.tab-content-listagem .select-item-active");
@@ -1049,9 +1060,11 @@ $(document).ready(() => {
         socket.emit("search.begin", { names: names, city: search_state.city });
 
         $('ul.tabs').tabs('select', 'progress');
-        $("#main-navigation a").addClass("disable");
-        $("#close_app").addClass("disable").hide();
-        $("#config_path").addClass("disable");
+
+        setTabRowEnable(false);
+
+        $("#close_app").addClass("disabled").hide();
+        $("#config_path").addClass("disabled");
     });
 
     // Botão selecionar todos
@@ -1079,6 +1092,7 @@ $(document).ready(() => {
         city = undefined;
 
         $('ul.tabs').tabs('select', 'tab-pesquisar');
+        setTabRowEnable(true);
 
         $("#config-product").addClass('enable');
         $("#search").addClass('enable');
