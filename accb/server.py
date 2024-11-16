@@ -30,7 +30,7 @@ from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
-from accb.model import Estab, OngoingSearch, Search
+from accb.model import Estab, OngoingSearch, Search, Product, City
 from accb.web_driver import is_chrome_installed, open_chrome_driver
 from accb.database import table_dump
 from accb.bi_queue import BiQueue
@@ -134,7 +134,7 @@ def route_home() -> str:
     day = str(date.today()).split("-")[1]
 
     searches_r = db.run_query(
-        "SELECT * FROM search WHERE done = 1 AND search_date LIKE ?",
+        "SELECT * FROM search WHERE search_date LIKE ?",
         (f"%%-{day}-%%",),
     )
 
@@ -144,7 +144,7 @@ def route_home() -> str:
     ]
 
     search_years = db.run_query(
-        "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search WHERE done = 1"
+        "SELECT DISTINCT SUBSTR(search_date, '____', 5) FROM search"
     )
 
     city_names = [c.name for c in db.get_cities()]
@@ -211,12 +211,12 @@ def route_select_product() -> str:
 
 @app.route("/select_search_data")
 def route_select_search_data() -> str:
-    """Rota de seleção de pesquisas no banco de dados."""
 
     search_id = request.args["search_id"]
 
+    # TODO: usar db.get_search_item(), eu acho...
     search_data = state.db_manager.run_query(
-        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = ? AND search.done = '1' ORDER BY search_item.product_name, search_item.price ASC",
+        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = ? ORDER BY search_item.product_name, search_item.price ASC",
         (search_id,),
     )
 
@@ -235,12 +235,12 @@ def route_select_search_info() -> RequestDict:
     if year is None:
         month = "0" + month if int(month) < 10 else month
         search_data = db.run_query(
-            "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
+            "SELECT * FROM search WHERE search_date LIKE ? ORDER BY city_name ASC",
             (f"%-{month}-%",),
         )
     else:
         search_data = db.run_query(
-            "SELECT * FROM search WHERE done = 1 AND search_date LIKE ? ORDER BY city_name ASC",
+            "SELECT * FROM search WHERE search_date LIKE ? ORDER BY city_name ASC",
             (f"{year}%",),
         )
 
@@ -251,18 +251,15 @@ def route_select_search_info() -> RequestDict:
 def route_update_product() -> RequestDict:
     """Rota de atualização de produtos no banco de dados."""
 
-    product_name = request.args.get("product_name")
-    keywords = request.args.get("keywords")
     primary_key = request.args.get("primary_key")
 
-    state.db_manager.update_product(
-        {
-            "product_name": product_name,
-            "keywords": keywords,
-            "primary_key": primary_key,
-        }
+    new = Product(
+        name=request.args["product_name"],
+        keywords=request.args["keywords"].split(","),
     )
+    state.db_manager.update_product(new, old_name=request.args["primary_key"])
     state.wait_reload = True
+
     return {
         "status": "success",
         "message": f"O produto {primary_key} foi atualizado com sucesso",
@@ -302,15 +299,13 @@ def route_update_estab() -> RequestDict:
     web_name = request.args["web_name"]
     address = request.args["address"]
 
-    state.db_manager.update_estab(
-        {
-            "primary_key": primary_key,
-            "city_name": city_name,
-            "estab_name": estab_name,
-            "web_name": web_name,
-            "address": address,
-        }
+    estab = Estab(
+        city=city_name,
+        name=estab_name,
+        web_name=web_name,
+        address=address,
     )
+    state.db_manager.update_estab(estab, primary_key)
 
     return {
         "status": "success",
@@ -354,9 +349,11 @@ def route_db_get_cities() -> str:
 def route_insert_city() -> RequestDict:
     """Rota de inserção de cidades no banco de dados."""
     db = state.db_manager
-    city_name = request.args.get("city_name")
 
-    db.save_city(city_name)
+    city_name = request.args["city_name"]
+    assert isinstance(city_name, str)
+    db.create_city(city_name)
+
     state.wait_reload = True
     return {
         "status": "success",
@@ -368,14 +365,15 @@ def route_insert_city() -> RequestDict:
 def route_update_city() -> RequestDict:
     """Rota de atualização de cidades no banco de dados."""
 
-    city_name = request.args["city_name"]
-    primary_key = request.args["primary_key"]
-    state.db_manager.update_city({"city_name": city_name, "primary_key": primary_key})
+    new = City(name=request.args["city_name"])
+    old_name = request.args["primary_key"]
+    state.db_manager.update_city(new, old_name)
+
     state.wait_reload = True
 
     return {
         "status": "success",
-        "message": f"A cidade {city_name} foi editada com sucesso",
+        "message": f"A cidade {old_name} foi editada com sucesso",
     }
 
 
@@ -486,7 +484,7 @@ def route_clean_search() -> RequestDict:
                 "SELECT * FROM estab WHERE city_name = ?", (city.name,)
             )
             args = db.run_query(
-                "SELECT DISTINCT id, search_date FROM search WHERE done = 1"
+                "SELECT DISTINCT id, search_date FROM search"
             )
 
             for search_id, search_date in args:
@@ -667,9 +665,12 @@ def search(
         ongoing = db.get_ongoing_search_by_id(resume_id)
         assert ongoing is not None
 
+        # caso o ongoing não tiver duração
+        if ongoing.duration_mins == 0.0:
+            ongoing.duration_mins = search.total_duration_mins
+
         opts = ScraperOptions(
             ongoing=ongoing,
-            duration_mins=search.total_duration_mins,
         )
     else:
         assert city is not None
@@ -684,13 +685,11 @@ def search(
             products=list(db.get_products()),
             current_product=0,
             current_keyword=0,
+            duration_mins=0.0,
         )
         db.create_ongoing_search(ongoing)
 
-        opts = ScraperOptions(
-            ongoing=ongoing,
-            duration_mins=0.0,
-        )
+        opts = ScraperOptions(ongoing=ongoing)
 
     error_count = 0
 

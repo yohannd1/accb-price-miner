@@ -23,7 +23,7 @@ from selenium.webdriver.remote.webelement import WebElement
 
 from accb.utils import log, show_warning, get_time_hms, enumerate_skip, Defer
 from accb.state import State
-from accb.model import OngoingSearch
+from accb.model import OngoingSearch, SearchItem
 
 URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
 
@@ -32,10 +32,9 @@ URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
 class ScraperOptions:
     """Armazena informações que instruem a pesquisa feita pelo Scraper."""
 
-    ongoing: OngoingSearch
+    # TODO: parar de usar isso (se tornou desnecessário, dá pra integrar no scraper mesmo)
 
-    duration_mins: float
-    """Estimação da duração da pesquisa (em minutos)."""
+    ongoing: OngoingSearch
 
     url: str = URL_PRECODAHORA
     """URL do site a ser pesquisado"""
@@ -73,7 +72,7 @@ class Scraper:
 
         self.mode: ScraperMode = "default"
 
-        self.start_time = time()
+        self.start_time_secs = time()
         """Valor do tempo no inicio da pesquisa."""
 
         self.time_coeff = 4.0
@@ -130,7 +129,7 @@ class Scraper:
         if len(messages) == 1:
             final = messages[0]
         else:
-            final = str.join("\n", [f"  {msg}" for msg in messages])
+            final = "\n" + str.join("\n", [f"  {msg}" for msg in messages])
 
         log(f"[Scraper.send_logs]: {final}")
         emit("search.log", list(messages), broadcast=True)
@@ -167,18 +166,18 @@ class Scraper:
             product_price = item.find(text=money_patt).lstrip()
 
             self.db.save_search_item(
-                {
-                    "search_id": self.options.ongoing.search_id,
-                    "web_name": product_local,
-                    "address": product_address,
-                    "product_name": product_name,
-                    "price": product_price,
-                    "keyword": keyword,
-                }
+                SearchItem(
+                    search_id=self.options.ongoing.search_id,
+                    web_name=product_local,
+                    address=product_address,
+                    product_name=product_name,
+                    price=product_price,
+                    keyword=keyword,
+                )
             )
 
             logs.append(
-                f"Produto: '{product_name}' em '{product_local}' a {product_price} (palavra chave: {keyword}, endereço: {product_address})"
+                f"Produto: {repr(product_name)} em {repr(product_local)} a {product_price} (palavra chave: {keyword}, endereço: {product_address})"
             )
 
         self.send_logs(*logs)
@@ -243,6 +242,15 @@ class Scraper:
     def _is_in_captcha(self) -> bool:
         return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
 
+    def _get_duration_mins_and_reset(self) -> float:
+        """Retorna a duração desde o tempo iniciado e reseta o timer."""
+
+        now_secs = time()
+        elapsed_secs = now_secs - self.start_time_secs
+        self.start_time_secs = now_secs
+
+        return elapsed_secs / 60.0
+
     def _wait_for_element(
         self, by: str, value: str, timeout: float
     ) -> WebElement | None:
@@ -279,6 +287,8 @@ class Scraper:
 
         emit("search.began", broadcast=True)
 
+        self.send_logs(f"Carregando página (URL: {self.options.url})...")
+
         driver.get(self.options.url)
 
         wait_for_element = self._wait_for_element
@@ -286,6 +296,8 @@ class Scraper:
 
         if elem := wait_for_element(By.ID, "informe-sefaz-valor", 2.5):
             elem.click()
+
+        self.send_logs("Especificando localização...")
 
         # botão que abre o modal referente a localização
         wait_for_element_or_captcha(By.CLASS_NAME, "location-box", 12.0).click()
@@ -312,6 +324,9 @@ class Scraper:
 
         product_count = len(ongoing.products)
 
+        ongoing.duration_mins += self._get_duration_mins_and_reset()
+        self.db.update_ongoing_search(ongoing)
+
         for p_idx, p in enumerate_skip(ongoing.products, start=ongoing.current_product):
             product = p.name
 
@@ -326,14 +341,14 @@ class Scraper:
             for k_idx, keyword in enumerate_skip(
                 p.keywords, start=ongoing.current_keyword
             ):
+                if keyword == "CARNE BOVINA CHA DE DENTRO":
+                    # FIXME: resolver isso. essa pesquisa em específico não está funcionando no price miner
+                    continue
+
                 self.send_logs(f"Próxima palavra chave: {keyword}")
 
-                duration = (
-                    get_time_hms(self.start_time)["minutes"]
-                    + self.options.duration_mins
-                )
-
                 self.send_logs("Atualizando backup...")
+                ongoing.duration_mins += self._get_duration_mins_and_reset()
                 ongoing.current_product = p_idx
                 ongoing.current_keyword = k_idx
                 self.db.update_ongoing_search(ongoing)
@@ -378,12 +393,10 @@ class Scraper:
             # voltar para o índice 0 de keyword (para não pular keywords do próximo produto)
             ongoing.current_keyword = 0
 
-        duration = get_time_hms(self.start_time)
-        log(f"************** {duration=} ***********")  # FIXME: tirar isso (debug)
-
         search = self.db.get_search_by_id(ongoing.search_id)
         assert search is not None
-        search.total_duration_mins = duration["minutes"] + self.options.duration_mins
+        ongoing.duration_mins += self._get_duration_mins_and_reset()
+        search.total_duration_mins = ongoing.duration_mins
         self.db.update_search(search)
 
         self.send_logs("Deletando backup...")

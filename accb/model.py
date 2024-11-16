@@ -31,7 +31,7 @@ class Search:
 
 @dataclass
 class SearchItem:
-    id: Optional[int]
+    search_id: int
     product_name: str
     web_name: str
     address: str
@@ -54,3 +54,4 @@ class OngoingSearch:
     products: list[Product]
     current_product: int
     current_keyword: int
+    duration_mins: float

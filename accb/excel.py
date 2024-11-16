@@ -9,7 +9,7 @@ from openpyxl.styles import Border, Side, Alignment
 
 from accb.database import DatabaseManager
 from accb.utils import get_time_hms, get_time_filename, log
-from accb.model import Estab
+from accb.model import Estab, SearchItem
 
 
 def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
@@ -21,14 +21,14 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
     for _index, row in df.iterrows():
         (name, local, keyword, address, price) = row
 
-        info = {
-            "search_id": search_id,
-            "web_name": local,
-            "address": address,
-            "product_name": name,
-            "price": price,
-            "keyword": keyword,
-        }
+        info = SearchItem(
+            search_id = search_id,
+            web_name = local,
+            address = address,
+            product_name = name,
+            price = price,
+            keyword = keyword,
+        )
         db.save_search_item(info)
 
     return search_id

@@ -378,8 +378,11 @@ const list_search = (search_id = undefined) => {
                 $(html).appendTo("#search-tbody");
             });
 
+            const mins = time.toFixed(0);
+            const secs = ((time % 1.0) * 60).toFixed(0);
+
             $duration
-                .html(`Tempo de duração da pesquisa: ${time} minuto(s)`)
+                .html(`Tempo (aproximado) de duração da pesquisa: ${mins}m ${secs}s`)
                 .fadeIn(100);
         }
     });

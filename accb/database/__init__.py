@@ -187,6 +187,13 @@ class DatabaseManager:
             """
             cursor.executescript(query)
 
+        @upgrader.until_version(4)
+        def uv4() -> None:
+            query = """
+            ALTER TABLE ongoing_search ADD duration_mins decimal DEFAULT 0.0;
+            """
+            cursor.executescript(query)
+
         upgrader.upgrade(version)
         final_version = upgrader.get_final_version()
 
@@ -261,13 +268,11 @@ class DatabaseManager:
 
         return Connection(conn, self._lock)
 
-    def save_city(self, city):
-        """Salva as cidades no banco de dados."""
-
+    def create_city(self, name: str) -> None:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            sql_query = """INSERT INTO city(city_name) VALUES(?)"""
-            cursor.execute(sql_query, (city,))
+            sql_query = """INSERT INTO city (city_name) VALUES (?)"""
+            cursor.execute(sql_query, (name,))
 
     def save_product(self, product_name: str, keywords: str) -> None:
         """Salva um produto no banco de dados."""
@@ -309,19 +314,19 @@ class DatabaseManager:
                 ),
             )
 
-    def save_search_item(self, search_item) -> None:
+    def save_search_item(self, search_item: SearchItem) -> None:
         """Salva os itens da pesquisa no banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
 
             tup = (
-                search_item["search_id"],
-                search_item["product_name"],
-                search_item["web_name"],
-                search_item["address"],
-                search_item["price"],
-                search_item["keyword"],
+                search_item.search_id,
+                search_item.product_name,
+                search_item.web_name,
+                search_item.address,
+                search_item.price,
+                search_item.keyword,
             )
 
             sql_query = """SELECT search_id FROM search_item WHERE search_id=? AND product_name=? AND web_name=? AND address=? AND price=? LIMIT 1"""
@@ -332,7 +337,7 @@ class DatabaseManager:
             sql_query = """INSERT INTO search_item(search_id, product_name, web_name, address, price, keyword) VALUES(?,?,?,?,?,?)"""
             cursor.execute(sql_query, tup)
 
-    def delete(self, table, where, value):
+    def delete(self, table: str, where: str, value: Any) -> None:
         """Deleta um elemento do banco de dados."""
 
         with self.db_connection() as conn:
@@ -368,9 +373,10 @@ class DatabaseManager:
             res = cursor.execute(query, args)
             return res.fetchall()
 
-    def get_search_item(self, search_id=None):
-        """Seleciona itens de uma pesquisa do banco de dados."""
+    def get_search_item(self, search_id: Optional[int] = None) -> Iterable[Any]:
+        """Seleciona itens de uma pesquisa (ou todas, se `search_id`=None) do banco de dados."""
 
+        args: tuple = ()
         if search_id is None:
             query = "SELECT * FROM search_item ORDER BY search_id ASC"
             args = ()
@@ -381,7 +387,7 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             res = cursor.execute(query, args)
-            return res.fetchall()
+            return res
 
     def get_products(self) -> Iterable[Product]:
         """Obtém a lista de produtos do banco de dados."""
@@ -419,7 +425,7 @@ class DatabaseManager:
                 for (city_name, name, address, web_name) in res.fetchall()
             )
 
-    def get_estab_old(self):
+    def get_estab_old(self) -> Iterable[Any]:
         """Seleciona estabelecimentos do banco de dados."""
         # FIXME: parar de usar isso (usar get_estabs)
 
@@ -428,24 +434,25 @@ class DatabaseManager:
             res = cursor.execute("""SELECT * FROM estab""")
             return res.fetchall()
 
-    def update_estab(self, estab):
+    def update_estab(self, estab: Estab, old_name: Optional[str] = None) -> None:
         """Atualiza estabelecimentos do banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """UPDATE estab SET city_name=?, estab_name=?, address=?, web_name=? WHERE estab_name=?"""
+            key = old_name or estab.name
             cursor.execute(
                 query,
                 (
-                    estab["city_name"],
-                    estab["estab_name"],
-                    estab["address"],
-                    estab["web_name"],
-                    estab["primary_key"],
+                    estab.city,
+                    estab.name,
+                    estab.address,
+                    estab.web_name,
+                    key,
                 ),
             )
 
-    def update_product(self, product):
+    def update_product(self, product: Product, old_name: Optional[str] = None) -> None:
         """Atualiza produtos do banco de dados."""
 
         with self.db_connection() as conn:
@@ -453,18 +460,20 @@ class DatabaseManager:
             query = (
                 """UPDATE product SET product_name=?, keywords=? WHERE product_name=?"""
             )
+
+            key = old_name or product.name
             cursor.execute(
                 query,
-                (product["product_name"], product["keywords"], product["primary_key"]),
+                (product.name, ",".join(product.keywords), key),
             )
 
-    def update_city(self, city):
+    def update_city(self, city: City, old_name: str) -> None:
         """Atualiza cidades do banco de dados."""
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """UPDATE city SET city_name=? WHERE city_name=?"""
-            cursor.execute(query, (city["city_name"], city["primary_key"]))
+            cursor.execute(query, (city.name, old_name))
 
     def update_search(self, search: Search) -> None:
         """Atualiza uma pesquisa de pesquisa do banco de dados."""
@@ -532,7 +541,7 @@ class DatabaseManager:
 
     def create_ongoing_search(self, o: OngoingSearch) -> None:
         self.run_query(
-            "INSERT INTO ongoing_search (search_id, city, estabs_json, products_json, current_product, current_keyword) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO ongoing_search (search_id, city, estabs_json, products_json, current_product, current_keyword, duration_mins) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 o.search_id,
                 o.city,
@@ -545,12 +554,13 @@ class DatabaseManager:
                 ),
                 o.current_product,
                 o.current_keyword,
+                o.duration_mins,
             ),
         )
 
     def update_ongoing_search(self, o: OngoingSearch) -> None:
         self.run_query(
-            "UPDATE ongoing_search SET search_id=?, city=?, estabs_json=?, products_json=?, current_product=?, current_keyword=? WHERE search_id=?",
+            "UPDATE ongoing_search SET search_id=?, city=?, estabs_json=?, products_json=?, current_product=?, current_keyword=?, duration_mins=? WHERE search_id=?",
             (
                 o.search_id,
                 o.city,
@@ -563,13 +573,14 @@ class DatabaseManager:
                 ),
                 o.current_product,
                 o.current_keyword,
+                o.duration_mins,
                 o.search_id,
             ),
         )
 
     def get_ongoing_search_by_id(self, id_: int) -> Optional[OngoingSearch]:
         result = self.run_query(
-            "SELECT city, estabs_json, products_json, current_product, current_keyword FROM ongoing_search WHERE search_id = ?",
+            "SELECT city, estabs_json, products_json, current_product, current_keyword, duration_mins FROM ongoing_search WHERE search_id = ?",
             (id_,),
         )
 
@@ -592,6 +603,7 @@ class DatabaseManager:
             products=products,
             current_product=tup[3],
             current_keyword=tup[4],
+            duration_mins=tup[5],
         )
 
     def get_ongoing_searches(self) -> list[OngoingSearch]:
