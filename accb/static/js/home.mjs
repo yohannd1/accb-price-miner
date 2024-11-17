@@ -130,7 +130,7 @@ const custom_select = () => {
             $styledSelect.text($(this).text()).removeClass('active');
             $this.val($(this).attr('rel'));
             $list.hide();
-            list_estab($this.val());
+            populateEstabs($this.val());
             $('#city_name-save').val($this.val()).change();
             $('#city-edit-select').val($this.val()).change();
             $('#city-delete-select').val($this.val()).change();
@@ -290,41 +290,41 @@ const custom_select_search = () => {
 }
 
 /**
- * Lista todos os estabelecimentos para uma cidade de id CITY, na pagina de configuração.
- * @param {integer} city=undefined
+ * Adiciona, na aba de configuração de estabelecimentos, todos os estabelecimentos da cidade `city`.
+ * @param {?number} city
  */
-const list_estab = (city = undefined) => {
-    if (city == undefined)
-        city = $("city").attr('value');
-    else {
+const populateEstabs = async (city = null) => {
+    if (city === null) {
+        city = $("#city-select option").attr('value');
+    } else {
         $(".estab-config").remove();
         $("#no-result").hide();
     }
 
-    $.get("/select_estab", { city: city }, (response) => {
-        console.assert(response.status === "success")
-        response = response.estabs;
+    const response = await getGenericJson("/select_estab", { city: city });
+    console.assert(response.status === "success");
 
-        ESTAB_DATA = response;
-        if (response.length == 0) {
-            $("#no-result").fadeIn(500);
-            return;
-        }
+    const estabs = response.estabs;
+    ESTAB_DATA = estabs;
 
-        response.map((value, index) => {
-            $(`
-                <div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
-                    <p>${value[1]}</p>
-                    <div class="right">
-                        <a id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large primary_color edit " ><i class="fa fa-edit"></i></a>
-                        <a value="${value[1]}" class="remove-estab btn-floating btn-large red " data-position="left" ><i class="fa fa-minus"></i></a>
-                    </div>
+    if (estabs.length == 0) {
+        $("#no-result").fadeIn(500);
+        return;
+    }
+
+    estabs.map((value, index) => {
+        const elem = $(`
+            <div class="z-depth-3 estab-config edit" id="ed-${value[1]}" value="${value[1]}">
+                <p>${value[1]}</p>
+                <div class="right">
+                    <a id="e-${value[1]}" value="${value[1]}" class="btn-floating btn-large primary_color edit " ><i class="fa fa-edit"></i></a>
+                    <a value="${value[1]}" class="remove-estab btn-floating btn-large red " data-position="left" ><i class="fa fa-minus"></i></a>
                 </div>
-            `).appendTo("#list-config").hide().slideDown("slow");
-        });
+            </div>
+        `);
+
+        elem.appendTo("#list-config").hide().slideDown("slow");
     });
-
-
 }
 
 /**
@@ -753,7 +753,7 @@ $(document).ready(() => {
     var city = undefined;
     $("select").formSelect();
     $('.tooltipped').tooltip();
-    list_estab();
+    populateEstabs();
     list_product();
     list_search();
     custom_select();
@@ -1014,7 +1014,7 @@ $(document).ready(() => {
                 modal.closeModal();
                 $(".jquery-modal").fadeOut(500);
                 $(".estab-config").remove();
-                list_estab();
+                populateEstabs();
             });
     });
 
@@ -1205,8 +1205,7 @@ $(document).ready(() => {
                     if (id.includes(value) || similarity(id, value) >= 0.6) {
                         found = true;
                         return false;
-                    }
-                    else {
+                    } else {
                         found = false;
                     }
                 });
@@ -1219,8 +1218,7 @@ $(document).ready(() => {
                         $(this).css("background", "rgba(242, 242, 242, 0.5)");
                         odd = !odd;
                     }
-                }
-                else {
+                } else {
                     $(this).hide();
                     hide_len += 1;
                 }
@@ -1306,7 +1304,7 @@ $(document).ready(() => {
     });
 
     // Abre o modal para gerar a coleção de arquivos para uma pesquisa existente (aba de pesquisas).
-    $("#open-search-file").on("click", (e) => {
+    $("#open-search-file").on("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -1319,28 +1317,28 @@ $(document).ready(() => {
         }
         const city = selected.attr("city");
 
-        $.get("/select_estab", { city: city }, (response) => {
-            console.assert(response.status === "success")
-            response = response.estabs;
+        const response = await getGenericJson("/select_estab", { city: city });
+        console.assert(response.status === "success");
 
-            if (response.length == 0) {
+        const estabs = response.estabs;
 
-                $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
-                alert("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração e tente novamente.");
+        if (estabs.length == 0) {
+            $("#listagem h5").html("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração para prosseguir.");
+            alert("Nenhum estabelecimento encontrado para essa cidade, se dirija até a aba de configuração e tente novamente.");
 
-                $("#generate-file").addClass("disabled");
-            } else {
-                $("#generate-file").addClass("enabled");
-                response.map((value, index) => {
-                    $("#file-list").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="F${index}" >${value[1]}</a>`).hide().fadeIn(200 * index))
-                });
+            $("#generate-file").addClass("disabled");
+            return;
+        }
 
-                $("#loader").fadeOut();
+        $("#generate-file").addClass("enabled");
+        estabs.map((value, index) => {
+            $("#file-list").append($(`<a class="z-depth-2 select-item estab" city="${value[0]}" value="${value[1]}" id="F${index}" >${value[1]}</a>`).hide().fadeIn(200 * index))
+        });
 
-                $("#search-file").modal({
-                    fadeDuration: 200,
-                });
-            }
+        $("#loader").fadeOut();
+
+        $("#search-file").modal({
+            fadeDuration: 200,
         });
     });
 
