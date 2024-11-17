@@ -182,22 +182,26 @@ class Scraper:
 
         self.send_logs(*logs)
 
-    def _sleep(self, base: float, unit_size: float = 1.0) -> None:
+    def _sleep(self, base: float) -> None:
         """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo.
 
         A cada `unit_size` segundos, verifica se a pesquisa foi cancelada, e para se este for o caso.
         """
 
         min_time = 0.2
-        value = max(min_time, base * self.time_coeff + random.uniform(-1.0, 1.0))
+        sleep_time = max(min_time, base * self.time_coeff + random.uniform(-1.0, 1.0))
 
-        emit("search.started_waiting", value, broadcast=True)
+        emit("search.started_waiting", sleep_time, broadcast=True)
 
-        to_sleep = value
-        while to_sleep > 0.0:
-            amount = min(to_sleep, unit_size)
-            sleep(amount)
-            to_sleep -= amount
+        start_time_secs = time()
+        while True:
+            slept_so_far = time() - start_time_secs
+            remaining_time_secs = sleep_time - slept_so_far
+            if remaining_time_secs <= 0.0:
+                break
+
+            to_sleep_now = min(remaining_time_secs, self.sleep_step)
+            sleep(to_sleep_now)
 
             self._check_interrupt()
 
@@ -258,20 +262,28 @@ class Scraper:
             emit("search.finished_waiting", broadcast=True)
 
         emit("search.started_waiting", timeout, broadcast=True)
-        sleep_left = timeout
+
         with Defer(None, deinit=deinit):
-            while sleep_left > 0.0:
+            self._check_connection()
+
+            start_time_secs = time()
+            while True:
                 self._check_interrupt()
+
+                slept_so_far = time() - start_time_secs
+                remaining_time_secs = timeout - slept_so_far
+                if remaining_time_secs <= 0.0:
+                    break
+                to_sleep_now = min(remaining_time_secs, self.sleep_step)
 
                 try:
                     ec = EC.presence_of_element_located((by, value))
-                    WebDriverWait(self.driver, self.sleep_step).until(ec)
+                    WebDriverWait(self.driver, to_sleep_now).until(ec)
                     return self.driver.find_element(by, value)
                 except TimeoutException:
-                    sleep_left -= self.sleep_step
+                    pass
 
             self._check_interrupt()
-            self._check_connection()
             self._check_captcha()
             return None
 
