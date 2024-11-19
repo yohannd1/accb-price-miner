@@ -45,15 +45,17 @@
       </div>
     </div>
     <div>
-      <ul id="main-navigation" class="tabs">
+      <ul id="main-navigation" class="tabs disabled">
+        <li class="hidden tab col s3"><a class="disabled" id="list" href="#tab-initial"></a></li>
+
         <li class="tab col s3"><a id="search" href="#tab-pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município">
           <i class="fa fa-map-marker"></i>
           Município
         </a></li>
 
-        <li class="hidden tab col s3"><a class="disable" id="list" href="#listagem"></a></li>
+        <li class="hidden tab col s3"><a class="disabled" id="list" href="#listagem"></a></li>
 
-        <li class="hidden tab col s3"><a class="disable" id="prog" href="#progress"></a></li>
+        <li class="hidden tab col s3"><a class="disabled" id="prog" href="#progress"></a></li>
 
         <li class="tab col s3"><a href="#configurar" id="config" class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos">
           <i class="fa fa-cogs"></i>
@@ -84,6 +86,23 @@
   </header>
 
   <main class="main-content row z-depth-5">
+    <div id="tab-initial" class="tab">
+      <div class="tab-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <p class="title">
+          <i class="fa fa-shopping-cart"></i>
+          ACCB Price Miner - Preço da Hora Bahia
+        </p>
+
+        <p id="please-wait">Por favor aguarde...</p>
+
+        <div id="no-path-set" hidden>
+          <p>Seu caminho de saída de arquivos não foi especificado!</p>
+          <p>Selecione uma pasta para salvar os arquivos que o programa gerar.</p>
+          <button id="change-path" class="primary_color btn-large">Definir caminho</button>
+          <p>Posteriormente você pode alterar esse caminho na pasta de configurações.</p>
+        </div>
+      </div>
+    </div>
     <div id="tab-pesquisar" class="tab">
       <div class="tab-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
         <p class="title">
@@ -489,17 +508,25 @@
   <div id="warning" class="modal">
     <div class="modal-content" style="height: 100%">
       <div>
-        <h5 class="modal-title" style="width: 100%;"><i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i> Dicas para utilização do programa <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i></h5>
+        <h5 class="modal-title" style="width: 100%;">
+          <i style="color: #bb3939;margin-right: 10px;" class="fa fa-warning"></i>
+          Dicas para utilização do programa
+          <i style="color: #bb3939;margin-left: 10px;" class="fa fa-warning"></i>
+        </h5>
       </div>
       <ul class="browser-default">
-        <li>Atualizar a página do programa manualmente irá fechar o programa.</li>
-        <li>Todo o progresso de uma pesquisa é salvo durante a mesma, ou seja, em caso de erro ou perda de internet, é possível retomar uma pesquisa através de um popup que aparece quando o programa é aberto.</li>
-        <li>A quantidade de estabelecimentos cadastrados não influênciam no tempo da pesquisa em si, os arquivos são gerados separadamentes para diminuir o custo de tempo consumido. Em contrapartida cada palavra chave aumenta em media 2-4 minutos no tempo total da pesquisa.</li>
+        <li>Só é possível abrir uma aba do programa por vez - janelas posteriores mostram um aviso relacionado.</li>
+
+        <li>O progresso de uma pesquisa é salvo durante a mesma - em caso de erro ou perda de internet, é possível retomar uma pesquisa através da página inicial.</li>
+        <li>Não atualize ou feche a página de pesquisa manualmente - isso pode causar erros.</li>
+
+        <li>A quantidade de estabelecimentos cadastrados não influenciam no tempo da pesquisa em si, mas as <b>palavras-chave</b> aumentam (média de 2 a 4 minutos extra por palavra-chave).</li>
+
+        <!-- TODO: colocar isso na aba de pesquisas, eu acho -->
         <li>É possível pesquisar por qualquer campo da tabela de pesquisas disponível na janela de pesquisas.</li>
-        <li>Evite o máximo atualizar a página manualmente ou fecha-la durante uma pesquisa para minimizar a probabilidade de erro causado durante uma pesquisa.</li>
-        <li>Só é possível abrir uma aba do programa por vez, caso seja aberto uma outra janela você encontrará um aviso o notificando para voltar para a janela principal.</li>
-        <li>Todos os endereços dos estabelecimentos devem ser cadastrados da forma mais identica possível aos valores encontrados no Preço da Hora - Bahia para máximizar as chances de uma filtragem correta.</li>
-        <li>Antes de cadastrar uma cidade, confira no site do preço da hora como o nome do município aparece, isso pode ser feito nos filtros de pesquisa em : Alterar Localização &gt; (popup) Usar centro do município &gt; Insira o nome do município desejado. </li>
+
+        <li>Os endereços dos estabelecimentos devem ser cadastrados da forma mais idêntica possível aos valores encontrados no <i>Preço da Hora - Bahia</i> para maximizar as chances de pesquisar corretamente.</li>
+        <li>Antes de cadastrar uma cidade, confira no site do preço da hora como o nome do município aparece. Isso pode ser feito nos filtros de pesquisa em: Alterar Localização &gt; (popup) Usar centro do município &gt; Insira o nome do município desejado.</li>
       </ul>
     </div>
   </div>

@@ -12,9 +12,6 @@ if TYPE_CHECKING:
 class State:
     """Dados utilizados ao longo do programa"""
 
-    output_path: Optional[Path]
-    """Caminho de saída dos dados (Excel)."""
-
     def __init__(self) -> None:
         self.wait_reload: bool = False
         """Se o servidor deve esperar uma nova conexão (a página conetada está recarregando)."""
@@ -27,9 +24,11 @@ class State:
 
         self.db_manager = DatabaseManager()
 
-        out_path = self.db_manager.get_option("path")
-        if isinstance(out_path, str):
-            self.output_path = Path(out_path)
+    def get_output_path(self) -> Optional[Path]:
+        path = self.db_manager.get_option("path")
+
+        if path is None:
+            return None
         else:
-            log("Caminho de saída de dados inválido!")
-            self.output_path = None
+            assert isinstance(path, str)
+            return Path(path)

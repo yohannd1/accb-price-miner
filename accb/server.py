@@ -395,12 +395,11 @@ def route_delete_city() -> RequestDict:
 @app.route("/ask_output_path")
 def route_ask_output_path() -> RequestDict:
     path = ask_user_directory()
-    print(path)
     if path is None:
         raise ValueError("Nenhum diretório selecionado")
 
     path.mkdir(exist_ok=True)
-    state.output_path = path
+    state.db_manager.set_option("path", str(path))
 
     return {
         "status": "success",
@@ -425,8 +424,10 @@ def route_delete_search() -> RequestDict:
 def route_export_database() -> RequestDict:
     """Rota responsável por exportar os dados do banco"""
 
-    assert state.output_path is not None
-    output_filename = state.output_path / "importar.sql"
+    output_path = state.get_output_path()
+    assert output_path is not None
+
+    output_filename = output_path / "importar.sql"
 
     tables_to_dump = ("city", "estab", "product")
 
@@ -468,7 +469,8 @@ def route_open_folder() -> RequestDict:
 def route_clean_search() -> RequestDict:
     """Rota que deleta todas as pesquisas e ou gera coleção de deletar as mesmas."""
 
-    assert state.output_path is not None
+    output_path = state.get_output_path()
+    assert output_path is not None
 
     db = state.db_manager
 
@@ -477,7 +479,7 @@ def route_clean_search() -> RequestDict:
     response = {"status": "success"}
 
     if generate:
-        limpeza_path = state.output_path / "Limpeza"
+        limpeza_path = output_path / "Limpeza"
 
         for city in db.get_cities():
             estab_data = db.run_query(
@@ -492,13 +494,13 @@ def route_clean_search() -> RequestDict:
                 output_folder.mkdir(parents=True, exist_ok=True)
 
                 for _, name, address, web_name in estab_data:
-                    output_path = output_folder / f"{name}.xlsx"
+                    xlsx_out = output_folder / f"{name}.xlsx"
 
                     export_to_xlsx(
                         db=db,
                         search_id=search_id,
                         filter_by_address=False,
-                        output_path=output_path,
+                        output_path=xlsx_out,
                         web_name=web_name,
                         address=address,
                     )
@@ -534,7 +536,8 @@ def route_set_option() -> RequestDict:
 def route_generate_file() -> RequestDict:
     """Gera arquivo(s) excel com os dados das pesquisas."""
 
-    assert state.output_path is not None
+    output_path = state.get_output_path()
+    assert output_path is not None
 
     db = state.db_manager
 
@@ -543,7 +546,7 @@ def route_generate_file() -> RequestDict:
     search_id = request.args["search_id"]
 
     if format_type == "all":
-        output_folder = db_to_xlsx_all(city, search_id, db, state.output_path)
+        output_folder = db_to_xlsx_all(city, search_id, db, output_path)
         return {"status": "success", "path": str(output_folder)}
 
     names = request.args["names"]
@@ -551,7 +554,7 @@ def route_generate_file() -> RequestDict:
     estab_names = json.loads(names)
     estabs = [e for e in db.get_estabs_for_city(city) if e.name in estab_names]
 
-    output_folder = db_to_xlsx(db, search_id, estabs, city, state.output_path)
+    output_folder = db_to_xlsx(db, search_id, estabs, city, output_path)
     return {"status": "success", "path": str(output_folder)}
 
 
@@ -609,19 +612,6 @@ def on_disconnect() -> None:
                 w_timer.start()
 
 
-@socketio.on("output_path_from_options")
-def on_path_from_options(args: RequestDict) -> None:
-    path = args.get("path")
-    is_valid = path is not None and Path(path).exists()
-
-    if not is_valid:
-        emit("invalid_output_path", broadcast=True)
-        return
-
-    assert path is not None
-    state.output_path = Path(path)
-
-
 @socketio.on("exit")
 def on_exit() -> None:
     os._exit(0)
@@ -655,7 +645,9 @@ def search(
     max_error_count: int = 3,
 ) -> None:
     db = state.db_manager
-    assert state.output_path is not None
+
+    output_path = state.get_output_path()
+    assert output_path is not None
 
     opts: ScraperOptions
     if resume_id is not None:
@@ -743,6 +735,9 @@ def attempt_search(scraper: Scraper) -> None:
     exc_to_raise: Optional[BaseException] = None
     needs_to_restart: bool = False
 
+    output_path = state.get_output_path()
+    assert output_path is not None
+
     try:
         scraper.begin_search()
 
@@ -750,7 +745,7 @@ def attempt_search(scraper: Scraper) -> None:
             # FIXME: é pra exportar automaticamente mesmo?
             ongoing = scraper.options.ongoing
             db_to_xlsx(
-                db, ongoing.search_id, ongoing.estabs, ongoing.city, state.output_path
+                db, ongoing.search_id, ongoing.estabs, ongoing.city, output_path
             )
 
         emit("search.finished", "Pesquisa finalizada com sucesso.", broadcast=True)

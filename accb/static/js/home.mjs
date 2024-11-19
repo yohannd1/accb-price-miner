@@ -39,6 +39,20 @@ const setTabRowEnable = (value) => {
         mn.addClass("disabled");
 };
 
+const setOutputPathHooks = [];
+
+const setOutputPath = async () => {
+    const response = await getGenericJson("/ask_output_path");
+
+    if (response.status !== "success") {
+        throw new Error("Ocorreu um erro durante a escolha do diretório.");
+    }
+
+    await setOption("path", response.path);
+    setOutputPathHooks.forEach(f => f());
+    showMessage(`Diretório alterado para ${response.path}`, { notification: false });
+};
+
 /**
  * Filtra a aba de pesquisa de acordo com o mês passado
  * @param {string} month
@@ -624,7 +638,6 @@ $(document).ready(() => {
     requestNotificationPermission();
 
     const resumeOngoingSearch = (search_id) => {
-        $("#config_path").addClass("disabled");
         $("#progress h5").html(`Retomando Pesquisa`).hide().fadeIn(500);
 
         socket.emit("search.resume_ongoing", { search_id: parseInt(search_id) });
@@ -640,14 +653,6 @@ $(document).ready(() => {
 
     socket.on("connect", async () => {
         console.log(`Conectado - id do socket: ${socket.id}`);
-
-        const path_option = await getOption("path");
-        if (path_option === undefined) {
-            alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-            setOutputPath().then();
-        } else {
-            socket.emit("output_path_from_options", { path: path_option });
-        }
     });
 
     socket.on("disconnect", (reason) => {
@@ -1067,7 +1072,6 @@ $(document).ready(() => {
         setTabRowEnable(false);
 
         $("#close_app").addClass("disabled").hide();
-        $("#config_path").addClass("disabled");
     });
 
     // Botão selecionar todos
@@ -1518,31 +1522,7 @@ $(document).ready(() => {
         setOption("warning", "seen");
     });
 
-    const setOutputPath = async () => {
-        const response = await getGenericJson("/ask_output_path");
-
-        if (response.status !== "success") {
-            alert("Ocorreu um erro durante a escolha do diretório.");
-            return;
-        }
-
-        await setOption("path", response.path);
-        showMessage(`Diretório alterado para ${response.path}`, { notification: false });
-    };
-
-    socket.on("invalid_output_path", () => {
-        alert("O diretório de arquivos registrado é inválido! Selecione uma pasta nova para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-        setOutputPath().then();
-    });
-
     socket.connect("http://127.0.0.1:5000/");
-
-    $("#config_path").on("click", (e) => {
-        e.preventDefault();
-
-        alert("Selecione uma pasta para salvar todos os arquivos gerados pelo o programa. Você pode estar alterando este caminho posteriormente no botão de configuração no canto superior direito.");
-        setOutputPath().then();
-    });
 
     $("#close_app").on("click", () => {
         if (!window.confirm("Deseja realmente fechar o programa?"))
@@ -1569,10 +1549,7 @@ $(document).ready(() => {
             out_path_text.html(`Caminho de saída: ${out_path}`);
         };
 
-        const handleSetOutputPath = async () => {
-            await setOutputPath();
-            await loadCurrentOutputPath();
-        };
+        setOutputPathHooks.push(loadCurrentOutputPath);
 
         const makeBoolOptionButton = async (option) => {
             const btn = $(`<a class="btn-large primary_color"></a>`);
@@ -1603,7 +1580,7 @@ $(document).ready(() => {
         loadCurrentOutputPath();
         out_path_text.appendTo(opp);
         $(`<br/><span>Se refere ao caminho para onde os arquivos de pesquisa serão exportados.</span>`).appendTo(opp);
-        $(`<br/><a class="btn-large primary_color">Alterar caminho de saída</a>`).on("click", handleSetOutputPath).appendTo(opp);
+        $(`<br/><a class="btn-large primary_color">Alterar caminho de saída</a>`).on("click", setOutputPath).appendTo(opp);
         opp.appendTo(settings_list);
 
         const ssw = $(`<p></p>`);
@@ -1617,6 +1594,36 @@ $(document).ready(() => {
         sse.append(await makeBoolOptionButton("show_search_extras"));
         $(`<br/><span>Mostra alguns detalhes extra na pesquisa, como quanto tempo está sendo aguardado para a próxima ação.</span>`).appendTo(sse);
         sse.appendTo(settings_list);
+
+        please_wait.hide();
+    })();
+
+    (async () => {
+        const tab_initial = $("#tab-initial");
+        const please_wait = tab_initial.find("#please-wait");
+        const no_path_set = tab_initial.find("#no-path-set");
+
+        const path = await getOption("path");
+
+        const unlock = () => {
+            setTabRowEnable(true);
+            $("ul.tabs").tabs("select", "tab-pesquisar");
+        };
+
+        if (path == null) {
+            no_path_set.find("button").on("click", async () => {
+                try {
+                    await setOutputPath();
+                    unlock();
+                } catch (err) {
+                    console.log(err);
+                    alert("Ocorreu um erro ao escolher o caminho");
+                }
+            });
+            no_path_set.show();
+        } else {
+            unlock();
+        }
 
         please_wait.hide();
     })();

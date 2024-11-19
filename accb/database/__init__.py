@@ -19,6 +19,7 @@ from accb.database.upgrader import Upgrader
 DB_PATH = "accb.sqlite"
 ENCODING = "utf-8"  # or "latin-1"?
 
+JsonValue = str | int | float | dict | list
 
 class DatabaseManager:
     def __init__(self) -> None:
@@ -614,7 +615,7 @@ class DatabaseManager:
         ids = self.run_query("SELECT search_id FROM ongoing_search")
         return [unwrap(self.get_ongoing_search_by_id(id_)) for (id_,) in ids]
 
-    def get_option(self, key: str) -> Any:
+    def get_option(self, key: str) -> Optional[JsonValue]:
         result = self.run_query("SELECT value FROM option WHERE key=?", (key,))
 
         if len(result) == 0:
@@ -622,7 +623,7 @@ class DatabaseManager:
 
         return json.loads(result[0][0])
 
-    def set_option(self, key: str, value: Any) -> None:
+    def set_option(self, key: str, value: JsonValue) -> None:
         if self.run_query("SELECT * FROM option WHERE key=?", (key,)):
             self.run_query(
                 "UPDATE option SET value=? WHERE key=?", (json.dumps(value), key)
