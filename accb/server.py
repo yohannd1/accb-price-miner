@@ -131,16 +131,14 @@ def route_home() -> str:
         (o, db.get_search_by_id(o.search_id)) for o in db.get_ongoing_searches()
     ]
 
-    day = str(date.today()).split("-")[1]
+    current_month = int(str(date.today()).split("-")[1])
 
-    searches_r = db.run_query(
-        "SELECT * FROM search WHERE search_date LIKE ?",
-        (f"%%-{day}-%%",),
-    )
-
-    searches = [
+    searches_this_month = [
         (id_, city_name, search_date)
-        for (id_, _done, city_name, search_date, *_) in searches_r
+        for (id_, _done, city_name, search_date, *_) in db.run_query(
+            "SELECT * FROM search WHERE search_date LIKE ?",
+            (f"%%-{current_month}-%%",),
+        )
     ]
 
     search_years = db.run_query(
@@ -157,11 +155,14 @@ def route_home() -> str:
     return render_template(
         template,
         city_names=city_names,
-        ongoing_searches_pairs=ongoing_searches_pairs,
-        searches=searches,
         product_len=len(product_names),
+
         months=MONTHS_PT_BR,
-        active_month=day,
+        current_month=current_month,
+
+        searches_this_month=searches_this_month,
+        ongoing_searches_pairs=ongoing_searches_pairs,
+
         is_chrome_installed=is_chrome_installed(),
         years=search_years,
     )

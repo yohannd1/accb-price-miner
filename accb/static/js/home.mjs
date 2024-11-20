@@ -1319,7 +1319,7 @@ $(document).ready(() => {
             alert("Não foi possível prosseguir - nenhuma pesquisa selecionada.");
             return;
         }
-        const city = selected.attr("city");
+        const city = selected.attr("data-city");
 
         const response = await getGenericJson("/select_estab", { city: city });
         console.assert(response.status === "success");
@@ -1381,7 +1381,7 @@ $(document).ready(() => {
 
     // Realiza a geração de coleção de arquivos para uma pesquisa existente no modal de gerar arquivos (aba de pesquisas).
     $("#generate-file").on('click', () => {
-        const city_name = $("#search-select option:selected").attr("city");
+        const city_name = $("#search-select option:selected").attr("data-city");
         const format_type = $("#file_format").val();
 
         if (!$('.estab').hasClass("select-item-active") && format_type != "all") {

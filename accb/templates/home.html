@@ -234,22 +234,22 @@
           <div>
             <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa">
               <select id="search-select" class="browser-default">
-                {% if len(searches) == 0 %}
+                {% if len(searches_this_month) == 0 %}
                   <option value="null">Nenhuma Pesquisa</option>
                 {% endif %}
 
-                {% for id, city_name, search_date in searches %}
-                  <option city="{{ city_name }}" value="{{ id }}">{{ city_name }} {{ search_date }}</option>
+                {% for id, city_name, search_date in searches_this_month[::-1] %}
+                  <option data-city="{{ city_name }}" value="{{ id }}">{{ city_name }} {{ search_date }}</option>
                 {% endfor %}
               </select>
             </div>
             <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês">
               <select id="month-picker" class="browser-default">
-                {% for i, m in enumerate(months) %}
-                  {% if i + 1 == active_month %}
-                    <option selected value="{{i}}">{{ m }}</option>
+                {% for (i, m) in enumerate(months) %}
+                  {% if i + 1 == current_month %}
+                    <option selected value="{{ i }}">{{ m }}</option>
                   {% else %}
-                    <option value="{{i}}">{{ m }}</option>
+                    <option value="{{ i }}">{{ m }}</option>
                   {% endif %}
                 {% endfor %}
               </select>
@@ -263,7 +263,7 @@
         </div>
         <h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
         <div class="input-field search_div">
-          <input placeholder="Nome do Estabelecimento: dalnordes..." class="browser-default z-depth-2" id="search_bar"/>
+          <input placeholder="Pesquisar (qualquer das colunas da tabela)" class="browser-default z-depth-2" id="search_bar"/>
           <a class="round btn-floating btn-large primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
         </div>
         <div id="list-search">
@@ -522,7 +522,6 @@
 
         <li>A quantidade de estabelecimentos cadastrados não influenciam no tempo da pesquisa em si, mas as <b>palavras-chave</b> aumentam (média de 2 a 4 minutos extra por palavra-chave).</li>
 
-        <!-- TODO: colocar isso na aba de pesquisas, eu acho -->
         <li>É possível pesquisar por qualquer campo da tabela de pesquisas disponível na janela de pesquisas.</li>
 
         <li>Os endereços dos estabelecimentos devem ser cadastrados da forma mais idêntica possível aos valores encontrados no <i>Preço da Hora - Bahia</i> para maximizar as chances de pesquisar corretamente.</li>
