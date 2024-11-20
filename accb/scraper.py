@@ -237,7 +237,11 @@ class Scraper:
 
             show_warning(
                 title="CAPTCHA",
-                message="O captcha foi ativado. Foi aberta uma aba no seu navegador - resolva-o lá e depois pressione OK nesta mensagem.",
+                message=(
+                    "Um captcha foi detectado.\n"
+                    "Foi aberta uma aba no seu navegador - resolva-o e depois pressione OK nesta mensagem.\n"
+                    "Se a aba não tiver um captcha, pode fechá-la (foi um falso positivo)."
+                ),
             )
 
             self.mode = "paused"
