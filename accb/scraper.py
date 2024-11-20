@@ -183,9 +183,9 @@ class Scraper:
         self.send_logs(*logs)
 
     def _sleep(self, base: float) -> None:
-        """Calcula um tempo aleatório próximo de `base`, e logo depois avisa e aguarda por tal tempo.
+        """Calcula um tempo aleatório baseado em `base * self.time_coeff`, e logo depois avisa e aguarda por tal tempo.
 
-        A cada `unit_size` segundos, verifica se a pesquisa foi cancelada, e para se este for o caso.
+        A cada `self.sleep_step` segundos, verifica se a pesquisa foi cancelada, e para se este for o caso.
         """
 
         min_time = 0.2
@@ -248,7 +248,15 @@ class Scraper:
             raise ScraperRestart()
 
     def _is_in_captcha(self) -> bool:
-        return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
+        def check() -> bool:
+            return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
+
+        if check():
+            self.send_logs(f"Parece que um captcha foi encontrado. Aguardando mais um pouco...")
+            self._sleep(1.0)
+            return check()
+        else:
+            return False
 
     def _get_duration_mins_and_reset(self) -> float:
         """Retorna a duração desde o tempo iniciado e reseta o timer."""

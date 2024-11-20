@@ -398,14 +398,13 @@ main {
     display: flex;
     justify-content: space-between;
     width: 100%;
-    /* padding: .5em; */
     align-items: center;
     padding-left: 1em;
     background-color: #0e3049;
     color: white;
     font-weight: bold;
     border-radius: 10px;
-    margin-bottom: 1em;
+    margin-bottom: 0.6em;
     transition: background .2s ease-in-out;
     font-size: 1.1em;
 }
@@ -420,7 +419,6 @@ main {
     display: flex;
     justify-content: space-between;
     width: 100%;
-    /* padding: .5em; */
     align-items: center;
     padding-left: 1em;
     background-color: #0e3049;
@@ -472,7 +470,7 @@ main {
 #list-product {
     padding: 1em;
     height: fit-content;
-    max-height: 70% !important;
+    max-height: 85% !important;
     overflow: auto;
     line-height: 1.0;
 }
@@ -491,11 +489,9 @@ main {
 .config-title {
     display: flex;
     width: 100%;
-    margin: 3em 0;
+    margin: 1.8em 0;
     flex-direction: row;
     justify-content: space-between;
-    /* margin-top: 2em; */
-    /* margin-bottom: 2em; */
 }
 
 #export , #import {
