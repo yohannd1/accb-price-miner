@@ -345,7 +345,7 @@ const populateEstabs = async (city = null) => {
  * Lista todos os dados de pesquisas para uma pesquisa de id search_id, na pagina de pesquisas.
  * @param {integer} search_id=undefined
  */
-const list_search = (search_id = undefined) => {
+const list_search = async (search_id = undefined) => {
     $("#search-loader").show();
 
     if (search_id == undefined) {
@@ -358,47 +358,69 @@ const list_search = (search_id = undefined) => {
         $(".no-result").hide();
     }
 
-    $(".tr-item").remove();
+    const table_logs = $("#table-logs");
+    const table_products = $("#table-products");
 
-    $.get("/select_search_data", { search_id: search_id }, (response) => {
-        response = JSON.parse(response);
-        $("#search-loader").fadeOut(500);
-        if (response.length == 0) {
-            $(".no-result").show();
-        } else {
-            const $duration = $(".duration");
-            $duration.fadeOut(200);
+    // limpar as tabelas
+    table_products.find(".tr-item").remove();
+    table_logs.find(".tr-item").remove();
 
-            let time = 0;
+    const response = await getGenericJson("/select_search_data", { search_id: search_id });
+    console.assert(response.status === "success");
 
-            response.map((value, index) => {
-                time = value[4];
-                const estab = value[7];
-                const address = value[8];
-                const keyword = value[10];
-                const produto = value[6];
-                const preco = value[9];
+    const data = response.data;
 
-                const html = `
-                    <tr class="tr-item flow-text">
-                        <td title="${estab}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${estab}</td>
-                        <td title="${address}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${address}</td>
-                        <td title="${keyword}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${keyword}</td>
-                        <td title="${produto}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${produto}</td>
-                        <td title="${preco}">${preco}</td>
-                    </tr>
-                `;
+    $("#search-loader").fadeOut(500);
+    if (data.length == 0) {
+        $(".no-result").show();
+        return;
+    }
 
-                $(html).appendTo("#search-tbody");
-            });
+    const $duration = $(".duration");
+    $duration.fadeOut(200);
 
-            const mins = time.toFixed(0);
-            const secs = ((time % 1.0) * 60).toFixed(0);
+    let time = 0;
+    const tbody = table_products.find("tbody");
 
-            $duration
-                .html(`Tempo (aproximado) de duração da pesquisa: ${mins}m ${secs}s`)
-                .fadeIn(100);
-        }
+    data.forEach(value => {
+        time = value[4];
+        const estab = value[7];
+        const address = value[8];
+        const keyword = value[10];
+        const produto = value[6];
+        const preco = value[9];
+
+        const html = `
+            <tr class="tr-item flow-text">
+                <td title="${estab}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${estab}</td>
+                <td title="${address}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${address}</td>
+                <td title="${keyword}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${keyword}</td>
+                <td title="${produto}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${produto}</td>
+                <td title="${preco}">${preco}</td>
+            </tr>
+        `;
+
+        $(html).appendTo(tbody);
+    });
+
+    const mins = time.toFixed(0);
+    const secs = ((time % 1.0) * 60).toFixed(0);
+
+    $duration
+        .html(`Tempo (aproximado) de duração da pesquisa: ${mins}m ${secs}s`)
+        .fadeIn(100);
+
+    const logs_response = await getGenericJson("/api/get_logs_for_search", { search_id: search_id });
+    console.assert(logs_response.status === "success");
+
+    const logs_tbody = table_logs.find("tbody");
+    logs_response.logs.forEach(log => {
+        const html = `
+            <tr class="tr-item flow-text">
+                <td>${log}</td>
+            </tr>
+        `;
+        $(html).appendTo(logs_tbody);
     });
 }
 
@@ -1627,4 +1649,9 @@ $(document).ready(() => {
 
         please_wait.hide();
     })();
+
+    const tab_pesquisa = $("#pesquisa");
+    tab_pesquisa.find(".config-title #esq #btn-toggle-warnings").on("click", () => {
+        tab_pesquisa.find("#table-logs").toggleClass("hidden");
+    });
 });

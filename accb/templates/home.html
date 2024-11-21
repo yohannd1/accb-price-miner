@@ -231,7 +231,7 @@
     <div id="pesquisa" class="col s12 tab">
       <div class="tab-content-search">
         <div class="config-title" style="margin: 0;">
-          <div>
+          <div id="esq">
             <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa">
               <select id="search-select" class="browser-default">
                 {% if len(searches_this_month) == 0 %}
@@ -254,6 +254,7 @@
                 {% endfor %}
               </select>
             </div>
+            <button id="btn-toggle-warnings" class="primary_color btn-large">Mostrar avisos</button>
           </div>
           <div>
             <a style="margin-right: 10px; margin-left: 10px;" class="right round btn-floating btn-large primary_color tooltipped" data-position="left" id="open-search-file" href="#search-file" rel="modal:open" data-tooltip="Gerar Arquivos"><i class="fa fa-file"></i></a>
@@ -267,8 +268,21 @@
           <a class="round btn-floating btn-large primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
         </div>
         <div id="list-search">
-            <table class="centered striped">
-              <thead>
+          <table id="table-logs" class="centered striped hidden">
+            <thead>
+              <tr style="position:sticky; top: -3%; color: #fff;" class="primary_color">
+                <th>Avisos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="no-result" style="display: none;">
+                <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table id="table-products" class="centered striped">
+            <thead>
               <tr style="position:sticky; top: -3%; color: #fff;" class="primary_color">
                 <th>Estabelecimento</th>
                 <th>Endereço</th>
@@ -276,19 +290,20 @@
                 <th>Produto</th>
                 <th>Preço</th>
               </tr>
-              </thead>
-              <tbody id="search-tbody">
-                <tr class="no-result" style="display: none;">
-                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                  <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
-                </tr>
-              </tbody>
-            </table>
-            <i class="fa fa-spinner fa-pulse" id="search-loader"></i>
-          </div>
+            </thead>
+            <tbody id="search-tbody">
+              <tr class="no-result" style="display: none;">
+                <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+                <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px; color: #fff" class="red">Nenhum valor encontrado</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <i class="fa fa-spinner fa-pulse" id="search-loader"></i>
+        </div>
         </div>
         <span class="left duration">Tempo de duração da pesquisa: ???</span>
     </div>

@@ -10,6 +10,7 @@ from typing import Generator, Literal, Optional, assert_never
 from dataclasses import dataclass
 from urllib.request import urlopen
 from urllib.error import URLError
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 from flask_socketio import emit
@@ -134,6 +135,14 @@ class Scraper:
         log(f"[Scraper.send_logs]: {final}")
         emit("search.log", list(messages), broadcast=True)
 
+    def _send_warning(self, warning: str) -> None:
+        now = datetime.now()
+
+        self.send_logs(f"AVISO: {warning}")
+
+        timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+        self.db.add_log(warning, timestamp, self.options.ongoing.search_id)
+
     def _extract_and_save_data(self, product: str, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
 
@@ -150,10 +159,7 @@ class Scraper:
         all_elements = list(soup.find_all(True, {"class": "flex-item2"}))
 
         if len(all_elements) == 0:
-            # TODO: adicionar warning na pesquisa
-            self.send_logs(
-                f"AVISO: Nenhum item encontrado com palavra-chave {keyword} (produto {product})"
-            )
+            self._send_warning(f"Nenhum item encontrado com palavra-chave {keyword} (produto {product})")
 
         for item in all_elements:
             product_name = adjust_and_clean(item.find("strong").text)
@@ -352,14 +358,12 @@ class Scraper:
         self.db.update_ongoing_search(ongoing)
 
         for p_idx, p in enumerate_skip(ongoing.products, start=ongoing.current_product):
-            product = p.name
-
             progress_value = 100 * p_idx / product_count
 
             self.send_logs(
-                f"Começando pesquisa do produto {product} (progresso: {progress_value:.0f}%)"
+                f"Começando pesquisa do produto {p.name} (progresso: {progress_value:.0f}%)"
             )
-            emit("search.began_searching_product", product)
+            emit("search.began_searching_product", p.name)
             emit("search.update_progress_bar", progress_value, broadcast=True)
 
             for k_idx, keyword in enumerate_skip(
@@ -412,10 +416,14 @@ class Scraper:
                     if update_counter >= update_threshold:
                         break
 
-                self._extract_and_save_data(product, keyword)
+                self._extract_and_save_data(p.name, keyword)
 
             # voltar para o índice 0 de keyword (para não pular keywords do próximo produto)
             ongoing.current_keyword = 0
+
+        for estab in ongoing.estabs:
+            if self.db.get_item_count_with(search_id=ongoing.search_id, estab=estab) == 0:
+                self._send_warning(f"Nenhum produto foi encontrado para o estabelecimento {estab.name}")
 
         search = self.db.get_search_by_id(ongoing.search_id)
         assert search is not None

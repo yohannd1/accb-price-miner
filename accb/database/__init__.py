@@ -21,6 +21,7 @@ ENCODING = "utf-8"  # or "latin-1"?
 
 JsonValue = str | int | float | dict | list
 
+
 class DatabaseManager:
     def __init__(self) -> None:
         self._conn_count = 0
@@ -195,6 +196,20 @@ class DatabaseManager:
             """
             cursor.executescript(query)
 
+        @upgrader.until_version(5)
+        def uv5() -> None:
+            query = """
+            CREATE TABLE search_log (
+                search_id integer,
+                message text,
+                timestamp date,
+
+                FOREIGN KEY (search_id) REFERENCES search (id),
+                PRIMARY KEY (message, timestamp)
+            );
+            """
+            cursor.executescript(query)
+
         upgrader.upgrade(version)
         final_version = upgrader.get_final_version()
 
@@ -289,7 +304,6 @@ class DatabaseManager:
 
     def save_search(self, done: bool, city_name: str, duration: int) -> int:
         """Salva as pesquisas no banco de dados. Retorna o ID da última pesquisa"""
-        # TODO: analisar isso direito - tá funcionando certo?
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
@@ -482,9 +496,7 @@ class DatabaseManager:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
             query = """UPDATE search SET done=-1, duration=? WHERE id=?"""
-            cursor.execute(
-                query, (search.total_duration_mins, search.id)
-            )
+            cursor.execute(query, (search.total_duration_mins, search.id))
 
     def run_query(self, query: str, args: tuple = ()) -> list[Any]:
         """Roda uma query específica no banco de dados."""
@@ -634,6 +646,19 @@ class DatabaseManager:
             "INSERT INTO option (key, value) VALUES (?, ?)", (key, json.dumps(value))
         )
 
+    def add_log(self, message: str, timestamp: str, search_id: int) -> None:
+        self.run_query(
+            "INSERT INTO search_log (message, timestamp, search_id) VALUES (?, ?, ?)",
+            (message, timestamp, search_id),
+        )
+
+    def get_logs(self, search_id: int) -> Iterable[str]:
+        result = self.run_query("SELECT message, timestamp FROM search_log WHERE search_id = ?", (search_id,))
+        return (f"[{timestamp}] {message}" for (message, timestamp) in result)
+
+    def get_item_count_with(self, search_id: int, estab: Estab) -> int:
+        result = self.run_query("SELECT search_id FROM search_item WHERE search_id=? AND web_name=?", (search_id, estab.web_name))
+        return len(result)
 
 def table_dump(conn: Connection, table_name: str) -> Generator[str, None, None]:
     """Importa um arquivo sql para ser injetado no banco de dados.

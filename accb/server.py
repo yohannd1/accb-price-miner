@@ -156,13 +156,10 @@ def route_home() -> str:
         template,
         city_names=city_names,
         product_len=len(product_names),
-
         months=MONTHS_PT_BR,
         current_month=current_month,
-
         searches_this_month=searches_this_month,
         ongoing_searches_pairs=ongoing_searches_pairs,
-
         is_chrome_installed=is_chrome_installed(),
         years=search_years,
     )
@@ -198,6 +195,13 @@ def route_remove_product() -> RequestDict:
     }
 
 
+@app.route("/api/get_logs_for_search")
+def route_get_logs_for_search() -> dict:
+    search_id = request.args["search_id"]
+    logs = state.db_manager.get_logs(int(search_id))
+    return {"status": "success", "logs": list(logs)}
+
+
 @app.route("/select_product")
 def route_select_product() -> str:
     """Rota de seleção de produtos."""
@@ -211,8 +215,7 @@ def route_select_product() -> str:
 
 
 @app.route("/select_search_data")
-def route_select_search_data() -> str:
-
+def route_select_search_data() -> dict:
     search_id = request.args["search_id"]
 
     # TODO: usar db.get_search_item(), eu acho...
@@ -221,7 +224,7 @@ def route_select_search_data() -> str:
         (search_id,),
     )
 
-    return json.dumps(search_data)
+    return {"status": "success", "data": search_data}
 
 
 @app.route("/select_search_info")
@@ -486,9 +489,7 @@ def route_clean_search() -> RequestDict:
             estab_data = db.run_query(
                 "SELECT * FROM estab WHERE city_name = ?", (city.name,)
             )
-            args = db.run_query(
-                "SELECT DISTINCT id, search_date FROM search"
-            )
+            args = db.run_query("SELECT DISTINCT id, search_date FROM search")
 
             for search_id, search_date in args:
                 output_folder = limpeza_path / search_date
@@ -745,9 +746,7 @@ def attempt_search(scraper: Scraper) -> None:
         if scraper.mode == "default":
             # FIXME: é pra exportar automaticamente mesmo?
             ongoing = scraper.options.ongoing
-            db_to_xlsx(
-                db, ongoing.search_id, ongoing.estabs, ongoing.city, output_path
-            )
+            db_to_xlsx(db, ongoing.search_id, ongoing.estabs, ongoing.city, output_path)
 
         emit("search.finished", "Pesquisa finalizada com sucesso.", broadcast=True)
 

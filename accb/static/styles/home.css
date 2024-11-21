@@ -1015,3 +1015,7 @@ div#top-right-buttons a.btn-floating {
     width: fit-content;
     padding: 0 0;
 }
+
+.hidden {
+    display: none !important;
+}
