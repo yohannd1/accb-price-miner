@@ -1019,3 +1019,9 @@ div#top-right-buttons a.btn-floating {
 .hidden {
     display: none !important;
 }
+
+td.search-item {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}

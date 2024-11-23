@@ -21,6 +21,7 @@ def _curtime_str() -> str:
 
 
 def set_log_file(f) -> None:
+    global _log_file
     _log_file = f
 
 
@@ -28,6 +29,7 @@ def log(message: str) -> None:
     """Faz um log de uma mensagem."""
     prefix = _curtime_str()
     print(f"[{prefix}] {message}", file=_log_file)
+    _log_file.flush()
 
 
 def log_multiline(messages: Iterable[str]) -> None:
@@ -36,7 +38,7 @@ def log_multiline(messages: Iterable[str]) -> None:
     print(f"[{prefix}]:", file=_log_file)
     for m in messages:
         print(f"  {m}", file=_log_file)
-
+    _log_file.flush()
 
 def log_error(exc: Exception) -> None:
     ls = ["Ocorreu um erro:"] + [l[:-1] for l in traceback.format_exception(exc)]

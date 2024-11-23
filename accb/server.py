@@ -6,7 +6,7 @@ import traceback
 import webbrowser
 from pathlib import Path
 import socket
-from threading import Timer
+from threading import Timer, Thread
 from queue import Queue
 from typing import Any, Optional
 from time import sleep
@@ -25,7 +25,14 @@ from accb.scraper import (
     ScraperRestart,
     ScraperInterrupt,
 )
-from accb.utils import log, log_error, ask_user_directory, open_folder, Defer
+from accb.utils import (
+    log,
+    log_error,
+    ask_user_directory,
+    open_folder,
+    Defer,
+    set_log_file,
+)
 from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
 from accb.state import State
@@ -202,29 +209,53 @@ def route_get_logs_for_search() -> dict:
     return {"status": "success", "logs": list(logs)}
 
 
-@app.route("/select_product")
-def route_select_product() -> str:
-    """Rota de seleção de produtos."""
+@app.route("/api/get_products")
+def route_get_products() -> dict:
+    products = [
+        {"name": p.name, "keywords": p.keywords}
+        for p in state.db_manager.get_products()
+    ]
 
-    products = state.db_manager.get_products()
+    return {"status": "success", "products": products}
 
-    # TODO: parar de usar assim (ver dataclass.asdict ou alguma conversão semi-automática p/ tupla)
-    retroencoded = [(p.name, str.join(",", p.keywords)) for p in products]
 
-    return json.dumps(retroencoded)
+@app.route("/api/get_search_info")
+def route_get_search_info() -> dict:
+    search_id = int(request.args["search_id"])
+
+    search = state.db_manager.get_search_by_id(search_id)
+    if search is None:
+        return {
+            "status": "error",
+            "message": f"Nenhuma pesquisa com ID {search_id} encontrada",
+        }
+
+    info = {
+        "city_name": search.city_name,
+        "start_date": search.start_date,
+        "total_duration_mins": search.total_duration_mins,
+    }
+
+    return {"status": "success", "info": info}
 
 
 @app.route("/select_search_data")
 def route_select_search_data() -> dict:
     search_id = request.args["search_id"]
 
-    # TODO: usar db.get_search_item(), eu acho...
-    search_data = state.db_manager.run_query(
-        "SELECT * FROM search JOIN search_item ON search.id = search_item.search_id AND search.id = ? ORDER BY search_item.product_name, search_item.price ASC",
-        (search_id,),
-    )
+    items = [
+        {
+            "search_id": it.search_id,
+            "product_name": it.product_name,
+            "web_name": it.web_name,
+            "address": it.address,
+            "price": it.price,
+            "keyword": it.keyword,
+        }
+        for it in state.db_manager.get_search_items(int(search_id))
+    ]
 
-    return {"status": "success", "data": search_data}
+    return {"status": "success", "items": items}
 
 
 @app.route("/select_search_info")
@@ -744,7 +775,6 @@ def attempt_search(scraper: Scraper) -> None:
         scraper.begin_search()
 
         if scraper.mode == "default":
-            # FIXME: é pra exportar automaticamente mesmo?
             ongoing = scraper.options.ongoing
             db_to_xlsx(db, ongoing.search_id, ongoing.estabs, ongoing.city, output_path)
 
@@ -806,13 +836,23 @@ def utility_processor() -> RequestDict:
     }
 
 
+def wait_and_start_browser() -> None:
+    """Aguardar até o port do servidor abrir e, quando isso acontecer, fechar o servidor."""
+
+    while True:
+        if is_port_in_use(PORT):
+            break
+        sleep(0.5)
+    webbrowser.open(f"{SERVER_URL}:{PORT}")
+
+
 def main() -> None:
     log("Iniciando o servidor...")
 
-    force_debug = os.environ.get("ACCB_FORCE_DEBUG") is not None
+    force_debug = os.environ.get("ACCB_DEBUG") is not None
 
     is_in_bundle = getattr(sys, "frozen", False)
-    debug_enabled = force_debug or bool(__file__) and not is_in_bundle
+    debug_enabled = force_debug or (bool(__file__) and not is_in_bundle)
     log(f"{is_in_bundle=}; {debug_enabled=}")
 
     if debug_enabled:
@@ -820,14 +860,18 @@ def main() -> None:
     else:
         os.environ["WDM_LOG_LEVEL"] = "0"
 
-    # TODO: configurar o arquivo de log
-
-    # TODO: rodar isso quando o servidor tiver carregado, ao invés de usar um timer...
-    Timer(1, lambda: webbrowser.open(f"{SERVER_URL}:{PORT}")).start()
+        # se não estamos fazendo debug, é melhor escrever os logs no arquivo.
+        log_file = open("accb.log", "a")
+        set_log_file(log_file)
 
     if is_port_in_use(PORT):
         log(f"Porta {PORT} já em uso - o programa já está rodando?")
         return
+
+    # FIXME: isso aqui tá funcionando? (no windows)
+    # Timer(1, lambda: webbrowser.open(f"{SERVER_URL}:{PORT}")).start()
+    t = Thread(target=wait_and_start_browser)
+    t.start()
 
     try:
         socketio.run(

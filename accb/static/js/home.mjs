@@ -368,10 +368,10 @@ const list_search = async (search_id = undefined) => {
     const response = await getGenericJson("/select_search_data", { search_id: search_id });
     console.assert(response.status === "success");
 
-    const data = response.data;
+    const items = response.items;
 
     $("#search-loader").fadeOut(500);
-    if (data.length == 0) {
+    if (items.length == 0) {
         $(".no-result").show();
         return;
     }
@@ -379,35 +379,41 @@ const list_search = async (search_id = undefined) => {
     const $duration = $(".duration");
     $duration.fadeOut(200);
 
-    let time = 0;
     const tbody = table_products.find("tbody");
 
-    data.forEach(value => {
-        time = value[4];
-        const estab = value[7];
-        const address = value[8];
-        const keyword = value[10];
-        const produto = value[6];
-        const preco = value[9];
+    const makeRow = (content, max_width) => {
+        const style = (max_width === undefined) ? "" : ` style="max-width: ${max_width};"`;
+        return `<td title="${content}" class="search-item" ${style}>${content}</td>`;
+    };
 
+    items.forEach(it => {
         const html = `
             <tr class="tr-item flow-text">
-                <td title="${estab}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${estab}</td>
-                <td title="${address}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${address}</td>
-                <td title="${keyword}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:50px;">${keyword}</td>
-                <td title="${produto}" style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:250px;">${produto}</td>
-                <td title="${preco}">${preco}</td>
+                ${makeRow(it.web_name, "250px")}
+                ${makeRow(it.address, "250px")}
+                ${makeRow(it.keyword, "50px")}
+                ${makeRow(it.product_name, "250px")}
+                ${makeRow(it.price)}
             </tr>
         `;
 
         $(html).appendTo(tbody);
     });
 
-    const mins = time.toFixed(0);
-    const secs = ((time % 1.0) * 60).toFixed(0);
+    let duration_text = "???";
+
+    if (search_id !== undefined) {
+        const si_response = await getGenericJson("/api/get_search_info", { search_id: search_id });
+        console.assert(si_response.status === "success");
+
+        const duration = si_response.info.total_duration_mins;
+        const mins = duration.toFixed(0);
+        const secs = ((duration % 1.0) * 60).toFixed(0);
+        duration_text = `${mins}m ${secs}s`;
+    }
 
     $duration
-        .html(`Tempo (aproximado) de duração da pesquisa: ${mins}m ${secs}s`)
+        .html(`Duração (aproximada) da pesquisa: ${duration_text}`)
         .fadeIn(100);
 
     const logs_response = await getGenericJson("/api/get_logs_for_search", { search_id: search_id });
@@ -424,38 +430,36 @@ const list_search = async (search_id = undefined) => {
     });
 }
 
-// Listagem de produtos
 /**
  * Lista todos os produtos na página de produtos.
  */
-const list_product = () => {
-    $.get("/select_product", (response) => {
-        response = JSON.parse(response);
-        PRODUCT_DATA = response;
-        if (response.length == 0) {
-            $("#no-result-product").fadeIn(500);
-        } else {
-            response.map((value, index) => {
-                const html = `
-                    <div class="z-depth-3 product-config edit-product" id="ed-${value[0]}" value="${value[0]}">
-                        <p>${value[0]}</p>
-                        <div class="right">
-                            <a style="margin-right: 10px;" id="e-${value[0]}" value="${value[0]}" class="btn-floating btn-large primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
-                            <a value="${value[0]}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
-                        </div>
-                    </div>
-                `;
+const listAllProducts = async () => {
+    const response = await getGenericJson("/api/get_products");
+    console.assert(response.status === "success");
 
-                $(html)
-                    .appendTo("#list-product")
-                    .hide()
-                    .slideDown("slow");
-            });
-        }
+    const products = response.products;
 
+    if (products.length == 0) {
+        $("#no-result-product").fadeIn(500);
+        return;
+    }
+
+    products.forEach(p => {
+        const html = `
+            <div class="z-depth-3 product-config edit-product" id="ed-${p.name}" value="${p.name}">
+                <p>${p.name}</p>
+                <div class="right">
+                    <a style="margin-right: 10px;" id="e-${p.name}" value="${p.name}" class="btn-floating btn-large primary_color edit-product " data-position="top"><i class="fa fa-edit"></i></a>
+                    <a value="${p.name}" class="remove-product btn-floating btn-large red " ><i class="fa fa-minus"></i></a>
+                </div>
+            </div>
+        `;
+
+        $(html)
+            .appendTo("#list-product")
+            .hide()
+            .slideDown("slow");
     });
-
-
 }
 
 // Conteudo do modal dinamico
@@ -781,7 +785,7 @@ $(document).ready(() => {
     $("select").formSelect();
     $('.tooltipped').tooltip();
     populateEstabs();
-    list_product();
+    listAllProducts();
     list_search();
     custom_select();
     custom_select_date();

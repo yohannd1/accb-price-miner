@@ -388,21 +388,37 @@ class DatabaseManager:
             res = cursor.execute(query, args)
             return res.fetchall()
 
-    def get_search_item(self, search_id: Optional[int] = None) -> Iterable[Any]:
-        """Seleciona itens de uma pesquisa (ou todas, se `search_id`=None) do banco de dados."""
+    def get_search_items(self, search_id: Optional[int] = None) -> list[SearchItem]:
+        """Seleciona itens de uma pesquisa (ou todas, se `search_id` = None) do banco de dados."""
 
         args: tuple = ()
         if search_id is None:
-            query = "SELECT * FROM search_item ORDER BY search_id ASC"
+            query = "SELECT search_id, product_name, web_name, address, price, keyword FROM search_item ORDER BY search_id, product_name, price ASC"
             args = ()
         else:
-            query = "SELECT * FROM search_item WHERE search_id=? ORDER BY search_id ASC"
+            query = "SELECT search_id, product_name, web_name, address, price, keyword FROM search_item WHERE search_id=? ORDER BY product_name, price ASC"
             args = (search_id,)
 
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            res = cursor.execute(query, args)
-            return res
+            return [
+                SearchItem(
+                    search_id=search_id,
+                    product_name=product_name,
+                    web_name=web_name,
+                    address=address,
+                    price=price,
+                    keyword=keyword,
+                )
+                for (
+                    search_id,
+                    product_name,
+                    web_name,
+                    address,
+                    price,
+                    keyword,
+                ) in cursor.execute(query, args)
+            ]
 
     def get_products(self) -> Iterable[Product]:
         """Obtém a lista de produtos do banco de dados."""
@@ -653,12 +669,19 @@ class DatabaseManager:
         )
 
     def get_logs(self, search_id: int) -> Iterable[str]:
-        result = self.run_query("SELECT message, timestamp FROM search_log WHERE search_id = ?", (search_id,))
+        result = self.run_query(
+            "SELECT message, timestamp FROM search_log WHERE search_id = ?",
+            (search_id,),
+        )
         return (f"[{timestamp}] {message}" for (message, timestamp) in result)
 
     def get_item_count_with(self, search_id: int, estab: Estab) -> int:
-        result = self.run_query("SELECT search_id FROM search_item WHERE search_id=? AND web_name=?", (search_id, estab.web_name))
+        result = self.run_query(
+            "SELECT search_id FROM search_item WHERE search_id=? AND web_name=?",
+            (search_id, estab.web_name),
+        )
         return len(result)
+
 
 def table_dump(conn: Connection, table_name: str) -> Generator[str, None, None]:
     """Importa um arquivo sql para ser injetado no banco de dados.
