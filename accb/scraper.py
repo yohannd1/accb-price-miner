@@ -26,20 +26,6 @@ from accb.utils import log, show_warning, get_time_hms, enumerate_skip, Defer
 from accb.state import State
 from accb.model import OngoingSearch, SearchItem
 
-URL_PRECODAHORA = "https://precodahora.ba.gov.br/produtos"
-
-
-@dataclass
-class ScraperOptions:
-    """Armazena informações que instruem a pesquisa feita pelo Scraper."""
-
-    # TODO: parar de usar isso (se tornou desnecessário, dá pra integrar no scraper mesmo)
-
-    ongoing: OngoingSearch
-
-    url: str = URL_PRECODAHORA
-    """URL do site a ser pesquisado"""
-
 
 class ScraperError(Exception):
     """Erro genérico do Scraper"""
@@ -65,8 +51,8 @@ ScraperMode = Literal["default", "errored", "cancelled", "paused"]
 class Scraper:
     """Realiza o scraping na página do Preço da Hora Bahia."""
 
-    def __init__(self, options: ScraperOptions, state: State, driver: Chrome) -> None:
-        self.options = options
+    def __init__(self, ongoing: OngoingSearch, state: State, driver: Chrome) -> None:
+        self.ongoing = ongoing
         self.state = state
         self.driver = driver
         self.db = self.state.db_manager
@@ -82,6 +68,9 @@ class Scraper:
         self.sleep_step = 1.0
         """Unidade de tempo quando aguardando algo. Geralmente são feitas verificações a cada unidade."""
 
+        self.url = "https://precodahora.ba.gov.br/produtos"
+        """URL onde ocorrem as pesquisas"""
+
     def pause(self) -> None:
         self.mode = "paused"
 
@@ -90,7 +79,7 @@ class Scraper:
 
     @staticmethod
     def _is_connected(test_url: str = "https://www.example.org/") -> bool:
-        """Confere a conexão com a URL_PRECODAHORA desejada."""
+        """Confere a conexão com a URL desejada."""
 
         try:
             with urlopen(test_url):
@@ -101,7 +90,7 @@ class Scraper:
 
     def _delete_related_search(self) -> None:
         db = self.state.db_manager
-        id_ = self.options.ongoing.search_id
+        id_ = self.ongoing.search_id
         db.delete_ongoing_search_by_id(id_)
         db.delete_search_by_id(id_)
 
@@ -141,7 +130,7 @@ class Scraper:
         self.send_logs(f"AVISO: {warning}")
 
         timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-        self.db.add_log(warning, timestamp, self.options.ongoing.search_id)
+        self.db.add_log(warning, timestamp, self.ongoing.search_id)
 
     def _extract_and_save_data(self, product: str, keyword: str) -> None:
         """Filtra os dados da janela atual aberta do navegador e os salva no banco de dados."""
@@ -173,7 +162,7 @@ class Scraper:
 
             self.db.save_search_item(
                 SearchItem(
-                    search_id=self.options.ongoing.search_id,
+                    search_id=self.ongoing.search_id,
                     web_name=product_local,
                     address=product_address,
                     product_name=product_name,
@@ -238,7 +227,7 @@ class Scraper:
     def _check_captcha(self) -> None:
         if self._is_in_captcha():
             # a página inicial redireciona automaticamente p/ a URL de captcha
-            webbrowser.open(self.options.url)
+            webbrowser.open(self.url)
             self.send_logs("Aguardando usuário resolver o captcha...")
 
             show_warning(
@@ -312,14 +301,14 @@ class Scraper:
         return elem or self.driver.find_element(by, value)
 
     def begin_search(self) -> None:
-        ongoing = self.options.ongoing
+        ongoing = self.ongoing
         driver = self.driver
 
         emit("search.began", broadcast=True)
 
-        self.send_logs(f"Carregando página (URL: {self.options.url})...")
+        self.send_logs(f"Carregando página (URL: {self.url})...")
 
-        driver.get(self.options.url)
+        driver.get(self.url)
 
         wait_for_element = self._wait_for_element
         wait_for_element_or_captcha = self._wait_for_element_or_captcha

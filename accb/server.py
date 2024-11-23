@@ -20,7 +20,6 @@ from werkzeug.exceptions import NotFound
 
 from accb.scraper import (
     Scraper,
-    ScraperOptions,
     ScraperError,
     ScraperRestart,
     ScraperInterrupt,
@@ -697,7 +696,6 @@ def search(
     output_path = state.get_output_path()
     assert output_path is not None
 
-    opts: ScraperOptions
     if resume_id is not None:
         search = db.get_search_by_id(resume_id)
         assert search is not None
@@ -708,10 +706,6 @@ def search(
         # caso o ongoing não tiver duração
         if ongoing.duration_mins == 0.0:
             ongoing.duration_mins = search.total_duration_mins
-
-        opts = ScraperOptions(
-            ongoing=ongoing,
-        )
     else:
         assert city is not None
         assert estab_names is not None
@@ -729,8 +723,6 @@ def search(
         )
         db.create_ongoing_search(ongoing)
 
-        opts = ScraperOptions(ongoing=ongoing)
-
     error_count = 0
 
     def close_driver(driver: Chrome) -> None:
@@ -744,7 +736,7 @@ def search(
             with Defer(
                 open_chrome_driver(is_headless=is_headless), deinit=close_driver
             ) as driver:
-                scraper = Scraper(opts, state, driver)
+                scraper = Scraper(ongoing, state, driver)
                 state.scraper = scraper
                 attempt_search(scraper)
             break
@@ -790,7 +782,7 @@ def attempt_search(scraper: Scraper) -> None:
         scraper.begin_search()
 
         if scraper.mode == "default":
-            ongoing = scraper.options.ongoing
+            ongoing = scraper.ongoing
             db_to_xlsx(db, ongoing.search_id, ongoing.estabs, ongoing.city, output_path)
 
         emit("search.finished", "Pesquisa finalizada com sucesso.", broadcast=True)
@@ -883,10 +875,7 @@ def main() -> None:
         log(f"Porta {PORT} já em uso - o programa já está rodando?")
         return
 
-    # FIXME: isso aqui tá funcionando? (no windows)
-    # Timer(1, lambda: webbrowser.open(f"{SERVER_URL}:{PORT}")).start()
-    t = Thread(target=wait_and_start_browser)
-    t.start()
+    Thread(target=wait_and_start_browser).start()
 
     try:
         socketio.run(
