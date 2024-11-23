@@ -6,13 +6,14 @@
 O ACCB Price Miner, desenvolvido por [Samuel
 Vasconcelos](https://github.com/smvasconcelos/) como Projeto de
 Iniciação Tecnológica, é um software que busca automatizar a coleta de
-preços de produtos na Bahia, utilizando-se de dados da plataforma Preço
-da Hora.
+preços de produtos na Bahia, pela plataforma [Preço da Hora
+(BA)](https://precodahora.ba.gov.br/).
 
-Esta versão é uma melhora feita por
-[Yohanan](https://github.com/yohannd1/) da [versão
-original](https://github.com/smvasconcelos/ACCB_IT), como Projeto de
-Extensão, buscando manutenir o projeto e melhorá-lo em alguns aspectos.
+Esta versão é uma melhora, feita por
+[Yohanan](https://github.com/yohannd1/), da [versão original de
+Samuel](https://github.com/smvasconcelos/ACCB_IT), feita sob um Projeto
+de Extensão com o objetivo de manutenir o sistema e melhorá-lo em alguns
+aspectos.
 
 A página oficial do projeto está disponível no [site da IM&A da
 UESC](https://ima.uesc.br/accb_price_miner/).
@@ -74,7 +75,7 @@ python accb/__main__.py
 Para criar um executável (usando PyInstaller, `pip install pyinstaller`):
 
 ```sh
-pyinstaller app.spec
+pyinstaller accb.spec
 ```
 
 ## Ferramentas de desenvolvimento
@@ -89,7 +90,7 @@ black .
 ponto) usando `mypy` (`pip install mypy`):
 
 ```sh
-mypy app.py --ignore-missing-imports
+mypy accb/__main__.py --ignore-missing-imports
 ```
 
 Para gerar a documentação do programa usando `pdoc` (`pip install
