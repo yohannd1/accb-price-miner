@@ -202,14 +202,14 @@ def route_remove_product() -> RequestDict:
     }
 
 
-@app.route("/api/get_logs_for_search")
+@app.route("/db/get_logs_for_search")
 def route_get_logs_for_search() -> dict:
     search_id = request.args["search_id"]
     logs = state.db_manager.get_logs(int(search_id))
     return {"status": "success", "logs": list(logs)}
 
 
-@app.route("/api/get_products")
+@app.route("/db/get_products")
 def route_get_products() -> dict:
     products = [
         {"name": p.name, "keywords": p.keywords}
@@ -219,7 +219,7 @@ def route_get_products() -> dict:
     return {"status": "success", "products": products}
 
 
-@app.route("/api/get_search_info")
+@app.route("/db/get_search_info")
 def route_get_search_info() -> dict:
     search_id = int(request.args["search_id"])
 
@@ -238,10 +238,25 @@ def route_get_search_info() -> dict:
 
     return {"status": "success", "info": info}
 
+@app.route("/db/get_all_items")
+def route_get_all_items() -> dict:
+    items = [
+        {
+            "search_id": it.search_id,
+            "product_name": it.product_name,
+            "web_name": it.web_name,
+            "address": it.address,
+            "price": it.price,
+            "keyword": it.keyword,
+        }
+        for it in state.db_manager.get_search_items()
+    ]
 
-@app.route("/select_search_data")
-def route_select_search_data() -> dict:
-    search_id = request.args["search_id"]
+    return {"status": "success", "items": items}
+
+@app.route("/db/get_items")
+def route_get_items() -> dict:
+    search_id = int(request.args["search_id"])
 
     items = [
         {
@@ -252,7 +267,7 @@ def route_select_search_data() -> dict:
             "price": it.price,
             "keyword": it.keyword,
         }
-        for it in state.db_manager.get_search_items(int(search_id))
+        for it in state.db_manager.get_search_items(search_id)
     ]
 
     return {"status": "success", "items": items}

@@ -81,7 +81,7 @@ function filter_search(month) {
 
         $("#search-select").parent().find(".styledSelect").remove();
         $("#search-select").parent().find("ul.options").remove();
-        list_search(data[0][0]);
+        listSearchItems(data[0][0]);
         custom_select_search();
 
         return true;
@@ -292,7 +292,7 @@ const custom_select_search = () => {
             $styledSelect.text($(this).text()).removeClass('active');
             $this.val($(this).attr('rel'));
             $list.hide();
-            list_search($this.val());
+            listSearchItems($this.val());
         });
 
         // Hides the unordered list when clicking outside of it
@@ -345,7 +345,7 @@ const populateEstabs = async (city = null) => {
  * Lista todos os dados de pesquisas para uma pesquisa de id search_id, na pagina de pesquisas.
  * @param {integer} search_id=undefined
  */
-const list_search = async (search_id = undefined) => {
+const listSearchItems = async (search_id = undefined) => {
     $("#search-loader").show();
 
     if (search_id == undefined) {
@@ -365,7 +365,7 @@ const list_search = async (search_id = undefined) => {
     table_products.find(".tr-item").remove();
     table_logs.find(".tr-item").remove();
 
-    const response = await getGenericJson("/select_search_data", { search_id: search_id });
+    const response = await getGenericJson("/db/get_items", { search_id: search_id });
     console.assert(response.status === "success");
 
     const items = response.items;
@@ -403,7 +403,7 @@ const list_search = async (search_id = undefined) => {
     let duration_text = "???";
 
     if (search_id !== undefined) {
-        const si_response = await getGenericJson("/api/get_search_info", { search_id: search_id });
+        const si_response = await getGenericJson("/db/get_search_info", { search_id: search_id });
         console.assert(si_response.status === "success");
 
         const duration = si_response.info.total_duration_mins;
@@ -416,7 +416,7 @@ const list_search = async (search_id = undefined) => {
         .html(`Duração (aproximada) da pesquisa: ${duration_text}`)
         .fadeIn(100);
 
-    const logs_response = await getGenericJson("/api/get_logs_for_search", { search_id: search_id });
+    const logs_response = await getGenericJson("/db/get_logs_for_search", { search_id: search_id });
     console.assert(logs_response.status === "success");
 
     const logs_tbody = table_logs.find("tbody");
@@ -434,7 +434,7 @@ const list_search = async (search_id = undefined) => {
  * Lista todos os produtos na página de produtos.
  */
 const listAllProducts = async () => {
-    const response = await getGenericJson("/api/get_products");
+    const response = await getGenericJson("/db/get_products");
     console.assert(response.status === "success");
 
     const products = response.products;
@@ -786,7 +786,7 @@ $(document).ready(() => {
     $('.tooltipped').tooltip();
     populateEstabs();
     listAllProducts();
-    list_search();
+    listSearchItems();
     custom_select();
     custom_select_date();
     custom_select_search();
