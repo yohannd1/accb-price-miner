@@ -22,12 +22,12 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
         (name, local, keyword, address, price) = row
 
         info = SearchItem(
-            search_id = search_id,
-            web_name = local,
-            address = address,
-            product_name = name,
-            price = price,
-            keyword = keyword,
+            search_id=search_id,
+            web_name=local,
+            address=address,
+            product_name=name,
+            price=price,
+            keyword=keyword,
         )
         db.save_search_item(info)
 
@@ -121,46 +121,40 @@ def export_to_xlsx(
         pattern = "|".join(address.upper().split(" "))
         df = df[df.ENDEREÇO.str.contains(pattern, regex=True)]
 
-    # df = df[df.ENDEREÇO.str.contains(address.upper())]
-    writer = pd.ExcelWriter(str(output_path), engine="openpyxl")
+    with pd.ExcelWriter(str(output_path), engine="openpyxl") as writer:
+        df.to_excel(
+            writer,
+            sheet_name="Pesquisa",
+            index=False,
+            startrow=0,
+            startcol=1,
+            engine="openpyxl",
+        )
 
-    # TODO: use `with` statement
+        border = Border(
+            left=Side(border_style="thin", color="FF000000"),
+            right=Side(border_style="thin", color="FF000000"),
+            top=Side(border_style="thin", color="FF000000"),
+            bottom=Side(border_style="thin", color="FF000000"),
+            diagonal=Side(border_style="thin", color="FF000000"),
+            diagonal_direction=0,
+            outline=True,
+            vertical=Side(border_style="thin", color="FF000000"),
+            horizontal=Side(border_style="thin", color="FF000000"),
+        )
 
-    df.to_excel(
-        writer,
-        sheet_name="Pesquisa",
-        index=False,
-        startrow=0,
-        startcol=1,
-        engine="openpyxl",
-    )
+        workbook = writer.book["Pesquisa"]
+        worksheet = workbook
 
-    border = Border(
-        left=Side(border_style="thin", color="FF000000"),
-        right=Side(border_style="thin", color="FF000000"),
-        top=Side(border_style="thin", color="FF000000"),
-        bottom=Side(border_style="thin", color="FF000000"),
-        diagonal=Side(border_style="thin", color="FF000000"),
-        diagonal_direction=0,
-        outline=True,
-        vertical=Side(border_style="thin", color="FF000000"),
-        horizontal=Side(border_style="thin", color="FF000000"),
-    )
+        for w_name in "BCDEF":
+            for cell in worksheet[w_name]:
+                cell.border = border
+                cell.alignment = Alignment(horizontal="center")
 
-    workbook = writer.book["Pesquisa"]
-    worksheet = workbook
-
-    for w_name in "BCDEF":
-        for cell in worksheet[w_name]:
-            cell.border = border
-            cell.alignment = Alignment(horizontal="center")
-
-    for col in worksheet.columns:
-        max_length = 0
-        column = col[0].column_letter
-        for cell in col:
-            max_length = max(max_length, len(str(cell.value)))
-        adjusted_width = (max_length + 2) * 1.2
-        worksheet.column_dimensions[column].width = adjusted_width
-
-    writer.close()
+        for col in worksheet.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                max_length = max(max_length, len(str(cell.value)))
+            adjusted_width = (max_length + 2) * 1.2
+            worksheet.column_dimensions[column].width = adjusted_width

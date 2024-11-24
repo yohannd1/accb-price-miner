@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from typing import Optional
+from threading import Lock
+
 import sqlite3
 
 from accb.utils import log
-from typing import Optional
-from threading import Lock
 
 
 class Connection:

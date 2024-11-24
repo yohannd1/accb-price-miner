@@ -6,7 +6,7 @@ import traceback
 import webbrowser
 from pathlib import Path
 import socket
-from threading import Timer, Thread
+from threading import Thread
 from queue import Queue
 from typing import Any, Optional
 from time import sleep
@@ -36,7 +36,7 @@ from accb.restartable_timer import RestartableTimer
 from accb.locked_var import LockedVar
 from accb.state import State
 from accb.consts import MONTHS_PT_BR
-from accb.model import Estab, OngoingSearch, Search, Product, City
+from accb.model import Estab, OngoingSearch, Product, City
 from accb.web_driver import is_chrome_installed, open_chrome_driver
 from accb.database import table_dump
 from accb.bi_queue import BiQueue
@@ -237,6 +237,7 @@ def route_get_search_info() -> dict:
 
     return {"status": "success", "info": info}
 
+
 @app.route("/db/get_all_items")
 def route_get_all_items() -> dict:
     items = [
@@ -252,6 +253,7 @@ def route_get_all_items() -> dict:
     ]
 
     return {"status": "success", "items": items}
+
 
 @app.route("/db/get_items")
 def route_get_items() -> dict:
@@ -669,23 +671,21 @@ def on_search_resume_ongoing(args: RequestDict) -> None:
     search_id = args["search_id"]
     assert isinstance(search_id, int)
 
-    search(resume_id=search_id)
+    start_search(resume_id=search_id)
 
 
 @socketio.on("search.begin")
 def on_search_begin(args: RequestDict) -> None:
-    db = state.db_manager
-
     city = args["city"]
     assert isinstance(city, str)
 
     estab_names = args["names"]
     assert isinstance(estab_names, list)
 
-    search(city=city, estab_names=estab_names)
+    start_search(city=city, estab_names=estab_names)
 
 
-def search(
+def start_search(
     resume_id: Optional[int] = None,
     city: Optional[str] = None,
     estab_names: Optional[list[str]] = None,
@@ -773,7 +773,6 @@ def attempt_search(scraper: Scraper) -> None:
 
     db = state.db_manager
     exc_to_raise: Optional[BaseException] = None
-    needs_to_restart: bool = False
 
     output_path = state.get_output_path()
     assert output_path is not None
@@ -798,7 +797,7 @@ def attempt_search(scraper: Scraper) -> None:
         # se precisamos reiniciar, vamos garantir que está pausado (para fazer backup)
         if scraper.mode != "paused":
             log(
-                f"Ao usar um ScraperRestart, o modo não estava `paused`. Forçando isso..."
+                "Ao usar um ScraperRestart, o modo não estava `paused`. Forçando isso..."
             )
             scraper.mode = "paused"
 
@@ -868,7 +867,7 @@ def main() -> None:
         os.environ["WDM_LOG_LEVEL"] = "0"
 
         # se não estamos fazendo debug, é melhor escrever os logs no arquivo.
-        log_file = open("accb.log", "a")
+        log_file = open("accb.log", "a", encoding=ENCODING)
         set_log_file(log_file)
 
     if is_port_in_use(PORT):

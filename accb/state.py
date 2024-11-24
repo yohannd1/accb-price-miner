@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from pathlib import Path
 
-from accb.utils import log
 from accb.database import DatabaseManager
 
 if TYPE_CHECKING:
@@ -29,6 +28,6 @@ class State:
 
         if path is None:
             return None
-        else:
-            assert isinstance(path, str)
-            return Path(path)
+
+        assert isinstance(path, str)
+        return Path(path)

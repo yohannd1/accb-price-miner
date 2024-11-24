@@ -40,6 +40,7 @@ def log_multiline(messages: Iterable[str]) -> None:
         print(f"  {m}", file=_log_file)
     _log_file.flush()
 
+
 def log_error(exc: Exception) -> None:
     ls = ["Ocorreu um erro:"] + [l[:-1] for l in traceback.format_exception(exc)]
     log_multiline(ls)
@@ -109,7 +110,9 @@ def open_folder(path: Path) -> None:
         raise NotImplementedError("unsupported operating system")
 
 
-def enumerate_skip(seq: Sequence[T], start: int = 0) -> Generator[tuple[int, T], None, None]:
+def enumerate_skip(
+    seq: Sequence[T], start: int = 0
+) -> Generator[tuple[int, T], None, None]:
     i = start
     while i < len(seq):
         yield (i, seq[i])

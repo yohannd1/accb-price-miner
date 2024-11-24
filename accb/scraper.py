@@ -6,8 +6,7 @@ import re
 from time import sleep, time
 import webbrowser
 import random
-from typing import Generator, Literal, Optional, assert_never
-from dataclasses import dataclass
+from typing import Literal, assert_never
 from urllib.request import urlopen
 from urllib.error import URLError
 from datetime import datetime
@@ -22,7 +21,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import Chrome
 from selenium.webdriver.remote.webelement import WebElement
 
-from accb.utils import log, show_warning, get_time_hms, enumerate_skip, Defer
+from accb.utils import log, show_warning, enumerate_skip, Defer
 from accb.state import State
 from accb.model import OngoingSearch, SearchItem
 
@@ -30,19 +29,13 @@ from accb.model import OngoingSearch, SearchItem
 class ScraperError(Exception):
     """Erro genérico do Scraper"""
 
-    pass
-
 
 class ScraperInterrupt(Exception):
     """Avisa que o scraper foi interrompido."""
 
-    pass
-
 
 class ScraperRestart(Exception):
     """Avisa que o scraper foi interrompido e precisa ser reiniciado."""
-
-    pass
 
 
 ScraperMode = Literal["default", "errored", "cancelled", "paused"]
@@ -100,8 +93,7 @@ class Scraper:
                 pass
 
             case "errored":
-                # FIXME: isso aqui faz com que a pesquisa seja cancelada e tenha que ser reiniciada. Talvez seja melhor tentar resumir ela por backup?
-                self._delete_related_search()
+                pass
 
             case "cancelled":
                 self._delete_related_search()
@@ -148,7 +140,9 @@ class Scraper:
         all_elements = list(soup.find_all(True, {"class": "flex-item2"}))
 
         if len(all_elements) == 0:
-            self._send_warning(f"Nenhum item encontrado com palavra-chave {keyword} (produto {product})")
+            self._send_warning(
+                f"Nenhum item encontrado com palavra-chave {keyword} (produto {product})"
+            )
 
         for item in all_elements:
             product_name = adjust_and_clean(item.find("strong").text)
@@ -247,11 +241,13 @@ class Scraper:
             return self.driver.current_url == "https://precodahora.ba.gov.br/challenge/"
 
         if check():
-            self.send_logs(f"Parece que um captcha foi encontrado. Aguardando mais um pouco...")
+            self.send_logs(
+                "Parece que um captcha foi encontrado. Aguardando mais um pouco..."
+            )
             self._sleep(1.0)
             return check()
-        else:
-            return False
+
+        return False
 
     def _get_duration_mins_and_reset(self) -> float:
         """Retorna a duração desde o tempo iniciado e reseta o timer."""
@@ -411,8 +407,13 @@ class Scraper:
             ongoing.current_keyword = 0
 
         for estab in ongoing.estabs:
-            if self.db.get_item_count_with(search_id=ongoing.search_id, estab=estab) == 0:
-                self._send_warning(f"Nenhum produto foi encontrado para o estabelecimento {estab.name}")
+            if (
+                self.db.get_item_count_with(search_id=ongoing.search_id, estab=estab)
+                == 0
+            ):
+                self._send_warning(
+                    f"Nenhum produto foi encontrado para o estabelecimento {estab.name}"
+                )
 
         search = self.db.get_search_by_id(ongoing.search_id)
         assert search is not None
