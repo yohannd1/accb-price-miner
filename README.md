@@ -78,6 +78,18 @@ Para criar um executável (usando PyInstaller, `pip install pyinstaller`):
 pyinstaller accb.spec
 ```
 
+## Localização dos dados
+
+Este programa pode criar alguns arquivos:
+
+- `./accb.sqlite`: banco de dados do programa (com dados de pesquisa e
+    opções)
+
+- `./accb.log`: log do programa (quando debug está desativado)
+
+Além disso, o usuário escolhe uma pasta em seu sistema para colocar os
+dados exportados.
+
 ## Ferramentas de desenvolvimento
 
 Esse projeto usa `black` para formatar o código (`pip install black`):
