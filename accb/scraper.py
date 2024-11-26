@@ -337,26 +337,26 @@ class Scraper:
         driver.find_element(By.ID, "aplicar").click()
         self._sleep(0.25)
 
-        product_count = len(ongoing.products)
-
         ongoing.duration_mins += self._get_duration_mins_and_reset()
         self.db.update_ongoing_search(ongoing)
 
-        for p_idx, p in enumerate_skip(ongoing.products, start=ongoing.current_product):
-            progress_value = 100 * p_idx / product_count
+        keyword_counts = [len(p.keywords) for p in ongoing.products]
+        total_keyword_count = sum(keyword_counts)
 
-            self.send_logs(
-                f"Começando pesquisa do produto {p.name} (progresso: {progress_value:.0f}%)"
-            )
+        for p_idx, p in enumerate_skip(ongoing.products, start=ongoing.current_product):
+            self.send_logs(f"Começando pesquisa do produto {p.name}")
             emit("search.began_searching_product", p.name)
-            emit("search.update_progress_bar", progress_value, broadcast=True)
 
             for k_idx, keyword in enumerate_skip(
                 p.keywords, start=ongoing.current_keyword
             ):
-                if keyword == "CARNE BOVINA CHA DE DENTRO":
-                    # FIXME: resolver isso. essa pesquisa em específico não está funcionando no price miner
-                    continue
+                keywords_from_previous = sum(keyword_counts[:p_idx])
+                progress_value = 100 * (keywords_from_previous + k_idx) / total_keyword_count
+                emit("search.update_progress_bar", progress_value, broadcast=True)
+
+                # if keyword == "CARNE BOVINA CHA DE DENTRO":
+                # FIXME: resolver isso. essa pesquisa em específico não está funcionando no price miner
+                # continue
 
                 self.send_logs(f"Próxima palavra chave: {keyword}")
 
