@@ -1,4 +1,4 @@
-import { showMessage, similarity } from "./misc.mjs";
+import { showMessage, similarity, assert } from "./misc.mjs";
 
 let ESTAB_DATA = undefined;
 let PRODUCT_DATA = undefined;
@@ -26,7 +26,7 @@ const setOption = async (key, value) => {
 
 const getOption = async (key) => {
     const r = await getGenericJson("/get_option", { key: key });
-    console.assert(r.status === "success", "Failed to get option");
+    assert(r.status === "success", "Failed to get option");
     return r.value;
 };
 
@@ -316,7 +316,7 @@ const populateEstabs = async (city = null) => {
     }
 
     const response = await getGenericJson("/select_estab", { city: city });
-    console.assert(response.status === "success");
+    assert(response.status === "success");
 
     const estabs = response.estabs;
     ESTAB_DATA = estabs;
@@ -342,21 +342,21 @@ const populateEstabs = async (city = null) => {
 }
 
 /**
- * Lista todos os dados de pesquisas para uma pesquisa de id search_id, na pagina de pesquisas.
- * @param {integer} search_id=undefined
+ * Tenta pegar a pesquisa atualmente selecionada.
+ *
+ * Retorna `null` se não houver nenhuma selecionada.
  */
-const listSearchItems = async (search_id = undefined) => {
-    $("#search-loader").show();
+const getCurrentSearchId = () => {
+    const val = $("#search-select").val();
+    return (val === "null") ? null : val;
+};
 
-    if (search_id == undefined) {
-        search_id = $("#search-select").val();
-    } else if (search_id == null) {
-        $(".no-result").fadeIn(500);
-        $("#search-loader").fadeOut(500);
-        return;
-    } else {
-        $(".no-result").hide();
-    }
+/**
+ * Lista todos os dados de pesquisas para uma pesquisa de id search_id, na pagina de pesquisas.
+ * @param {integer} search_id
+ */
+const listSearchItems = async (search_id) => {
+    $("#search-loader").show();
 
     const table_logs = $("#table-logs");
     const table_products = $("#table-products");
@@ -366,15 +366,18 @@ const listSearchItems = async (search_id = undefined) => {
     table_logs.find(".tr-item").remove();
 
     const response = await getGenericJson("/db/get_items", { search_id: search_id });
-    console.assert(response.status === "success");
+    assert(response.status === "success");
 
     const items = response.items;
 
+    const no_result = $(".no-result");
+
     $("#search-loader").fadeOut(500);
-    if (items.length == 0) {
-        $(".no-result").show();
+    if (items.length === 0) {
+        no_result.show();
         return;
     }
+    no_result.hide();
 
     const $duration = $(".duration");
     $duration.fadeOut(200);
@@ -400,24 +403,21 @@ const listSearchItems = async (search_id = undefined) => {
         $(html).appendTo(tbody);
     });
 
-    let duration_text = "???";
-
-    if (search_id !== undefined) {
-        const si_response = await getGenericJson("/db/get_search_info", { search_id: search_id });
-        console.assert(si_response.status === "success");
-
-        const duration = si_response.info.total_duration_mins;
-        const mins = duration.toFixed(0);
-        const secs = ((duration % 1.0) * 60).toFixed(0);
-        duration_text = `${mins}m ${secs}s`;
-    }
+    const duration_text = await getGenericJson("/db/get_search_info", { search_id: search_id })
+        .then(r => {
+            assert(r.status === "success");
+            const duration = r.info.total_duration_mins;
+            const mins = duration.toFixed(0);
+            const secs = ((duration % 1.0) * 60).toFixed(0);
+            return `${mins}m ${secs}s`;
+        });
 
     $duration
         .html(`Duração (aproximada) da pesquisa: ${duration_text}`)
         .fadeIn(100);
 
     const logs_response = await getGenericJson("/db/get_logs_for_search", { search_id: search_id });
-    console.assert(logs_response.status === "success");
+    assert(logs_response.status === "success");
 
     const logs_tbody = table_logs.find("tbody");
     logs_response.logs.forEach(log => {
@@ -435,7 +435,7 @@ const listSearchItems = async (search_id = undefined) => {
  */
 const listAllProducts = async () => {
     const response = await getGenericJson("/db/get_products");
-    console.assert(response.status === "success");
+    assert(response.status === "success");
 
     const products = response.products;
 
@@ -539,8 +539,6 @@ const get_modal_content_product = (product_name) => {
 
     filtered_product = filtered_product[0];
     keywords = filtered_product[1].split(',');
-
-    // console.log({ filtered_product, keywords });
 
     let modal = `
         <div class="modal-content"">
@@ -755,7 +753,7 @@ $(document).ready(() => {
         setTabRowEnable(false);
 
         const response = await getGenericJson("/select_estab", { city: city });
-        console.assert(response.status === "success");
+        assert(response.status === "success");
 
         const estabs = response.estabs;
 
@@ -786,7 +784,14 @@ $(document).ready(() => {
     $('.tooltipped').tooltip();
     populateEstabs();
     listAllProducts();
-    listSearchItems();
+
+    const current_search_id = getCurrentSearchId();
+    if (current_search_id !== null) {
+        listSearchItems(current_search_id);
+    } else {
+        $(".no-result").show();
+    }
+
     custom_select();
     custom_select_date();
     custom_select_search();
@@ -1348,7 +1353,7 @@ $(document).ready(() => {
         const city = selected.attr("data-city");
 
         const response = await getGenericJson("/select_estab", { city: city });
-        console.assert(response.status === "success");
+        assert(response.status === "success");
 
         const estabs = response.estabs;
 

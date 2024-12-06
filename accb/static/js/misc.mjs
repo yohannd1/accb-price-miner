@@ -28,6 +28,17 @@ export const similarity = (s1, s2) => {
     return (longerLength - distance(longer, shorter)) / parseFloat(longerLength);
 }
 
+export const assert = (cond, message) => {
+    if (cond)
+        return;
+
+    const final_message = (message === undefined)
+        ? "Assertion failed!"
+        : `Assertion failed: ${message}`;
+
+    throw new Error(final_message);
+};
+
 /**
  * Função de ajuda para a similarity, retorna a distancia entre as palavras.
  * @param  {string} s1
