@@ -17,20 +17,22 @@
 {% endmacro %}
 
 {% macro sobre_programa() %}
-  Esta aplicação objetivou modernizar o processo de coleta de preços dos
-  produtos que compõem a cesta básica do projeto de extensão intitulado
-  Acompanhamento do Custo da Cesta Básica (ACCB). Para isso foram desenvolvidas
-  duas ferramentas uma delas sendo esta ferramenta. Esta aplicação desktop
-  automatiza a pesquisa na plataforma Preço da Hora – Bahia
-  (precodahora.ba.gov.br) que disponibiliza os preços de produtos em diversos
-  estabelecimentos da Bahia. Esta aplicação desktop atualmente disponível
-  somente para o sistema operacional Windows, com alguns testes realizados na
-  plataforma Linux, formata os dados coletados no processo de scraping no
-  referido site e devolve uma coleção de arquivos em excel contendo informações
-  de preços de produtos de interesse em diferentes formatação e agrupamento de
-  dados para facilitar o entendimento geral dos dados coletados. Essa
-  ferramenta pode ser utilizada por outras instituições da Bahia, bastando
-  apenas alterar o arquivo de configuração do programa
+  <p>Esta aplicação objetivou <b>modernizar o processo de coleta de preços dos
+    produtos que compõem a cesta básica</b> do projeto de extensão
+  <i>Acompanhamento do Custo da Cesta Básica (ACCB)</i>.</p>
+
+  <p>Para isso, uma das ferramentas desenvolvidas foi esta aplicação desktop,
+  que busca automatizar a pesquisa na plataforma <i><a
+  href="https://precodahora.ba.gov.br/">Preço da Hora – Bahia</a></i>, que
+  disponibiliza os preços de produtos em diversos estabelecimentos da
+  Bahia.</p>
+
+  <p>Para realizar a pesquisa, este aplicativo coleta os dados no processo de
+  scraping no referido site, armazenando-os em um banco de dados e
+  devolvendo-os em uma coleção de arquivos em excel, contendo informações de
+  preços de produtos de interesse. Essa ferramenta pode ser utilizada por
+  outras instituições da Bahia, bastando apenas alterar algumas configurações
+  do programa.</p>
 {% endmacro %}
 
 {% block content %}
@@ -347,19 +349,19 @@
               </div>
             </div>
           </div>
-          <div id="doc2" class="row tab" style="margin: 1em 0; position: relative;">
-            <div class="config-title">
-              <h5>Sobre o programa</h5>
-            </div>
-            <div class="about-program">
-              <p>{{ sobre_programa() }}</p>
-            </div>
-          </div>
-          <ul id="sec-navigation" class="tabs" style="width: 100%;">
-            <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>Colaboradores</a></li>
-            <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i>O programa</a></li>
-          </ul>
         </div>
+        <div id="doc2" class="row tab" style="margin: 1em 0; position: relative;">
+          <div class="config-title">
+            <h5>Sobre o programa</h5>
+          </div>
+          <div class="about-program">
+            {{ sobre_programa() }}
+          </div>
+        </div>
+        <ul id="sec-navigation" class="tabs" style="width: 100%;">
+          <li class="tab"><a href="#doc"><i class="fa fa-map-marker"></i>Colaboradores</a></li>
+          <li class="tab"><a href="#doc2"> <i class="fa fa-map-marker"></i>O programa</a></li>
+        </ul>
       </div>
     </div>
 
