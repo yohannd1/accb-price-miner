@@ -78,6 +78,18 @@ def ask_user_directory() -> Optional[Path]:
     return Path(result)
 
 
+def ask_user_file() -> Optional[Path]:
+    root = Tk()
+    root.attributes("-topmost", True)
+    root.withdraw()
+    result = filedialog.askopenfilename()
+    root.destroy()
+
+    if result == () or (is_windows() and result == "."):
+        return None
+    return Path(result)
+
+
 def get_time_hms(start_time_sec: float) -> dict:
     """Calcula o tempo passado desde `start_time_sec`, retornando-o em horas, minutos e segundos."""
     end = time()

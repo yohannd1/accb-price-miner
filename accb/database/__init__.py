@@ -433,6 +433,13 @@ class DatabaseManager:
                 for (name, keywords) in res.fetchall()
             )
 
+    def get_product(self, name: str) -> Product:
+        with self.db_connection() as conn:
+            cursor = conn.get_cursor()
+            res = cursor.execute("SELECT product_name, keywords FROM product WHERE product_name=?", (name,)).fetchall()
+            (name, keywords) = res[0]
+            return Product(name=name, keywords=keywords.split(","))
+
     def get_estabs(self) -> Iterable[Estab]:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()

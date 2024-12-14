@@ -1,15 +1,9 @@
 import { showMessage, similarity, assert } from "./misc.mjs";
 
 let ESTAB_DATA = undefined;
-let PRODUCT_DATA = undefined;
 
 const updateProgressBar = (newValue) => {
     const pb = document.querySelector("#progress_bar");
-    if (pb == null) {
-        console.log("#progress_bar não encontrada");
-        return;
-    }
-
     const encoded = newValue.toFixed(0).toString() + "%";
     pb.textContent = encoded;
     pb.style.width = encoded;
@@ -530,51 +524,50 @@ const get_modal_content = (estab_name, cities) => {
  * Modal dinâmico que retorna o conteúdo do produto product_name.
  * @param {string} product_name
  */
-const get_modal_content_product = (product_name) => {
-    $('#edit-modal-product .modal-content').remove();
-    var filtered_product = PRODUCT_DATA.filter((item, index) => {
-        if (item[0] === product_name)
-            return item;
-    });
+const openProductModal = async (product_name) => {
+    const result = await getGenericJson("/db/get_product", { name: product_name });
+    assert(result.status === "success");
 
-    filtered_product = filtered_product[0];
-    keywords = filtered_product[1].split(',');
+    const product = result.product;
+    const keywords_joined = product.keywords.join(",");
 
-    let modal = `
-        <div class="modal-content"">
-            <primary_key_product style="display: none;" value="${filtered_product[0]}" />
-            <h5 class="modal-title">${filtered_product[0]}</h5>
+    const modal_container = $("#edit-modal-product");
+    modal_container.find(".modal-content").remove();
+
+    const modal_html = `
+        <div class="modal-content">
+            <primary_key_product style="display: none;" value="${product_name}" />
+            <h5 class="modal-title">${product_name}</h5>
             <div>
                 <div style="margin: 20px 0;">
                     <div class="input-field col s12">
-                        <input value="${filtered_product[0]}" placeholder="Produto" id="product_name_edit" type="text" class="validate">
+                        <input value="${product_name}" placeholder="Produto" id="product_name_edit" type="text" class="validate">
                         <label class="active" for="product_name_edit">Produto</label>
                     </div>
                     <div class="input-field col s12">
-                        <input value="${filtered_product[1]}" placeholder="Palavras Chave" id="keywords_edit" type="text" class="validate">
-                        <label class="active" for="keywords_edit">Palavras Chave</label>
+                        <input value="${keywords_joined}" placeholder="Palavras-chave" id="keywords_edit" type="text" class="validate">
+                        <label class="active" for="keywords_edit">Palavras-chave</label>
                     </div>
-                </div>
                 </div>
                 <div class="modal-menu" style="position: relative;">
                     <button id="cancel" class="primary_color btn-large" href="#" rel="modal:close">Cancelar</button>
                     <button id="save-edit-product" class="primary_color btn-large">Salvar Alterações</button>
                 </div>
+            </div>
         </div>
-    `
+    `;
 
-    $(modal).appendTo('#edit-modal-product');
+    modal_container.append(modal_html);
 
-    $("#edit-modal-product").modal({
-        // fadeDuration: 200,
-    });
-    $('select').formSelect();
+    console.log(modal_container);
 
+    modal_container.modal({});
+
+    $("select").formSelect();
 }
 
-// Cria novo estab adidiconado e o coloca no front end
 /**
- * Adiciona um novo elemento .estab para a listagem de estabs com o nome novo dele. Chamado pel modal de criação de estabelecimento.
+ * Adiciona um novo elemento .estab para a listagem de estabs com o nome novo dele. Chamado pelo modal de criação de estabelecimento.
  * @param {string} new_estab
  */
 const createEstabElement = (new_estab) => {
@@ -611,8 +604,7 @@ const openFolder = (path) => {
  * @param {string} new_product
  */
 const create_product_element = (new_product) => {
-    const element =
-        `
+    const element = `
         <div class="z-depth-3 product-config edit-product" id="ed-${new_product}" value="${new_product}">
             <p>${new_product}</p>
             <div class="right">
@@ -620,7 +612,7 @@ const create_product_element = (new_product) => {
                 <a value="${new_product}" class="remove-product btn-floating btn-large red"><i class="fa fa-minus"></i></a>
             </div>
         </div>
-        `
+    `;
 
     $("#list-product").prepend(element).hide().fadeIn(1000);
     $("#no-result-product").fadeOut("500");
@@ -892,20 +884,20 @@ $(document).ready(() => {
         var primary_key = $("primary_key_product").attr('value').toUpperCase();
         var keywords = $("#keywords_edit").val().toUpperCase();
 
-        if (validateForm([product_name, keywords]))
-            if (window.confirm(`Realmente deseja alterar os valores inseridos?`)) {
-                $.get("/update_product", { product_name: product_name, keywords: keywords, primary_key: primary_key }, (response) => {
-                    if (response.status !== "success") {
-                        showMessage(`O produto ${product_name} não pôde ser atualizado.`, { notification: false });
-                    }
+        if (!validateForm([product_name, keywords]))
+            return;
 
-                    showMessage(response.message, { notification: false });
-                    $("#edit-modal-product").modal().closeModal();
-                    $(".jquery-modal").fadeOut(500);
-                    window.location = window.location.origin + "#produtos";
-                    window.location.reload(true);
-                });
+        $.get("/update_product", { product_name: product_name, keywords: keywords, primary_key: primary_key }, (response) => {
+            if (response.status !== "success") {
+                showMessage(`O produto ${product_name} não pôde ser atualizado.`, { notification: false });
             }
+
+            showMessage(response.message, { notification: false });
+            $("#edit-modal-product").modal().closeModal();
+            $(".jquery-modal").fadeOut(500);
+            window.location = window.location.origin + "#produtos";
+            window.location.reload(true);
+        });
     });
 
     // Macro para fechar modal
@@ -984,7 +976,6 @@ $(document).ready(() => {
             var modal = $("#add-modal-product").modal();
             modal.closeModal();
             $(".jquery-modal").fadeOut(500);
-            PRODUCT_DATA.push([product_name, keywords]);
             create_product_element(product_name);
         });
 
@@ -1006,7 +997,7 @@ $(document).ready(() => {
     });
 
     // Abrir modal dinamico de product
-    $('body').on('click', '.edit-product', (event) => {
+    $('body').on('click', '.edit-product', async (event) => {
         event.preventDefault();
 
         if ($("#edit-modal-product").find('.modal-content').length !== 0) {
@@ -1015,7 +1006,7 @@ $(document).ready(() => {
         }
 
         let product_name = $(event.currentTarget).attr('value').toUpperCase();
-        get_modal_content_product(product_name);
+        await openProductModal(product_name);
     });
 
     // Cancelar edição de estab
@@ -1491,60 +1482,6 @@ $(document).ready(() => {
         }
     });
 
-    // Botão responsável por exportar as configurações da aplicação.
-    $("#export").on("click", (e) => {
-        e.preventDefault();
-
-        if (window.confirm(`Realmente deseja exportar todos os dados atuais?`)) {
-            $.get("/export_database", (response) => {
-                if (response.status !== "success") {
-                    alert("Ocorreu um erro durante a exportação dos dados.");
-                    return;
-                }
-
-                showMessage(response.message, { notification: false });
-            });
-        }
-    });
-
-    // Botão responsável por abrir o popup de importação de configuração da aplicação.
-    $("#import").on("click", (e) => {
-        $("#import_file").click();
-    });
-
-    // Listener para o input de importação de configuração.
-    $("#import_file").on("change", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        var form_data = new FormData();
-        var files = $('#import_file')[0].files;
-        if (!files[0].name.includes(".sql")) {
-            showMessage("Insira um arquivo .sql válido.", { notification: false });
-            return;
-        }
-
-        form_data.append('file', files[0]);
-        $.ajax({
-            url: '/import_database',
-            type: 'post',
-            data: form_data,
-            contentType: false,
-            processData: false,
-            cache: false,
-            success: (response) => {
-                if (response.status !== "success") {
-                    alert("Ocorreu um erro durante a importação dos dados.");
-                    return;
-                }
-
-                alert(response.message);
-                window.location = window.location.origin + "#configurar";
-                window.location.reload(true);
-            },
-        });
-    });
-
     getOption("warning").then(opt => {
         if (opt !== null)
             return;
@@ -1581,6 +1518,12 @@ $(document).ready(() => {
         };
 
         setOutputPathHooks.push(loadCurrentOutputPath);
+
+        const makeButton = (text, callback) => {
+            const btn = $(`<a class="btn-large primary_color">${text}</a>`);
+            btn.on("click", callback);
+            return btn;
+        };
 
         const makeBoolOptionButton = async (option) => {
             const btn = $(`<a class="btn-large primary_color"></a>`);
@@ -1626,6 +1569,34 @@ $(document).ready(() => {
         $(`<br/><span>Mostra alguns detalhes extra na pesquisa, como quanto tempo está sendo aguardado para a próxima ação.</span>`).appendTo(sse);
         sse.appendTo(settings_list);
 
+        const eid = $(`<p></p>`);
+        eid.append(`<span>Dados do programa: </span>`);
+        eid.append(`<input id="import-file" type="file" style="display: none;"/>`);
+
+        eid.append(makeButton("Exportar", async () => {
+            const r = await getGenericJson("/export_database", {});
+            if (r.status !== "success") {
+                alert("Ocorreu um erro durante a exportação dos dados.");
+                return;
+            }
+
+            alert(r.message);
+        }));
+
+        eid.append(makeButton("Importar", async () => {
+            const r = await getGenericJson("/import_database", {});
+            if (r.status !== "success") {
+                const suffix = r.message ? `: ${r.message}` : "";
+                alert(`Ocorreu um erro durante a importação dos dados${suffix}.`)
+                return;
+            }
+
+            alert(r.message);
+            window.location.reload(true);
+        }));
+
+        settings_list.append(eid);
+
         please_wait.hide();
     })();
 
@@ -1647,7 +1618,7 @@ $(document).ready(() => {
                     await setOutputPath();
                     unlock();
                 } catch (err) {
-                    console.log(err);
+                    console.error(err);
                     alert("Ocorreu um erro ao escolher o caminho");
                 }
             });
@@ -1663,4 +1634,9 @@ $(document).ready(() => {
     tab_pesquisa.find(".config-title #esq #btn-toggle-warnings").on("click", () => {
         tab_pesquisa.find("#table-logs").toggleClass("hidden");
     });
+
+    setTimeout(() => {
+        const is_chrome_installed = $("#template-values #is-chrome-installed")[0].innerText === "True";
+        setTabRowEnable(is_chrome_installed);
+    }, 1000);
 });

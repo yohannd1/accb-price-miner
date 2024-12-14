@@ -28,6 +28,7 @@ from accb.utils import (
     log,
     log_error,
     ask_user_directory,
+    ask_user_file,
     open_folder,
     Defer,
     set_log_file,
@@ -216,6 +217,20 @@ def route_get_products() -> dict:
     ]
 
     return {"status": "success", "products": products}
+
+
+@app.route("/db/get_product")
+def route_get_product() -> dict:
+    name = request.args["name"]
+    p = state.db_manager.get_product(name)
+
+    return {
+        "status": "success",
+        "product": {
+            "name": p.name,
+            "keywords": p.keywords,
+        },
+    }
 
 
 @app.route("/db/get_search_info")
@@ -496,14 +511,22 @@ def route_export_database() -> RequestDict:
     }
 
 
-@app.route("/import_database", methods=["POST"])
+@app.route("/import_database")
 def route_import_database() -> RequestDict:
-    """Rota responsável por importar os dados do banco"""
+    path = ask_user_file()
 
-    script = request.files["file"].read().decode(ENCODING)
-    state.db_manager.import_database_from_script(script)
+    if path is None or not path.is_file():
+        return {"status": "error", "message": "Arquivo não selecionado ou inválido"}
 
+    if not str(path).endswith(".sql"):
+        return {"status": "error", "message": "Extensão inválida (deve ser .sql)"}
+
+    with path.open("r", encoding=ENCODING) as f:
+        content = f.read()
+
+    state.db_manager.import_database_from_script(content)
     state.wait_reload = True
+
     return {
         "status": "success",
         "message": "Dados importados com sucesso.",

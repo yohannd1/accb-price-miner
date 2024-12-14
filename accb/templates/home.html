@@ -50,42 +50,46 @@
       <ul id="main-navigation" class="tabs disabled">
         <li class="hidden tab col s3"><a class="disabled" id="list" href="#tab-initial"></a></li>
 
-        <li class="tab col s3"><a id="search" href="#tab-pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Selecionar Município">
-          <i class="fa fa-map-marker"></i>
-          Município
+        <li class="tab col s3"><a id="search" href="#tab-pesquisar" class="tooltipped" data-position="bottom" data-tooltip="Realizar uma pesquisa">
+          <i class="fa fa-search"></i>
+          Pesquisa
         </a></li>
 
         <li class="hidden tab col s3"><a class="disabled" id="list" href="#listagem"></a></li>
 
         <li class="hidden tab col s3"><a class="disabled" id="prog" href="#progress"></a></li>
 
-        <li class="tab col s3"><a href="#configurar" id="config" class="tooltipped" data-position="bottom" data-tooltip="Configurar Estabelecimentos">
-          <i class="fa fa-cogs"></i>
+        <li class="tab col s3"><a href="#configurar" id="config" class="tooltipped" data-position="bottom" data-tooltip="Configurar estabelecimentos">
+          <i class="fa fa-map-marker"></i>
           Estabelecimentos
         </a></li>
 
-        <li class="tab col s3"><a href="#produtos" id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar Produtos">
-          <i class="fa fa-cogs"></i>
+        <li class="tab col s3"><a href="#produtos" id="config-product" class="tooltipped" data-position="bottom" data-tooltip="Configurar produtos">
+          <i class="fa fa-shopping-cart"></i>
           Produtos
         </a></li>
 
-        <li class="tab col s3"><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar Pesquisas">
+        <li class="tab col s3"><a href="#pesquisa" id="search_check" class="tooltipped" data-position="bottom" data-tooltip="Visualizar pesquisas já feitas">
           <i class="fa fa-database"></i>
-          Pesquisas
+          Histórico
         </a></li>
 
-        <li class="tab col s3"><a href="#tab-configuracoes" class="tooltipped" data-position="bottom" data-tooltip="Configurações">
+        <li class="tab col s3"><a href="#tab-configuracoes" class="tooltipped" data-position="bottom" data-tooltip="Configurações do programa">
           <i class="fa fa-cogs"></i>
           Configurações
         </a></li>
 
-        <li class="tab col s3"><a href="#about" id="sobre" class="tooltipped" data-position="left" data-tooltip="Sobre o Programa">
+        <li class="tab col s3"><a href="#about" id="sobre" class="tooltipped" data-position="left" data-tooltip="Sobre o programa">
           <i class="fa fa-info-circle"></i>
           Sobre
         </a></li>
       </ul>
     </div>
   </header>
+
+  <div id="template-values" hidden>
+    <p id="is-chrome-installed">{{ is_chrome_installed }}</p>
+  </div>
 
   <main class="main-content row z-depth-5">
     <div id="tab-initial" class="tab">
@@ -194,17 +198,10 @@
         </a>
         <a style="margin-right: 10px;" class="right round btn-floating btn-large primary_color tooltipped" data-position="bottom" data-tooltip="Remover Cidade" href="#delete-city" rel="modal:open"><i class="fa fa-minus"></i>
         </a>
-        <a id="export" class="primary_color left btn-large">Exportar</a>
-        <a id="import" class="primary_color left btn-large">
-          Importar
-        </a>
-        <div style="width: 0; height: 0; overflow: hidden;">
-          <input id="import_file" type="file"/>
-        </div>
       </div>
       <div class="tab-content-config">
         <div class="config-title">
-          <h5>Listagem de Estabelecimentos</h5>
+          <h5>Lista de estabelecimentos</h5>
           <a class="right round btn-floating btn-large primary_color tooltipped" data-position="left" data-tooltip="Adicionar Estabelecimento" href="#add-modal" rel="modal:open"><i class="fa fa-plus"></i></a>
         </div>
         <div id="list-config">
@@ -218,7 +215,7 @@
     <div id="produtos" class="col s12 tab">
       <div class="tab-content-config">
         <div class="config-title">
-          <h5>Listagem de Produtos</h5>
+          <h5>Lista de produtos</h5>
           <a class="right round btn-floating btn-large primary_color tooltipped" data-position="left" data-tooltip="Adicionar Produto" href="#add-modal-product" rel="modal:open"><i class="fa fa-plus"></i></a>
         </div>
         <div id="list-product">
@@ -264,7 +261,7 @@
             <a style="margin-right: 10px;" class="right round btn-floating btn-large primary_color tooltipped" id="clean-search" data-position="left" data-tooltip="Limpar Pesquisas"><i class="fa fa-trash"></i></a>
           </div>
         </div>
-        <h5 style="width: 100%; margin-top: 1em;">Listagem de Pesquisa</h5>
+        <h5 style="width: 100%; margin-top: 1em;">Lista de pesquisas</h5>
         <div class="input-field search_div">
           <input placeholder="Pesquisar (qualquer das colunas da tabela)" class="browser-default z-depth-2" id="search_bar"/>
           <a class="round btn-floating btn-large primary_color tooltipped" data-position="left" id="do_search" data-tooltip="Pesquisar"><i class="fa fa-search"></i></a>
