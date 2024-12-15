@@ -454,8 +454,8 @@
         <div style="margin: 20px 0;">
           <div class="input-field col s12">
             <select id="city-delete-select" style="color: black !important;">
-              {% for city in city_names %}
-                <option value="{{ city_name }}">{{ city_name }}</option>
+              {% for name in city_names %}
+                <option value="{{ name }}">{{ name }}</option>
               {% endfor %}
             </select>
             <label>Cidade</label>
@@ -469,7 +469,7 @@
     </div>
   </div>
 
-  <!-- MODAL EDITANDO CIDADE -->
+  <!-- MODAL DE EDIÇÃO DE CIDADE -->
   <div id="edit-city" class="modal" style="height: 40%; min-height: 350px;">
     <div class="modal-content">
       <div>
@@ -479,8 +479,8 @@
         <div style="margin: 20px 0;">
           <div class="input-field col s6">
             <select id="city-edit-select" style="color: black !important;">
-              {% for city in city_names %}
-                <option value="{{ city_name }}">{{ city_name }}</option>
+              {% for name in city_names %}
+                <option value="{{ name }}">{{ name }}</option>
               {% endfor %}
             </select>
             <label>Cidade</label>
@@ -497,7 +497,7 @@
       </div>
   </div>
 
-  <!-- MODAL ADICIONANDO CIDADE -->
+  <!-- MODAL DE CRIAÇÃO DE CIDADE -->
   <div style="height: 40%;" id="add-city-modal" class="modal">
     <div class="modal-content">
       <div>
