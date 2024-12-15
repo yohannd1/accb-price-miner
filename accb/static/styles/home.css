@@ -992,6 +992,10 @@ div#tab-configuracoes-settings-list {
     flex-direction: column;
 }
 
+div#tab-configuracoes-settings-list p {
+    margin: 1em 0em;
+}
+
 div#file-list {
     max-height: 250px;
     overflow: auto;
