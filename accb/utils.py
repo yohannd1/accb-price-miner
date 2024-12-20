@@ -27,6 +27,8 @@ def set_log_file(f) -> None:
 
 def log(message: str) -> None:
     """Faz um log de uma mensagem."""
+    if _log_file is None:
+        return
     prefix = _curtime_str()
     print(f"[{prefix}] {message}", file=_log_file)
     _log_file.flush()
