@@ -988,12 +988,16 @@ div#tab-pesquisar-backup-list button {
     margin-bottom: 0.6em;
 }
 
+#tab-configuracoes {
+    overflow-y: scroll;
+}
+
 div#tab-configuracoes-settings-list {
     flex-direction: column;
 }
 
 div#tab-configuracoes-settings-list p {
-    margin: 1em 0em;
+    margin: 1.5em 0em;
 }
 
 div#file-list {

@@ -231,17 +231,6 @@
       <div class="tab-content-search">
         <div class="config-title" style="margin: 0;">
           <div id="esq">
-            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa">
-              <select id="search-select" class="browser-default">
-                {% if len(searches_this_month) == 0 %}
-                  <option value="null">Nenhuma Pesquisa</option>
-                {% endif %}
-
-                {% for id, city_name, search_date in searches_this_month[::-1] %}
-                  <option data-city="{{ city_name }}" value="{{ id }}">{{ city_name }} {{ search_date }}</option>
-                {% endfor %}
-              </select>
-            </div>
             <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Mês">
               <select id="month-picker" class="browser-default">
                 {% for (i, m) in enumerate(months) %}
@@ -250,6 +239,17 @@
                   {% else %}
                     <option value="{{ i }}">{{ m }}</option>
                   {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div style="margin-top: 1px ;" class="left tooltipped" data-position="top" data-tooltip="Filtrar por Pesquisa">
+              <select id="search-select" class="browser-default">
+                {% if len(searches_this_month) == 0 %}
+                  <option value="null">Nenhuma Pesquisa</option>
+                {% endif %}
+
+                {% for id, city_name, search_date in searches_this_month[::-1] %}
+                  <option data-city="{{ city_name }}" value="{{ id }}">{{ city_name }} {{ search_date }}</option>
                 {% endfor %}
               </select>
             </div>

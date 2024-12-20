@@ -559,8 +559,6 @@ const openProductModal = async (product_name) => {
 
     modal_container.append(modal_html);
 
-    console.log(modal_container);
-
     modal_container.modal({});
 
     $("select").formSelect();
@@ -1133,7 +1131,6 @@ $(document).ready(() => {
     });
 
     // Remover estabelecimento
-
     $('body').on('click', 'a.remove-estab', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -1190,9 +1187,8 @@ $(document).ready(() => {
         if ($("#search-select").val() == "null")
             return;
 
-        if (row_len == 0) {
+        if (row_len == 0)
             return;
-        }
 
         if (e.key === 'Backspace' || e.keyCode === 8) {
             if (value == '') {
@@ -1209,9 +1205,11 @@ $(document).ready(() => {
         if (e.key === 'Enter' || e.keyCode === 13) {
             var hide_len = 0;
 
+            const tr_items = $(".tr-item");
+
             if (value == '') {
-                if ($(".tr-item").is(":hidden"))
-                    $(".tr-item").fadeIn();
+                if (tr_items.is(":hidden"))
+                    tr_items.fadeIn();
                 if ($(".no-result").is(":visible"))
                     $(".no-result").hide();
                 $(".tr-item").css("background", "transparent");
@@ -1219,10 +1217,10 @@ $(document).ready(() => {
                 return;
             }
 
-            $(".tr-item").css("background", "transparent");
+            tr_items.css("background", "transparent");
 
             var odd = true;
-            $(".tr-item").each(function (index) {
+            tr_items.each(function (index) {
                 var found = false;
 
                 $(this).find("td").each(function (index) {
@@ -1570,8 +1568,8 @@ $(document).ready(() => {
         sse.appendTo(settings_list);
 
         const eid = $(`<p></p>`);
-        eid.append(`<span>Dados do programa: </span>`);
-        eid.append(`<input id="import-file" type="file" style="display: none;"/>`);
+        eid.append(`<span>Dados do programa</span><br/>`);
+        eid.append(`<span>(É mais recomendado salvar o arquivo <code>accb.sqlite</code> gerado pelo programa)</span><br/>`);
 
         eid.append(makeButton("Exportar", async () => {
             const r = await getGenericJson("/export_database", {});
@@ -1582,6 +1580,8 @@ $(document).ready(() => {
 
             alert(r.message);
         }));
+
+        eid.append(`<span> </span>`);
 
         eid.append(makeButton("Importar", async () => {
             const r = await getGenericJson("/import_database", {});
@@ -1594,6 +1594,7 @@ $(document).ready(() => {
             alert(r.message);
             window.location.reload(true);
         }));
+
 
         settings_list.append(eid);
 
