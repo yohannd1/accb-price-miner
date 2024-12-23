@@ -16,6 +16,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+accb_rust/target/
 
 # dados do programa
 accb.sqlite
