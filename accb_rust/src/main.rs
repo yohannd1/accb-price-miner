@@ -6,9 +6,9 @@
 use std::error::Error;
 use thirtyfour::{DesiredCapabilities, WebDriver};
 
+mod gui;
 mod model;
 mod scraper;
-mod gui;
 
 use model::OngoingSearch;
 use scraper::Scraper;
