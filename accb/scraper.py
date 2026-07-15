@@ -64,22 +64,14 @@ class Scraper:
         self.url = "https://precodahora.ba.gov.br/produtos"
         """URL onde ocorrem as pesquisas"""
 
+        self.connection_check_url =  "https://precodahora.ba.gov.br"
+        """URL utilizada para verificar se a conexão está ocorrendo apropriadamente."""
+
     def pause(self) -> None:
         self.mode = "paused"
 
     def cancel(self) -> None:
         self.mode = "cancelled"
-
-    @staticmethod
-    def _is_connected(test_url: str = "https://www.example.org/") -> bool:
-        """Confere a conexão com a URL desejada."""
-
-        try:
-            with urlopen(test_url):
-                return True
-
-        except URLError:
-            return False
 
     def _delete_related_search(self) -> None:
         db = self.state.db_manager
@@ -215,8 +207,11 @@ class Scraper:
         raise ScraperInterrupt("Pesquisa interrompida por motivo desconhecido.")
 
     def _check_connection(self) -> None:
-        if not self._is_connected():
-            raise ScraperError("Sem conexão com a rede!")
+        try:
+            with urlopen(self.connection_check_url):
+                return True
+        except URLError as exc:
+            raise ScraperError(f"Não foi possível se conectar a {self.connection_check_url}: {exc}")
 
     def _check_captcha(self) -> None:
         if self._is_in_captcha():
@@ -297,6 +292,8 @@ class Scraper:
         return elem or self.driver.find_element(by, value)
 
     def begin_search(self) -> None:
+        """Inicia e procede com a pesquisa."""
+
         ongoing = self.ongoing
         driver = self.driver
 
@@ -351,7 +348,9 @@ class Scraper:
                 p.keywords, start=ongoing.current_keyword
             ):
                 keywords_from_previous = sum(keyword_counts[:p_idx])
-                progress_value = 100 * (keywords_from_previous + k_idx) / total_keyword_count
+                progress_value = (
+                    100 * (keywords_from_previous + k_idx) / total_keyword_count
+                )
                 emit("search.update_progress_bar", progress_value, broadcast=True)
 
                 # if keyword == "CARNE BOVINA CHA DE DENTRO":
