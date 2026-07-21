@@ -64,7 +64,7 @@ def timeout_exit() -> None:
 watchdog = LockedVar(RestartableTimer(WATCHDOG_TIMEOUT, timeout_exit))
 
 
-def export_thread(recv: Queue, send: Queue) -> None:
+def export_thread(recv: Queue[Any], send: Queue[Any]) -> None:
     from accb.excel import db_to_xlsx, db_to_xlsx_all, export_to_xlsx
 
     shutdown = False
@@ -89,15 +89,15 @@ def export_thread(recv: Queue, send: Queue) -> None:
 export_bq = BiQueue(export_thread)
 
 
-def db_to_xlsx(*args, **kwargs):
+def db_to_xlsx(*args: Any, **kwargs: Any) -> Any:
     return export_bq.exchange(("db_to_xlsx", args, kwargs))
 
 
-def db_to_xlsx_all(*args, **kwargs):
+def db_to_xlsx_all(*args: Any, **kwargs: Any) -> Any:
     return export_bq.exchange(("db_to_xlsx_all", args, kwargs))
 
 
-def export_to_xlsx(*args, **kwargs):
+def export_to_xlsx(*args: Any, **kwargs: Any) -> Any:
     return export_bq.exchange(("export_to_xlsx", args, kwargs))
 
 
@@ -203,14 +203,14 @@ def route_remove_product() -> RequestDict:
 
 
 @app.route("/db/get_logs_for_search")
-def route_get_logs_for_search() -> dict:
+def route_get_logs_for_search() -> RequestDict:
     search_id = request.args["search_id"]
     logs = state.db_manager.get_logs(int(search_id))
     return {"status": "success", "logs": list(logs)}
 
 
 @app.route("/db/get_products")
-def route_get_products() -> dict:
+def route_get_products() -> RequestDict:
     products = [
         {"name": p.name, "keywords": p.keywords}
         for p in state.db_manager.get_products()
@@ -220,7 +220,7 @@ def route_get_products() -> dict:
 
 
 @app.route("/db/get_product")
-def route_get_product() -> dict:
+def route_get_product() -> RequestDict:
     name = request.args["name"]
     p = state.db_manager.get_product(name)
 
@@ -234,7 +234,7 @@ def route_get_product() -> dict:
 
 
 @app.route("/db/get_search_info")
-def route_get_search_info() -> dict:
+def route_get_search_info() -> RequestDict:
     search_id = int(request.args["search_id"])
 
     search = state.db_manager.get_search_by_id(search_id)
@@ -254,7 +254,7 @@ def route_get_search_info() -> dict:
 
 
 @app.route("/db/get_all_items")
-def route_get_all_items() -> dict:
+def route_get_all_items() -> RequestDict:
     items = [
         {
             "search_id": it.search_id,
@@ -271,7 +271,7 @@ def route_get_all_items() -> dict:
 
 
 @app.route("/db/get_items")
-def route_get_items() -> dict:
+def route_get_items() -> RequestDict:
     search_id = int(request.args["search_id"])
 
     items = [

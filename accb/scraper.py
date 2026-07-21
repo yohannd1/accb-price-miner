@@ -6,7 +6,7 @@ import re
 from time import sleep, time
 import webbrowser
 import random
-from typing import Literal, assert_never
+from typing import Literal, assert_never, Any
 from urllib.request import urlopen
 from urllib.error import URLError
 from datetime import datetime
@@ -209,7 +209,7 @@ class Scraper:
     def _check_connection(self) -> None:
         try:
             with urlopen(self.connection_check_url):
-                return True
+                pass
         except URLError as exc:
             raise ScraperError(f"Não foi possível se conectar a {self.connection_check_url}: {exc}")
 
@@ -256,7 +256,7 @@ class Scraper:
     def _wait_for_element(
         self, by: str, value: str, timeout: float
     ) -> WebElement | None:
-        def deinit(_) -> None:
+        def deinit(_: Any) -> None:
             emit("search.finished_waiting", broadcast=True)
 
         emit("search.started_waiting", timeout, broadcast=True)

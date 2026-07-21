@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional
-from threading import Lock
-
 import sqlite3
+from typing import Optional, Any
+from threading import Lock
 
 from accb.utils import log
 
@@ -42,7 +41,7 @@ class Connection:
 
         self._closed = True
 
-    def __exit__(self, ext_type, exc_value, traceback) -> None:
+    def __exit__(self, ext_type: Any, exc_value: Any, traceback: Any) -> None:
         has_errored = isinstance(exc_value, Exception)
         self._close(has_errored)
 

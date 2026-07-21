@@ -19,6 +19,7 @@ dependencies = [
     "pandas-stubs",
     "types-openpyxl",
     "types-beautifulsoup4",
+    "types-Flask-SocketIO",
 ]
 
 [tool.hatch.build.targets.wheel]

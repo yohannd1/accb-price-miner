@@ -3,12 +3,11 @@ from __future__ import annotations
 import re
 import sqlite3
 import sys
-from os.path import exists
-from datetime import date
 import os
 import json
+from datetime import date
 from dataclasses import asdict
-from typing import Any, Sequence, Generator, Optional, Iterable
+from typing import Any, Sequence, Generator, Optional, Iterable, TypeAlias, cast
 from threading import Lock
 
 from accb.model import Product, City, Estab, Search, SearchItem, OngoingSearch
@@ -19,7 +18,9 @@ from accb.database.upgrader import Upgrader
 DB_PATH = "accb.sqlite"
 ENCODING = "utf-8"  # or "latin-1"?
 
-JsonValue = str | int | float | dict | list
+JsonValue: TypeAlias = (
+    "str | int | float | None | dict[str, JsonValue] | list[JsonValue]"
+)
 
 
 class DatabaseManager:
@@ -116,14 +117,12 @@ class DatabaseManager:
             """
             cursor.executescript(query)
 
-            backups = cursor.execute(
-                """
+            backups = cursor.execute("""
             SELECT
                 active, city, estab_info,
                 product_info, search_id, done
             FROM backup
-            """
-            )
+            """)
 
             for b in backups:
                 done = b[5]
@@ -131,7 +130,7 @@ class DatabaseManager:
                     # ignorar backups de pesquisas já finalizadas
                     continue
 
-                (current_product, current_keyword) = [int(x) for x in b[0].split(".")]
+                current_product, current_keyword = [int(x) for x in b[0].split(".")]
                 city = b[1]
 
                 estabs_old = json.loads(b[2])
@@ -257,7 +256,7 @@ class DatabaseManager:
     def db_connection(self) -> Connection:
         """Realiza a conexão com o banco de dados ou o povoa caso não exista."""
 
-        if exists(DB_PATH):
+        if os.path.exists(DB_PATH):
             conn = sqlite3.connect(DB_PATH)
         else:
             conn = self._init_conn()
@@ -373,7 +372,7 @@ class DatabaseManager:
     def get_search(self, where: str, equals: Any = None) -> list[Any]:
         """Seleciona uma pesquisa do banco de dados."""
 
-        args: Sequence
+        args: tuple[Any, ...]
         if equals is None:
             query = """SELECT * FROM search ORDER BY id ASC"""
             args = ()
@@ -391,7 +390,7 @@ class DatabaseManager:
     def get_search_items(self, search_id: Optional[int] = None) -> list[SearchItem]:
         """Seleciona itens de uma pesquisa (ou todas, se `search_id` = None) do banco de dados."""
 
-        args: tuple = ()
+        args: tuple[Any, ...] = ()
         if search_id is None:
             query = "SELECT search_id, product_name, web_name, address, price, keyword FROM search_item ORDER BY search_id, product_name, price ASC"
             args = ()
@@ -436,8 +435,11 @@ class DatabaseManager:
     def get_product(self, name: str) -> Product:
         with self.db_connection() as conn:
             cursor = conn.get_cursor()
-            res = cursor.execute("SELECT product_name, keywords FROM product WHERE product_name=?", (name,)).fetchall()
-            (name, keywords) = res[0]
+            res = cursor.execute(
+                "SELECT product_name, keywords FROM product WHERE product_name=?",
+                (name,),
+            ).fetchall()
+            name, keywords = res[0]
             return Product(name=name, keywords=keywords.split(","))
 
     def get_estabs(self) -> Iterable[Estab]:
@@ -521,7 +523,7 @@ class DatabaseManager:
             query = """UPDATE search SET done=-1, duration=? WHERE id=?"""
             cursor.execute(query, (search.total_duration_mins, search.id))
 
-    def run_query(self, query: str, args: tuple = ()) -> list[Any]:
+    def run_query(self, query: str, args: tuple[Any, ...] = ()) -> list[Any]:
         """Roda uma query específica no banco de dados."""
 
         with self.db_connection() as conn:
@@ -549,6 +551,7 @@ class DatabaseManager:
             return None
 
         (id_,) = result[0]
+        assert isinstance(id_, int)
         return id_
 
     def get_search_by_id(self, id_: int) -> Optional[Search]:
@@ -643,20 +646,20 @@ class DatabaseManager:
         )
 
     def get_ongoing_searches(self) -> list[OngoingSearch]:
-        def unwrap(x):
+        def unwrap(x: Optional[OngoingSearch]) -> OngoingSearch:
             assert x is not None
             return x
 
         ids = self.run_query("SELECT search_id FROM ongoing_search")
         return [unwrap(self.get_ongoing_search_by_id(id_)) for (id_,) in ids]
 
-    def get_option(self, key: str) -> Optional[JsonValue]:
+    def get_option(self, key: str) -> JsonValue:
         result = self.run_query("SELECT value FROM option WHERE key=?", (key,))
 
         if len(result) == 0:
             return None
 
-        return json.loads(result[0][0])
+        return cast("JsonValue", json.loads(result[0][0]))
 
     def set_option(self, key: str, value: JsonValue) -> None:
         if self.run_query("SELECT * FROM option WHERE key=?", (key,)):

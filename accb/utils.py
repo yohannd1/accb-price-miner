@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import os
 from time import strftime, time
-from typing import Iterable, Optional, TypeVar, Generator, Sequence, Generic, Callable
+from typing import Iterable, Optional, TypeVar, Generator, Sequence, Generic, Callable, cast, Any, TypedDict
 from dataclasses import dataclass
 from datetime import datetime
 from tkinter import filedialog, messagebox, Tk
@@ -20,7 +20,7 @@ def _curtime_str() -> str:
     return strftime("%Y-%m-%d %H:%M:%S")
 
 
-def set_log_file(f) -> None:
+def set_log_file(f: Any) -> None:
     global _log_file
     _log_file = f
 
@@ -75,7 +75,7 @@ def ask_user_directory() -> Optional[Path]:
     result = filedialog.askdirectory()
     root.destroy()
 
-    if result == () or (is_windows() and result == "."):
+    if cast("Any", result) == () or (is_windows() and result == "."):
         return None
     return Path(result)
 
@@ -87,21 +87,25 @@ def ask_user_file() -> Optional[Path]:
     result = filedialog.askopenfilename()
     root.destroy()
 
-    if result == () or (is_windows() and result == "."):
+    if cast("Any", result) == () or (is_windows() and result == "."):
         return None
     return Path(result)
 
+class TimeDict(TypedDict):
+    minutes: int
+    seconds: int
+    hours: int
 
-def get_time_hms(start_time_sec: float) -> dict:
+def get_time_hms(start_time_sec: float) -> TimeDict:
     """Calcula o tempo passado desde `start_time_sec`, retornando-o em horas, minutos e segundos."""
     end = time()
     temp = end - start_time_sec
 
-    hours = temp // 3600
+    hours = int(temp // 3600)
     temp = temp % 3600
 
-    minutes = temp // 60
-    seconds = temp % 60
+    minutes = int(temp // 60)
+    seconds = int(temp % 60)
 
     return {"minutes": minutes, "seconds": seconds, "hours": hours}
 
@@ -144,5 +148,5 @@ class Defer(Generic[T]):
     def __enter__(self) -> T:
         return self.resource
 
-    def __exit__(self, *_args, **_kwargs) -> None:
+    def __exit__(self, *_args: Any, **_kwargs: Any) -> None:
         self.deinit(self.resource)

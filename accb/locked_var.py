@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Any
 from threading import Lock
 
 T = TypeVar("T")
@@ -17,5 +17,5 @@ class LockedVar(Generic[T]):
         self._lock.__enter__()
         return self._value
 
-    def __exit__(self, *args, **kwargs) -> None:
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         self._lock.__exit__(*args, **kwargs)

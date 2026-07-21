@@ -1,11 +1,12 @@
 """Ferramentas para comunicação com o Excel"""
 
-from typing import Any
+from typing import Any, cast
 from time import time
 from pathlib import Path
 
 import pandas as pd
 from openpyxl.styles import Border, Side, Alignment
+from openpyxl.cell import Cell
 
 from accb.database import DatabaseManager
 from accb.utils import get_time_hms, get_time_filename, log
@@ -19,7 +20,7 @@ def inject_into_db(db: DatabaseManager, city_name: str) -> Any:
     search_id = db.save_search(True, city_name, duration["minutes"])
 
     for _index, row in df.iterrows():
-        (name, local, keyword, address, price) = row
+        name, local, keyword, address, price = row
 
         info = SearchItem(
             search_id=search_id,
@@ -63,7 +64,7 @@ def db_to_xlsx(
     return output_folder
 
 
-def db_to_xlsx_all(city, search_id, db: DatabaseManager, path: Path) -> Path:
+def db_to_xlsx_all(city: str, search_id: int, db: DatabaseManager, path: Path) -> Path:
     query = """
     SELECT DISTINCT * FROM search_item
     WHERE search_item.web_name NOT IN (SELECT web_name FROM estab)
@@ -153,7 +154,7 @@ def export_to_xlsx(
 
         for col in worksheet.columns:
             max_length = 0
-            column = col[0].column_letter
+            column = cast("Cell", col[0]).column_letter # TODO: é uma boa ideia fazer esse cast aqui? ou seria melhor um assert?
             for cell in col:
                 max_length = max(max_length, len(str(cell.value)))
             adjusted_width = (max_length + 2) * 1.2

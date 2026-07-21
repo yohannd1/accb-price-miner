@@ -8,11 +8,11 @@ class BiQueue:
     Só suporta uma request por vez, via `BiQueue.exchange()`
     """
 
-    _sender_queue: Queue
-    _receiver_queue: Queue
+    _sender_queue: Queue[Any]
+    _receiver_queue: Queue[Any]
     _receiver_thread: Thread
 
-    def __init__(self, handler_target: Callable[[Queue, Queue], None]) -> None:
+    def __init__(self, handler_target: Callable[[Queue[Any], Queue[Any]], None]) -> None:
         """Inicializa a classe.
 
         Um thread é criado, chamando `handler_target`, e passando duas filas: a primeira, de onde ele lê mensagens, e a segunda, onde ele coloca respostas.

@@ -10,12 +10,12 @@ class Upgrader:
         self.upgrades: list[UpgradeFunc] = []
         """Upgrade-funcs to run, where the i-th function runs only if the version number less than or equal to i."""
 
-    def until_version(self, version: int):
+    def until_version(self, version: int) -> Callable[[UpgradeFunc], UpgradeFunc]:
         must_be_for = len(self.upgrades)
         if version != must_be_for:
             raise ValueError(f"next until_version must be for version {must_be_for}")
 
-        def inner(func):
+        def inner(func: UpgradeFunc) -> UpgradeFunc:
             self.upgrades.append(func)
             return func
 
